@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project basedir="." default="help" name="StoRM">
+  <description>
+     Ant buildfile to build RPM of Dynamic Info Provider.
+  </description>
+
+  <!-- =================================================================== -->
+  <!-- PRINT USAGE INFORMATION                                             -->
+  <!-- =================================================================== -->
+  <target name="help"
+	description="short help text">
+	<echo>
+  to do :)
+	</echo>
+  </target>
+
+
+
+  <!-- =============================================================== -->
+  <!-- SET ANT PROPERTIES                                              -->
+  <!-- =============================================================== -->
+  <!--                                                                 -->
+  <!-- N.B.: once a property has been set, it will not be overwritten. -->
+  <!-- Therefore, default values for properties go last, and user      -->
+  <!-- overrides go first.                                             -->
+  <!--                                                                 -->
+
+  <!-- sets the standard DSTAMP, TSTAMP, and TODAY properties -->
+  <tstamp/>
+
+  <!-- load all properties from ``build.properties`` file -->
+  <property file="build.properties"/>
+
+  <!-- load environment vars under the env.* property hierarchy -->
+  <property environment="env"/>
+
+  <!-- set default global properties for this build -->
+  <property name="basedir" location="."/>
+	
+  <!-- sources used to build and make the distribution archives -->
+  <property name="info.dir" location="${src.dir}/info-provider"/>
+	
+	
+  <property name="tmpdir" location="${localstatedir}/tmp"/>
+  	
+  <!-- the output file names -->
+  <property name="info.tarfile" value="glite-info-dynamic-storm-${version}.tar"/>
+
+
+
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <!-- Print properties                                                -->
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <!--                                                                 -->
+
+  <target name="help.properties"
+	description="Print values of customizable properties">
+	<echo>
+This is StoRM-BE, version ${version}
+------------------------------------------------
+
+All properties may be overridden with the
+``build.properties`` file or ant's ``-D`` command-line
+switch, as usual.
+
+
+basedir=${basedir}
+  The mother of all paths
+
+src.dir=${src.dir}
+  Root of the source tree; the properties below name
+  its different parts
+
+prefix=${prefix}
+  Root path for making all the following directory paths;
+  they may be individually set, but all default to a
+  standardly-named subdirectory of ``prefix``.
+
+localstatedir=${localstatedir}
+  Root path for ``logdir`` and ``tmpdir``, if those are not
+  set independently
+
+tmpdir=${tmpdir}
+  Created by ``install`` target; where will the StoRM
+  temporary files reside.
+
+info.tarfile=${info.tarfile}
+  The name of the created .tar file containing the glite 
+  dynamic information provider plugin.
+
+	</echo>
+  </target>
+
+
+  <!-- =============================================================== -->
+  <!-- BUILD/COMPILE TARGETS                                           -->
+  <!-- =============================================================== -->
+
+  <!-- Prepare directories and properties for compile/build tasks to run -->
+  <target name="init">
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build.dir}"/>
+  </target>
+
+
+  <!-- =============================================================== -->
+  <!-- CLEAN                                                           -->
+  <!-- =============================================================== -->
+
+  <target name="clean" 	description="Remove build tree and all of the intermediate build files">
+    <delete dir="${build.dir}"/>
+  </target> 
+
+
+  <!-- =============================================================== -->
+  <!-- TARBALL                                                         -->
+  <!-- =============================================================== -->
+		
+  <target name="info.src" description="Roll a tarball of the glite info provider">
+	    <delete file="${info.tarfile}"/>
+	    <delete file="${info.tarfile}.gz"/>
+	    <delete file="${info.tarfile}.bz2"/>
+  	  <tar
+  	      destfile="${info.tarfile}"
+  	      compression="none"
+  	      longfile="gnu">
+  	  <tarfileset
+  	 	  dir="${info.dir}"
+  	 	  username="storm"
+  	 	  group="storm"
+  	 	  mode="0644"
+  	 	  prefix="glite-info-dynamic-storm-${version}/">
+  	      <include name="opt/"/>
+  	  </tarfileset>	
+  	  </tar>
+  	    <gzip src="${info.tarfile}" destfile="${info.tarfile}.gz"/>
+  	</target>
+
+</project>
