@@ -1,3 +1,4 @@
+#!/bin/sh
 if [ ! -d ./RPMS ]; then
     mkdir RPMS
 fi
