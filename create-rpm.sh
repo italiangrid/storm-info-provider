@@ -37,7 +37,7 @@ ant -Dversion=$VERSION info.src
 
 CUR_DIR=`pwd`
 
-cp $CUR_DIR/rpm/glite-info-dymanic-storm.spec $CUR_DIR/RPMS/SPECS/glite-info-dymanic-storm.spec
+cp $CUR_DIR/rpm/glite-info-dynamic-storm.spec $CUR_DIR/RPMS/SPECS/glite-info-dymanic-storm.spec
 cp glite-info-dynamic-storm-$VERSION.tar.gz ./RPMS/SOURCES/
 
 # Generate RPMs
