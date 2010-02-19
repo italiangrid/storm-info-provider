@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Helper script for the SRM/StoRM service publisher
+# First argument is init to set variables
+#                   status to check the status
+
+case "$1" in
+  init)
+
+    version=2.2.0
+    echo GLITE_INFO_SERVICE_ENDPOINT=httpg://${STORM_FRONTEND_PUBLIC_HOST}:${STORM_FRONTEND_PORT}${STORM_FRONTEND_PATH}
+    echo GLITE_INFO_SERVICE_VERSION=$version
+    exit
+    ;;
+  
+  status)
+
+    #stat=`/sbin/service storm-backend status`
+    stat=`ls /var/run/storm-backend.pid &> /dev/null`
+    rc=$?
+
+    echo -n "The StoRM Backend server is "
+    [[ $rc != 0 ]] && echo -n "not "
+    echo "running"
+    [[ $rc = 0 ]]
+    exit $?
+    ;;
+
+  *)
+
+    echo "Usage: glite-info-service-storm <init|status>"
+    exit 1
+    ;;
+
+esac
