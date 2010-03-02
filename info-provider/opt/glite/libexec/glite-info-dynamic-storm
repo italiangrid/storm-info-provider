@@ -331,15 +331,14 @@ function get_total_size_gb () {
   # Create GlueSE entries
 
   cat >> ${FILE} << EOF
-#
-# GlueSE
-#
-
 dn: GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST},mds-vo-name=resource,o=grid
-GlueSESizeTotal: ${GLOBAL_TOTAL_SIZE_GB}
-GlueSESizeFree: ${GLOBAL_FREE_SIZE_GB}
-GlueSETotalOnlineSize: ${GLOBAL_TOTAL_SIZE_GB}
-GlueSEUsedOnlineSize: ${GLOBAL_USED_SIZE_GB}
+GlueSESizeTotal: $((GLOBAL_TOTAL_SIZE_GB))
+GlueSESizeFree: $((GLOBAL_FREE_SIZE_GB))
+GlueSETotalOnlineSize: $((GLOBAL_TOTAL_SIZE_GB))
+GlueSEUsedOnlineSize: $((GLOBAL_USED_SIZE_GB))
+GlueForeignKey: GlueSiteUniqueID=${SITE_NAME}
+GlueSchemaVersionMajor: 1
+GlueSchemaVersionMinor: 3
 
 EOF
   #==========================================================
@@ -396,18 +395,18 @@ EOF
     fi
 
     cat >> ${FILE} << EOF
-#
-# GlueSALocalID ${SA_LOW}:${SA_RETENTION_POLICY}:${SA_ACCESS_LATENCY} SA (${SA_VONAME} VO)
-#
 dn: GlueSALocalID=${SA_LOW}:${SA_RETENTION_POLICY}:${SA_ACCESS_LATENCY},GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST},mds-vo-name=resource,o=grid
-GlueSATotalOnlineSize: `hash_find SA_TOTAL_SIZE_GB ${SA_UPP}`
-GlueSAUsedOnlineSize: `hash_find SA_USED_SIZE_GB ${SA_UPP}`
-GlueSAFreeOnlineSize: `hash_find SA_FREE_SIZE_GB ${SA_UPP}`
-GlueSAReservedOnlineSize: `hash_find SA_TOTAL_SIZE_GB ${SA_UPP}`
-GlueSACapability: InstalledOnlineCapacity=${SA_INSTALLED_ONLINE_CAPACITY}
-GlueSACapability: InstalledNearlineCapacity=${SA_INSTALLED_NEARLINE_CAPACITY}
-GlueSAStateAvailableSpace: `hash_find SA_FREE_SIZE_KB ${SA_UPP}`
-GlueSAStateUsedSpace: `hash_find SA_USED_SIZE_KB ${SA_UPP}`
+GlueSATotalOnlineSize: $((`hash_find SA_TOTAL_SIZE_GB ${SA_UPP}`))
+GlueSAUsedOnlineSize: $((`hash_find SA_USED_SIZE_GB ${SA_UPP}`))
+GlueSAFreeOnlineSize: $((`hash_find SA_FREE_SIZE_GB ${SA_UPP}`))
+GlueSAReservedOnlineSize: $((`hash_find SA_TOTAL_SIZE_GB ${SA_UPP}`))
+GlueSACapability: InstalledOnlineCapacity=$((SA_INSTALLED_ONLINE_CAPACITY))
+GlueSACapability: InstalledNearlineCapacity=$((SA_INSTALLED_NEARLINE_CAPACITY))
+GlueSAStateAvailableSpace: $((`hash_find SA_FREE_SIZE_KB ${SA_UPP}`))
+GlueSAStateUsedSpace: $((`hash_find SA_USED_SIZE_KB ${SA_UPP}`))
+GlueChunkKey: GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST}
+GlueSchemaVersionMajor: 1
+GlueSchemaVersionMinor: 3
 
 EOF
 
@@ -416,15 +415,15 @@ EOF
   for PERVO_VONAME in ${PERVO_VONAMES}; do
     PERVO_VONAME_INDEX=`echo ${PERVO_VONAME} | sed 's/\.//g'`
     cat >> ${FILE} << EOF
-#
-# GlueSALocalID ${PERVO_VONAME}
-#
 dn: GlueSALocalID=${PERVO_VONAME},GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST},mds-vo-name=resource,o=grid
-GlueSATotalOnlineSize: `hash_find PERVO_TOTAL_SIZE_GB ${PERVO_VONAME_INDEX}`
-GlueSAUsedOnlineSize: `hash_find PERVO_USED_SIZE_GB ${PERVO_VONAME_INDEX}`
-GlueSAFreeOnlineSize: `hash_find PERVO_FREE_SIZE_GB ${PERVO_VONAME_INDEX}`
-GlueSAStateAvailableSpace: `hash_find PERVO_FREE_SIZE_KB ${PERVO_VONAME_INDEX}`
-GlueSAStateUsedSpace: `hash_find PERVO_USED_SIZE_KB ${PERVO_VONAME_INDEX}`
+GlueSATotalOnlineSize: $((`hash_find PERVO_TOTAL_SIZE_GB ${PERVO_VONAME_INDEX}`))
+GlueSAUsedOnlineSize: $((`hash_find PERVO_USED_SIZE_GB ${PERVO_VONAME_INDEX}`))
+GlueSAFreeOnlineSize: $((`hash_find PERVO_FREE_SIZE_GB ${PERVO_VONAME_INDEX}`))
+GlueSAStateAvailableSpace: $((`hash_find PERVO_FREE_SIZE_KB ${PERVO_VONAME_INDEX}`))
+GlueSAStateUsedSpace: $((`hash_find PERVO_USED_SIZE_KB ${PERVO_VONAME_INDEX}`))
+GlueChunkKey: GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST}
+GlueSchemaVersionMajor: 1
+GlueSchemaVersionMinor: 3
 
 EOF
 
