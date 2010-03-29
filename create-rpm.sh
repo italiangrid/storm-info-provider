@@ -42,7 +42,7 @@ cp $CUR_DIR/rpm/glite-info-dynamic-storm.spec $CUR_DIR/RPMS/SPECS/glite-info-dyn
 cp glite-info-dynamic-storm-$VERSION.tar.gz ./RPMS/SOURCES/
 
 # Generate RPMs
-if [ $ARCH_BIT == 64 ]; then
+if [ "$xARCH_BIT" == "x64" ]; then
     rpmbuild --define "_topdir $CUR_DIR/RPMS" --define "arch_bit 64" -ba $CUR_DIR/RPMS/SPECS/glite-info-dynamic-storm.spec
 else
     rpmbuild --define "_topdir $CUR_DIR/RPMS" -ba $CUR_DIR/RPMS/SPECS/glite-info-dynamic-storm.spec
