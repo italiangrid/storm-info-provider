@@ -23,8 +23,8 @@ function get_used_size_kb () {
   # Quota off
   else
     # Get values from the storm_be_ISAM database
-    total=`echo "SELECT total_size FROM storage_space WHERE space_file='$1' ;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
-    free=`echo "SELECT free_size FROM storage_space WHERE space_file='$1' ;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
+    total=`echo "SELECT total_size FROM storage_space WHERE space_file='$1' limit 1;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
+    free=`echo "SELECT free_size FROM storage_space WHERE space_file='$1' limit 1;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
     if [ ! -z "${free}" ] && [ ! -z "${total}" ]; then
       used=$((${total}-${free}))
       # convert in kB (base 10)
@@ -64,8 +64,8 @@ function get_used_size_gb () {
   # Quota off
   else
     # Get values from the storm_be_ISAM database
-    total=`echo "SELECT total_size FROM storage_space WHERE space_file='$1' ;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
-    free=`echo "SELECT free_size FROM storage_space WHERE space_file='$1' ;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
+    total=`echo "SELECT total_size FROM storage_space WHERE space_file='$1' limit 1;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
+    free=`echo "SELECT free_size FROM storage_space WHERE space_file='$1' limit 1;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
     if [ ! -z "${free}" ] && [ ! -z "${total}" ]; then
       used=$((${total}-${free}))
       # convert in GB (base 10)
@@ -107,7 +107,7 @@ function get_free_size_kb () {
   # Quota off
   else
     # Get values from the storm_be_ISAM database
-    free=`echo "SELECT free_size FROM storage_space WHERE space_file='$1' ;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
+    free=`echo "SELECT free_size FROM storage_space WHERE space_file='$1' limit 1;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
     if [ ! -z "${free}" ]; then
       # convert in kB (base 10)
       free=$((${free}/1000))
@@ -148,7 +148,7 @@ function get_free_size_gb () {
   # Quota off
   else
     # Get values from the storm_be_ISAM database
-    free=`echo "SELECT free_size from storage_space WHERE space_file='$1' ;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
+    free=`echo "SELECT free_size from storage_space WHERE space_file='$1' limit 1;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
     if [ ! -z "${free}" ]; then
       # convert in GB (base 10)
       free=$((${free}/(1000*1000*1000)))
@@ -187,7 +187,7 @@ function get_total_size_kb () {
   # Quota off
   else
     # Get values from the storm_be_ISAM database
-    total=`echo "SELECT total_size FROM storage_space WHERE space_file='$1' ;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
+    total=`echo "SELECT total_size FROM storage_space WHERE space_file='$1' limit 1;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
     if [ ! -z "${total}" ]; then
       # convert in kB (base 10)
       total=$((${total}/1000))
@@ -226,7 +226,7 @@ function get_total_size_gb () {
   # Quota off
   else
     # Get values from the storm_be_ISAM database
-    total=`echo "SELECT total_size FROM storage_space WHERE space_file='$1' ;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
+    total=`echo "SELECT total_size FROM storage_space WHERE space_file='$1' limit 1;" | mysql --user=${STORM_USER} --password=${STORM_DB_PWD} -N storm_be_ISAM`   # in B
     if [ ! -z "${total}" ]; then
       # convert in GB (base 10)
       total=$((${total}/(1000*1000*1000)))
@@ -336,9 +336,6 @@ GlueSESizeTotal: $((GLOBAL_TOTAL_SIZE_GB))
 GlueSESizeFree: $((GLOBAL_FREE_SIZE_GB))
 GlueSETotalOnlineSize: $((GLOBAL_TOTAL_SIZE_GB))
 GlueSEUsedOnlineSize: $((GLOBAL_USED_SIZE_GB))
-GlueForeignKey: GlueSiteUniqueID=${SITE_NAME}
-GlueSchemaVersionMajor: 1
-GlueSchemaVersionMinor: 3
 
 EOF
   #==========================================================
@@ -404,9 +401,6 @@ GlueSACapability: InstalledOnlineCapacity=$((SA_INSTALLED_ONLINE_CAPACITY))
 GlueSACapability: InstalledNearlineCapacity=$((SA_INSTALLED_NEARLINE_CAPACITY))
 GlueSAStateAvailableSpace: $((`hash_find SA_FREE_SIZE_KB ${SA_UPP}`))
 GlueSAStateUsedSpace: $((`hash_find SA_USED_SIZE_KB ${SA_UPP}`))
-GlueChunkKey: GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST}
-GlueSchemaVersionMajor: 1
-GlueSchemaVersionMinor: 3
 
 EOF
 
@@ -421,9 +415,6 @@ GlueSAUsedOnlineSize: $((`hash_find PERVO_USED_SIZE_GB ${PERVO_VONAME_INDEX}`))
 GlueSAFreeOnlineSize: $((`hash_find PERVO_FREE_SIZE_GB ${PERVO_VONAME_INDEX}`))
 GlueSAStateAvailableSpace: $((`hash_find PERVO_FREE_SIZE_KB ${PERVO_VONAME_INDEX}`))
 GlueSAStateUsedSpace: $((`hash_find PERVO_USED_SIZE_KB ${PERVO_VONAME_INDEX}`))
-GlueChunkKey: GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST}
-GlueSchemaVersionMajor: 1
-GlueSchemaVersionMinor: 3
 
 EOF
 
