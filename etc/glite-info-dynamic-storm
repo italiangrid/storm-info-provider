@@ -307,7 +307,7 @@ function get_total_size_gb () {
     hash_insert SA_FREE_SIZE_KB  ${SA_UPP} ${PARAMETER}
 
     # Prepare per-VO and global values
-    PERVO_VONAME_INDEX=`echo ${SA_VONAME} | sed 's/-//g' -e 's/\.//g'`
+    PERVO_VONAME_INDEX=`echo ${SA_VONAME} | sed -e 's/-//g' -e 's/\.//g'`
     # Add VONAME if missing
     if ! [[ "${PERVO_VONAMES}" =~ "${SA_VONAME}" ]]; then
       PERVO_VONAMES="${PERVO_VONAMES} ${SA_VONAME}"
