@@ -420,19 +420,6 @@ EOF
 
   done
 
-  for PERVO_VONAME in ${PERVO_VONAMES}; do
-    PERVO_VONAME_INDEX=`echo ${PERVO_VONAME} | sed -e 's/-//g' -e 's/\.//g'`
-    cat >> ${FILE} << EOF
-dn: GlueSALocalID=${PERVO_VONAME},GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST},mds-vo-name=resource,o=grid
-GlueSATotalOnlineSize: $((`hash_find PERVO_TOTAL_SIZE_GB ${PERVO_VONAME_INDEX}`))
-GlueSAUsedOnlineSize: $((`hash_find PERVO_USED_SIZE_GB ${PERVO_VONAME_INDEX}`))
-GlueSAFreeOnlineSize: $((`hash_find PERVO_FREE_SIZE_GB ${PERVO_VONAME_INDEX}`))
-GlueSAStateAvailableSpace: $((`hash_find PERVO_FREE_SIZE_KB ${PERVO_VONAME_INDEX}`))
-GlueSAStateUsedSpace: $((`hash_find PERVO_USED_SIZE_KB ${PERVO_VONAME_INDEX}`))
-
-EOF
-
-  done
   #==========================================================
 
   # Print built file
