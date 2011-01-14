@@ -1,6 +1,7 @@
 2011-01-14  Elisabetta Ronchieri  <elisabetta.ronchieri@cnaf.infn.it>
 
     * added interaction with Info Service Interface
+    * added two new def variables, STORM_INFO_SERVICE_HOST and STORM_INFO_SERVICE_PORT
 
 2010-12-17  Elisabetta Ronchieri  <elisabetta.ronchieri@cnaf.infn.it>
 
