@@ -13,7 +13,7 @@
 # Environment variables can be set by writing to stdout (x=y)
 
 # NB Config is the same for all BDII flavours so we only need one init script
-init = /opt/glite/libexec/glite-info-service-storm init
+init = /usr/libexec/storm-dynamic-info-provider/glite-info-service-storm init
 
 # The service type should follow the official list in
 # http://glueschema.forge.cnaf.infn.it/V12/ServiceType
@@ -37,7 +37,7 @@ get_endpoint = echo ldap://$STORM_BACKEND_HOST:$BDII_PORT_READ/GLUE2DomainID=$GL
 # The return code should indicate the status:
 # 0 = OK, 1 = Critical, 2 = Warning, 3 = Unknown, other = Other
 
-get_status = /opt/glite/libexec/glite-info-service-test SRM_V2 && /opt/glite/libexec/glite-info-service-storm status
+get_status = /usr/libexec/glite-info-service-test SRM_V2 && /usr/libexec/storm-dynamic-info-provider/glite-info-service-storm status
 
 # The URL of a WSDL document describing the service
 # If the string does not start with "http" this will be omitted
