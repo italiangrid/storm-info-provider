@@ -19,22 +19,25 @@
 #
 function get_used_size_kb () {
 
-  cmd="/usr/bin/curl"
-  used=`curl -s 'http://$4:$5/info/status/$1' | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
+  used=`/usr/bin/curl -s http://$4:$5/info/status/$1 | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
   if [ -z ${used} ]; then
-    echo "ERROR: ${cmd} return no value; check storm info service status."
+    echo "ERROR: the command /usr/bin/curl -s http://$4:$5/info/status/$1 return no value; check storm info service status."
     exit 1
   fi  
 
-  # Quota on
-  if [ "$3" == "true" ]; then
-    # convert in kB (base 10)
-    used=$((${used}*1024/1000))
-  # Quota off
-  else
-    # convert in kB (base 10)
-    used=$((${used}/1000))
+  if [ ${used} -gt 0 ]; then
+    # Quota on
+    if [ "$3" == "true" ]; then
+      # convert in kB (base 10)
+      used=$((${used}*1024/1000))
+    # Quota off
+    else
+      # convert in kB (base 10)
+      used=$((${used}/1000))
+    fi
   fi
+
+  echo "INFO: used in kb - $used"
 
   export $2=${used}
 
@@ -47,22 +50,25 @@ function get_used_size_kb () {
 #
 function get_used_size_gb () {
 
-  cmd="/usr/bin/curl"
-  used=`curl -s 'http://$4:$5/info/status/$1' | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
+  used=`/usr/bin/curl -s http://$4:$5/info/status/$1 | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
   if [ -z ${used} ]; then
-    echo "ERROR: ${cmd} return no value; check storm info service status."
+    echo "ERROR: the command /usr/bin/curl -s http://$4:$5/info/status/$1 return no value; check storm info service status."
     exit 1
   fi
 
-  # Quota on
-  if [ "$3" == "true" ]; then
-    # convert in GB (base 10)
-    used=$((${used}*1024/(1000*1000*1000)))
-  # Quota off
-  else
-    # convert in GB (base 10)
-    used=$((${used}/(1000*1000*1000)))
+  if [ ${used} -gt 0 ]; then
+    # Quota on
+    if [ "$3" == "true" ]; then
+      # convert in GB (base 10)
+      used=$((${used}*1024/(1000*1000*1000)))
+    # Quota off
+    else
+      # convert in GB (base 10)
+      used=$((${used}/(1000*1000*1000)))
+    fi
   fi
+
+  echo "INFO: used in gb - $used"
 
   export $2=${used}
 
@@ -75,22 +81,25 @@ function get_used_size_gb () {
 #
 function get_free_size_kb () {
 
-  cmd="/usr/bin/curl"
-  free=`curl -s 'http://$4:$5/info/status/$1' | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^free-space/ {print $2}'`
+  free=`/usr/bin/curl -s http://$4:$5/info/status/$1 | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^free-space/ {print $2}'`
   if [ -z ${free} ]; then
-    echo "ERROR: ${cmd} return no value; check storm info service status."
+    echo "ERROR: the command /usr/bin/curl -s http://$4:$5/info/status/$1 return no value; check storm info service status."
     exit 1
   fi
 
-  # Quota on
-  if [ "$3" == "true" ]; then
-    # convert in kB (base 10)
-    free=$((${free}*1024/1000))
-  # Quota off
-  else
-    # convert in kB (base 10)
-    free=$((${free}/1000))
+  if [ ${free} -gt 0 ]; then
+    # Quota on
+    if [ "$3" == "true" ]; then
+      # convert in kB (base 10)
+      free=$((${free}*1024/1000))
+    # Quota off
+    else
+      # convert in kB (base 10)
+      free=$((${free}/1000))
+    fi
   fi
+
+  echo "INFO: free in kb - $free"
 
   export $2=${free}
 
@@ -103,22 +112,25 @@ function get_free_size_kb () {
 #
 function get_free_size_gb () {
 
-  cmd="/usr/bin/curl"
-  free=`curl -s 'http://$4:$5/info/status/$1' | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^free-space/ {print $2}'`
+  free=`/usr/bin/curl -s http://$4:$5/info/status/$1 | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^free-space/ {print $2}'`
   if [ -z ${free} ]; then
-    echo "ERROR: ${cmd} return no value; check storm info service status."
+    echo "ERROR: the command /usr/bin/curl -s http://$4:$5/info/status/$1 return no value; check storm info service status."
     exit 1
   fi
 
-  # Quota on
-  if [ "$3" == "true" ]; then
-    # convert in GB (base 10)
-    free=$((${free}*1024/(1000*1000*1000)))
-  # Quota off
-  else
-    # convert in GB (base 10)
-    free=$((${free}/(1000*1000*1000)))
+  if [ ${free} -gt 0 ]; then
+    # Quota on
+    if [ "$3" == "true" ]; then
+      # convert in GB (base 10)
+      free=$((${free}*1024/(1000*1000*1000)))
+    # Quota off
+    else
+      # convert in GB (base 10)
+      free=$((${free}/(1000*1000*1000)))
+    fi
   fi
+
+  echo "INFO: free in gb - $free"
 
   export $2=${free}
 
@@ -131,22 +143,25 @@ function get_free_size_gb () {
 #
 function get_total_size_kb () {
 
-  cmd="/usr/bin/curl"
-  total=`curl -s 'http://$4:$5/info/status/$1' | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^total-space/ {print $2}'`
-  if [ -z ${free} ]; then
-    echo "ERROR: ${cmd} return no value; check storm info service status."
+  total=`/usr/bin/curl -s http://$4:$5/info/status/$1 | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^total-space/ {print $2}'`
+  if [ -z ${total} ]; then
+    echo "ERROR: the command /usr/bin/curl -s http://$4:$5/info/status/$1 return no value; check storm info service status."
     exit 1
   fi
 
-  # Quota on
-  if [ "$3" == "true" ]; then
-    # convert in kB (base 10)
-    total=$((${total}*1024/1000))
-  # Quota off
-  else
-    # convert in kB (base 10)
-    total=$((${total}/1000))
+  if [ ${total} -gt 0 ]; then
+    # Quota on
+    if [ "$3" == "true" ]; then
+      # convert in kB (base 10)
+      total=$((${total}*1024/1000))
+    # Quota off
+    else
+      # convert in kB (base 10)
+      total=$((${total}/1000))
+    fi
   fi
+
+  echo "INFO: total in kb - $total"
 
   export $2=${total}
 
@@ -159,22 +174,25 @@ function get_total_size_kb () {
 #
 function get_total_size_gb () {
 
-  cmd="/usr/bin/curl"
-  total=`curl -s 'http://$4:$5/info/status/$1' | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^total-space/ {print $2}'`
-  if [ -z ${free} ]; then
-    echo "ERROR: ${cmd} return no value; check storm info service status."
+  total=`/usr/bin/curl -s http://$4:$5/info/status/$1 | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^total-space/ {print $2}'`
+  if [ -z ${total} ]; then
+    echo "ERROR: the command /usr/bin/curl -s http://$4:$5/info/status/$1 return no value; check storm info service status."
     exit 1
   fi
 
-  # Quota on
-  if [ "$3" == "true" ]; then
-    # convert in GB (base 10)
-    total=$((${total}*1024/(1000*1000*1000)))
-  # Quota off
-  else
-    # convert in GB (base 10)
-    total=$((${total}/(1000*1000*1000)))
+  if [ ${total} -gt 0 ]; then
+    # Quota on
+    if [ "$3" == "true" ]; then
+      # convert in GB (base 10)
+      total=$((${total}*1024/(1000*1000*1000)))
+    # Quota off
+    else
+      # convert in GB (base 10)
+      total=$((${total}/(1000*1000*1000)))
+    fi
   fi
+
+  echo "INFO: total in gb - $total"
 
   export $2=${total}
 
@@ -214,22 +232,22 @@ function get_total_size_gb () {
     SA_UPP=`echo ${SA_UPP} | sed -e 's/-//g' -e 's/\.//g'`
 
     x=STORM_${SA_UPP}_TOKEN;           SA_TOKEN=${!x:-${SA_UPP}_TOKEN}
-    x=STORM_${SA_UPP}_QUOTA;           SA_QUOTA=${!x}
+    x=STORM_${SA_UPP}_QUOTA;           SA_QUOTA=${!x:-false}
     x=STORM_${SA_UPP}_VONAME;          SA_VONAME=${!x:-${SA_LOW}}
 
     # Get size values on SA_TOKEN (in GB)
-    get_used_size_gb  ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_INFO_SERVICE_HOST} ${STORM_INFO_SERVICE_PORT}
+    get_used_size_gb ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_BACKEND_HOST} ${STORM_BACKEND_REST_SERVICES_PORT} 
     hash_insert SA_USED_SIZE_GB  ${SA_UPP} ${PARAMETER} 
-    get_free_size_gb  ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_INFO_SERVICE_HOST} ${STORM_INFO_SERVICE_PORT}
+    get_free_size_gb ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_BACKEND_HOST} ${STORM_BACKEND_REST_SERVICES_PORT}
     hash_insert SA_FREE_SIZE_GB  ${SA_UPP} ${PARAMETER}
-    get_total_size_gb ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_INFO_SERVICE_HOST} ${STORM_INFO_SERVICE_PORT}
+    get_total_size_gb ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_BACKEND_HOST} ${STORM_BACKEND_REST_SERVICES_PORT}
     hash_insert SA_TOTAL_SIZE_GB ${SA_UPP} ${PARAMETER}
 
     # Get size values on SA_TOKEN (in KB)
-    get_used_size_kb  ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_INFO_SERVICE_HOST} ${STORM_INFO_SERVICE_PORT}
-    hash_insert SA_USED_SIZE_KB  ${SA_UPP} ${PARAMETER}
-    get_free_size_kb  ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_INFO_SERVICE_HOST} ${STORM_INFO_SERVICE_PORT}
-    hash_insert SA_FREE_SIZE_KB  ${SA_UPP} ${PARAMETER}
+    get_used_size_kb ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_BACKEND_HOST} ${STORM_BACKEND_REST_SERVICES_PORT}
+    hash_insert SA_USED_SIZE_KB ${SA_UPP} ${PARAMETER}
+    get_free_size_kb  ${SA_TOKEN} PARAMETER ${SA_QUOTA} ${STORM_BACKEND_HOST} ${STORM_BACKEND_REST_SERVICES_PORT}
+    hash_insert SA_FREE_SIZE_KB ${SA_UPP} ${PARAMETER}
 
     # Prepare per-VO and global values
     PERVO_VONAME_INDEX=`echo ${SA_VONAME} | sed -e 's/-//g' -e 's/\.//g'`
