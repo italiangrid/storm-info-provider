@@ -67,6 +67,15 @@ get_owner = echo
 
 get_acbr = echo
 
+# ServiceData entries if any, as a list of key=value pairs
+# This will normally call a separate script
+
+get_data = echo
+
+# Associated services - not used here
+
+get_services = echo
+
 # New GLUE 2 attributes start here
 
 # Capabilities are not very well-defined yet!
