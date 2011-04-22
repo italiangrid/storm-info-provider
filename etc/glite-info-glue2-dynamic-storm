@@ -289,9 +289,6 @@ function get_total_size_gb () {
 
   cat >> ${FILE} << EOF
 dn: GLUE2StorageServiceCapacityId=${STORM_FRONTEND_PUBLIC_HOST}/capacity/online,GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupId=resource,o=glue
-objectClass: GLUE2StorageServiceCapacity
-GLUE2StorageServiceCapacityId: ${STORM_FRONTEND_PUBLIC_HOST}/capacity/online
-GLUE2StorageServiceCapacityType: online
 GLUE2StorageServiceCapacityTotalSize: $((GLOBAL_TOTAL_SIZE_GB))
 GLUE2StorageServiceCapacityFreeSize: $((GLOBAL_FREE_SIZE_GB))
 GLUE2StorageServiceCapacityUsedSize: $((GLOBAL_USED_SIZE_GB))
@@ -355,7 +352,7 @@ EOF
     fi
 
     cat >> ${FILE} << EOF
-dn: GLUE2StorageShareCapacityID=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW}/capacity,GLUE2ShareId=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW},GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupId=resource,o=GLUE
+dn: GLUE2StorageShareCapacityID=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW}/capacity,GLUE2ShareId=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW},GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupId=resource,o=glue
 GLUE2StorageShareCapacityTotalSize: $((`hash_find SA_TOTAL_SIZE_GB ${SA_UPP}`))
 GLUE2StorageShareCapacityFreeSize: $((`hash_find SA_FREE_SIZE_GB ${SA_UPP}`))
 GLUE2StorageShareCapacityUsedSize: $((`hash_find SA_USED_SIZE_KB ${SA_UPP}`))
