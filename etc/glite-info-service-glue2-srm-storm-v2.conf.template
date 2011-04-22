@@ -54,28 +54,6 @@ semantics_URL = http://sdm.lbl.gov/srm-wg/doc/SRM.v2.2.html
 
 get_starttime = perl -e '@st=stat("/var/run/storm-backend.pid");print "@st[10]\n";'
 
-# Owner: this should return a list of owner VO names, one per line
-# Null entries will be omitted
-# This needs to be set at config time
-
-get_owner = echo
-
-# A list of AccessControlBaseRule strings to indicate who is allowed to
-# have access to the service - at the simplest this is the same as the
-# Owner but with the VO names prefixed by "VO:"
-# This needs to be set at config time
-
-get_acbr = echo
-
-# ServiceData entries if any, as a list of key=value pairs
-# This will normally call a separate script
-
-get_data = echo
-
-# Associated services - not used here
-
-get_services = echo
-
 # New GLUE 2 attributes start here
 
 # Capabilities are not very well-defined yet!
@@ -104,4 +82,24 @@ get_qualitylevel = echo 2
 
 get_servingstate = echo 4
 
+# ServiceData entries if any, as a list of key=value pairs
+# This will normally call a separate script
 
+get_data = echo
+
+# Associated services - not used here
+
+get_services = echo
+
+# Owner: this should return a list of owner VO names, one per line
+# Null entries will be omitted
+# This needs to be set at config time
+
+get_owner = echo
+
+# A list of AccessControlBaseRule strings to indicate who is allowed to
+# have access to the service - at the simplest this is the same as the
+# Owner but with the VO names prefixed by "VO:"
+# This needs to be set at config time
+
+get_acbr = echo
