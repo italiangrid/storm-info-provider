@@ -29,8 +29,8 @@ case "$1" in
   
   status)
 
-    #stat=`/sbin/service storm-backend status`
-    stat=`ls /var/run/storm-backend.pid &> /dev/null`
+    #stat=`/sbin/service storm-backend-server status`
+    stat=`ls /var/run/storm-backend-server.pid &> /dev/null`
     rc=$?
 
     echo -n "The StoRM Backend server is "
