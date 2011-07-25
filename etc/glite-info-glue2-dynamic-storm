@@ -292,7 +292,7 @@ EOF
 dn: GLUE2StorageShareCapacityID=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW}/capacity,GLUE2ShareId=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW},GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupId=resource,o=glue
 GLUE2StorageShareCapacityTotalSize: $((`hash_find SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP}`))
 GLUE2StorageShareCapacityFreeSize: $((`hash_find SA_FREE_ONLINE_SIZE_GB ${SA_UPP}`))
-GLUE2StorageShareCapacityUsedSize: $((`hash_find SA_USED_ONLINE_SIZE_KB ${SA_UPP}`))
+GLUE2StorageShareCapacityUsedSize: $((`hash_find SA_USED_ONLINE_SIZE_GB ${SA_UPP}`))
 GLUE2StorageShareCapacityReservedSize:  $((`hash_find SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP}`))
 
 EOF
