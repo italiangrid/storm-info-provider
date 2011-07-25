@@ -288,12 +288,17 @@ EOF
       esac
     fi
 
+    SA_TOTAL_SIZE_GB=$((`hash_find SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP}`))+$((`hash_find SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP}`))
+    SA_USED_SIZE_GB=$((`hash_find SA_USED_ONLINE_SIZE_GB ${SA_UPP}`))+$((`hash_find SA_USED_NEARLINE_SIZE_GB ${SA_UPP}`))
+    SA_FREE_SIZE_GB=$((`hash_find SA_FREE_ONLINE_SIZE_GB ${SA_UPP}`))+$((`hash_find SA_FREE_NEARLINE_SIZE_GB ${SA_UPP}`))
+    SA_RESERVED_SIZE_GB=$((`hash_find SA_RESERVED_ONLINE_SIZE_GB ${SA_UPP}`))+$((`hash_find SA_RESERVED_NEARLINE_SIZE_GB ${SA_UPP}`))
+
     cat >> ${FILE} << EOF
 dn: GLUE2StorageShareCapacityID=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW}/capacity,GLUE2ShareId=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW},GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupId=resource,o=glue
-GLUE2StorageShareCapacityTotalSize: $((`hash_find SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP}`))
-GLUE2StorageShareCapacityFreeSize: $((`hash_find SA_FREE_ONLINE_SIZE_GB ${SA_UPP}`))
-GLUE2StorageShareCapacityUsedSize: $((`hash_find SA_USED_ONLINE_SIZE_GB ${SA_UPP}`))
-GLUE2StorageShareCapacityReservedSize:  $((`hash_find SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP}`))
+GLUE2StorageShareCapacityTotalSize: $((`hash_find SA_TOTAL_SIZE_GB ${SA_UPP}`))
+GLUE2StorageShareCapacityFreeSize: $((`hash_find SA_FREE_SIZE_GB ${SA_UPP}`))
+GLUE2StorageShareCapacityUsedSize: $((`hash_find SA_USED_SIZE_GB ${SA_UPP}`))
+GLUE2StorageShareCapacityReservedSize:  $((`hash_find SA_RESERVED_SIZE_GB ${SA_UPP}`))
 
 EOF
 
