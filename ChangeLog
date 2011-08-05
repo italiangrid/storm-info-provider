@@ -1,3 +1,7 @@
+2011-08-05  Elisabetta Ronchieri  <elisabetta.ronchieri@cnaf.infn.it>
+
+    * optimized query to the REST interface to publish Size information
+
 2011-04-08  Elisabetta Ronchieri  <elisabetta.ronchieri@cnaf.infn.it>
 
     * changed path file
