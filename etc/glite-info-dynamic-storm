@@ -122,25 +122,25 @@ function get_size () {
     if ! [ -z "${SA_STORAGECLASS}" ]; then
       if [ "${SA_STORAGECLASS}" == "T1D0" ] ; then
           # Get size values on SA_TOKEN (in GB)
-          hash_insert SA_USED_NEARLINE_SIZE_GB  ${SA_UPP} $((${USED}*1024/(1000*1000*1000)))
-          hash_insert SA_FREE_NEARLINE_SIZE_GB  ${SA_UPP} $((${FREE}*1024/(1000*1000*1000)))
-          hash_insert SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP} $((${TOTAL}*1024/(1000*1000*1000)))
-          hash_insert SA_RESERVED_NEARLINE_SIZE_GB ${SA_UPP} $((${RESERVED}*1024/(1000*1000*1000)))
+          hash_insert SA_USED_NEARLINE_SIZE_GB  ${SA_UPP} $((${USED}/(1000*1000*1000)))
+          hash_insert SA_FREE_NEARLINE_SIZE_GB  ${SA_UPP} $((${FREE}/(1000*1000*1000)))
+          hash_insert SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP} $((${TOTAL}/(1000*1000*1000)))
+          hash_insert SA_RESERVED_NEARLINE_SIZE_GB ${SA_UPP} $((${RESERVED}/(1000*1000*1000)))
 
           # Get size values on SA_TOKEN (in KB)
-          hash_insert SA_USED_NEARLINE_SIZE_KB  ${SA_UPP} $((${USED}*1024/1000))
+          hash_insert SA_USED_NEARLINE_SIZE_KB  ${SA_UPP} $((${USED}/1000))
           hash_insert SA_AVAILABLE_NEARLINE_SIZE_KB  ${SA_UPP} $((${AVAILABLE}*1024/1000))
       fi
     fi
     # Get size values on SA_TOKEN (in GB)
-    hash_insert SA_USED_ONLINE_SIZE_GB  ${SA_UPP} $((${USED}*1024/(1000*1000*1000)))
-    hash_insert SA_FREE_ONLINE_SIZE_GB  ${SA_UPP} $((${FREE}*1024/(1000*1000*1000)))
-    hash_insert SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP} $((${TOTAL}*1024/(1000*1000*1000)))
-    hash_insert SA_RESERVED_ONLINE_SIZE_GB ${SA_UPP} $((${RESERVED}*1024/(1000*1000*1000)))
+    hash_insert SA_USED_ONLINE_SIZE_GB  ${SA_UPP} $((${USED}/(1000*1000*1000)))
+    hash_insert SA_FREE_ONLINE_SIZE_GB  ${SA_UPP} $((${FREE}/(1000*1000*1000)))
+    hash_insert SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP} $((${TOTAL}/(1000*1000*1000)))
+    hash_insert SA_RESERVED_ONLINE_SIZE_GB ${SA_UPP} $((${RESERVED}/(1000*1000*1000)))
 
     # Get size values on SA_TOKEN (in KB)
-    hash_insert SA_USED_ONLINE_SIZE_KB  ${SA_UPP} $((${USED}*1024/1000))
-    hash_insert SA_AVAILABLE_ONLINE_SIZE_KB  ${SA_UPP} $((${AVAILABLE}*1024/1000))
+    hash_insert SA_USED_ONLINE_SIZE_KB  ${SA_UPP} $((${USED}/1000))
+    hash_insert SA_AVAILABLE_ONLINE_SIZE_KB  ${SA_UPP} $((${AVAILABLE}/1000))
 
     # Prepare per-VO and global values
     PERVO_VONAME_INDEX=`echo ${SA_VONAME} | sed -e 's/-//g' -e 's/\.//g'`
@@ -280,8 +280,8 @@ EOF
       esac
     fi
 
-    SA_AVAILABLE_SIZE_KB=$((`hash_find SA_AVAILABLE_ONLINE_SIZE_KB ${SA_UPP}`))+$((`hash_find SA_AVAILABLE_NEARLINE_SIZE_KB ${SA_UPP}`))
-    SA_USED_SIZE_KB=$((`hash_find SA_USED_ONLINE_SIZE_KB ${SA_UPP}`))+$((`hash_find SA_USED_NEARLINE_SIZE_KB ${SA_UPP}`))
+    SA_AVAILABLE_SIZE_KB=$(($((`hash_find SA_AVAILABLE_ONLINE_SIZE_KB ${SA_UPP}`))+$((`hash_find SA_AVAILABLE_NEARLINE_SIZE_KB ${SA_UPP}`))))
+    SA_USED_SIZE_KB=$(($((`hash_find SA_USED_ONLINE_SIZE_KB ${SA_UPP}`))+$((`hash_find SA_USED_NEARLINE_SIZE_KB ${SA_UPP}`))))
 
     cat >> ${FILE} << EOF
 dn: GlueSALocalID=${SA_LOW}:${SA_RETENTION_POLICY}:${SA_ACCESS_LATENCY},GlueSEUniqueID=${STORM_FRONTEND_PUBLIC_HOST},mds-vo-name=resource,o=grid
