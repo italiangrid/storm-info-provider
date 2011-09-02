@@ -31,12 +31,16 @@ function get_size () {
     free=$4
     available=$4
   else
-      # convert in GB (base 10)
-      used=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
-      free=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^free-space/ {print $2}'`
-      reserved=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^reserved-space/ {print $2}'`
-      total=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^total-space/ {print $2}'`
-      available=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^available-space/ {print $2}'`
+    # convert in GB (base 10)
+    used=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
+    free=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^free-space/ {print $2}'`
+    reserved=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^reserved-space/ {print $2}'`
+    total=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^total-space/ {print $2}'`
+    available=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^available-space/ {print $2}'`
+    busy=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^busy-space/ {print $2}'`
+    if [ "${available}" -eq "0" ]; then
+      available=$((${total} - ${busy}))
+    fi
   fi
   export $5=${total}
   export $6=${available}
@@ -92,18 +96,14 @@ function get_size () {
     hash_insert SA_AVAILABLE_ONLINE_SIZE_KB ${SA_UPP} 0      # default
 
     hash_insert SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP} 0        # default
-    hash_insert SA_FREE_NEARLINE_SIZE_GB ${SA_UPP} 0         # default
-    hash_insert SA_USED_NEARLINE_SIZE_GB ${SA_UPP} 0        # default
-    hash_insert SA_RESERVED_NEARLINE_SIZE_GB ${SA_UPP} 0    # default
-    hash_insert SA_USED_NEARLINE_SIZE_KB ${SA_UPP} 0        # default
-    hash_insert SA_AVAILABLE_NEARLINE_SIZE_KB ${SA_UPP} 0   # default
 
     SA_SIZE=1                          #default
 
     if ! [ -z "${SA_STORAGECLASS}" ]; then
       case ${SA_STORAGECLASS} in
         "T1D0")
-          x=STORM_${SA_UPP}_NEARLINE_SIZE;   SA_SIZE=${!x}
+          x=STORM_${SA_UPP}_NEARLINE_SIZE; SA_NL_SIZE=${!x}
+          x=STORM_${SA_UPP}_ONLINE_SIZE;   SA_SIZE=${!x}
           ;;
         "T1D1")
           x=STORM_${SA_UPP}_ONLINE_SIZE;   SA_SIZE=${!x}
@@ -122,14 +122,7 @@ function get_size () {
     if ! [ -z "${SA_STORAGECLASS}" ]; then
       if [ "${SA_STORAGECLASS}" == "T1D0" ] ; then
           # Get size values on SA_TOKEN (in GB)
-          hash_insert SA_USED_NEARLINE_SIZE_GB  ${SA_UPP} $((${USED}/(1000*1000*1000)))
-          hash_insert SA_FREE_NEARLINE_SIZE_GB  ${SA_UPP} $((${FREE}/(1000*1000*1000)))
-          hash_insert SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP} $((${TOTAL}/(1000*1000*1000)))
-          hash_insert SA_RESERVED_NEARLINE_SIZE_GB ${SA_UPP} $((${RESERVED}/(1000*1000*1000)))
-
-          # Get size values on SA_TOKEN (in KB)
-          hash_insert SA_USED_NEARLINE_SIZE_KB  ${SA_UPP} $((${USED}/1000))
-          hash_insert SA_AVAILABLE_NEARLINE_SIZE_KB  ${SA_UPP} $((${AVAILABLE}/1000))
+          hash_insert SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP} $((${SA_NL_SIZE}/(1000*1000*1000)))
       fi
     fi
     # Get size values on SA_TOKEN (in GB)
@@ -169,21 +162,6 @@ function get_size () {
     hash_insert PERVO_TOTAL_ONLINE_SIZE_GB ${PERVO_VONAME_INDEX} $((x+y))
     let GLOBAL_TOTAL_ONLINE_SIZE_GB+=$y
 
-    x=`hash_find PERVO_USED_NEARLINE_SIZE_GB ${PERVO_VONAME_INDEX}`
-    y=`hash_find SA_USED_NEARLINE_SIZE_GB ${SA_UPP}`
-    hash_insert PERVO_USED_NEARLINE_SIZE_GB ${PERVO_VONAME_INDEX} $((x+y))
-    let GLOBAL_USED_NEARLINE_SIZE_GB+=$y
-
-    x=`hash_find PERVO_RESERVED_NEARLINE_SIZE_GB ${PERVO_VONAME_INDEX}`
-    y=`hash_find SA_RESERVED_NEARLINE_SIZE_GB ${SA_UPP}`
-    hash_insert PERVO_RESERVED_NEARLINE_SIZE_GB ${PERVO_VONAME_INDEX} $((x+y))
-    let GLOBAL_RESERVED_NEARLINE_SIZE_GB+=$y
-
-    x=`hash_find PERVO_FREE_NEARLINE_SIZE_GB ${PERVO_VONAME_INDEX}`
-    y=`hash_find SA_FREE_NEARLINE_SIZE_GB ${SA_UPP}`
-    hash_insert PERVO_FREE_NEARLINE_SIZE_GB ${PERVO_VONAME_INDEX} $((x+y))
-    let GLOBAL_FREE_NEARLINE_SIZE_GB+=$y
-
     x=`hash_find PERVO_TOTAL_NEARLINE_SIZE_GB ${PERVO_VONAME_INDEX}`
     y=`hash_find SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP}`
     hash_insert PERVO_TOTAL_NEARLINE_SIZE_GB ${PERVO_VONAME_INDEX} $((x+y))
@@ -199,16 +177,6 @@ function get_size () {
     y=`hash_find SA_AVAILABLE_ONLINE_SIZE_KB ${SA_UPP}`
     hash_insert PERVO_AVAILABLE_ONLINE_SIZE_KB ${PERVO_VONAME_INDEX} $((x+y))
     let GLOBAL_AVAILABLE_ONLINE_SIZE_KB+=$y
-
-    x=`hash_find PERVO_USED_NEARLINE_SIZE_KB ${PERVO_VONAME_INDEX}`
-    y=`hash_find SA_USED_NEARLINE_SIZE_KB ${SA_UPP}`
-    hash_insert PERVO_USED_NEARLINE_SIZE_KB ${PERVO_VONAME_INDEX} $((x+y))
-    let GLOBAL_USED_NEARLINE_SIZE_KB+=$y
-
-    x=`hash_find PERVO_AVAILABLE_NEARLINE_SIZE_KB ${PERVO_VONAME_INDEX}`
-    y=`hash_find SA_AVAILABLE_NEARLINE_SIZE_KB ${SA_UPP}`
-    hash_insert PERVO_AVAILABLE_NEARLINE_SIZE_KB ${PERVO_VONAME_INDEX} $((x+y))
-    let GLOBAL_AVAILABLE_NEARLINE_SIZE_KB+=$y
 
   done
 
@@ -227,9 +195,9 @@ EOF
   cat >> ${FILE} << EOF
 dn: GLUE2StorageServiceCapacityId=${STORM_FRONTEND_PUBLIC_HOST}/capacity/nearline,GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupId=resource,o=glue
 GLUE2StorageServiceCapacityTotalSize: $((GLOBAL_TOTAL_NEARLINE_SIZE_GB))
-GLUE2StorageServiceCapacityFreeSize: $((GLOBAL_FREE_NEARLINE_SIZE_GB))
-GLUE2StorageServiceCapacityUsedSize: $((GLOBAL_USED_NEARLINE_SIZE_GB))
-GLUE2StorageServiceCapacityReservedSize: $((GLOBAL_RESERVED_NEARLINE_SIZE_GB))
+GLUE2StorageServiceCapacityFreeSize: 0
+GLUE2StorageServiceCapacityUsedSize: 0
+GLUE2StorageServiceCapacityReservedSize: 0
 
 EOF
   #==========================================================
@@ -264,7 +232,7 @@ EOF
         "T1D0")
           SA_RETENTION_POLICY="custodial"
           SA_ACCESS_LATENCY="nearline"
-          SA_INSTALLED_ONLINE_CAPACITY=0
+          SA_INSTALLED_ONLINE_CAPACITY=`hash_find SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP}`
           SA_INSTALLED_NEARLINE_CAPACITY=`hash_find SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP}`
           ;;
         "T1D1")
@@ -289,9 +257,9 @@ EOF
     fi
 
     SA_TOTAL_SIZE_GB=$(($((`hash_find SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP}`))+$((`hash_find SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP}`))))
-    SA_USED_SIZE_GB=$(($((`hash_find SA_USED_ONLINE_SIZE_GB ${SA_UPP}`))+$((`hash_find SA_USED_NEARLINE_SIZE_GB ${SA_UPP}`))))
-    SA_FREE_SIZE_GB=$(($((`hash_find SA_FREE_ONLINE_SIZE_GB ${SA_UPP}`))+$((`hash_find SA_FREE_NEARLINE_SIZE_GB ${SA_UPP}`))))
-    SA_RESERVED_SIZE_GB=$(($((`hash_find SA_RESERVED_ONLINE_SIZE_GB ${SA_UPP}`))+$((`hash_find SA_RESERVED_NEARLINE_SIZE_GB ${SA_UPP}`))))
+    SA_USED_SIZE_GB=$(($((`hash_find SA_USED_ONLINE_SIZE_GB ${SA_UPP}`))))
+    SA_FREE_SIZE_GB=$(($((`hash_find SA_FREE_ONLINE_SIZE_GB ${SA_UPP}`))))
+    SA_RESERVED_SIZE_GB=$(($((`hash_find SA_RESERVED_ONLINE_SIZE_GB ${SA_UPP}`))))
 
     cat >> ${FILE} << EOF
 dn: GLUE2StorageShareCapacityID=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW}/capacity,GLUE2ShareId=${STORM_FRONTEND_PUBLIC_HOST}/${SA_LOW},GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupId=resource,o=glue
