@@ -30,6 +30,14 @@ function get_size () {
     reserved=0
     free=$4
     available=$4
+  elif [ "${size}" == "<html><body><h1>Internal Error</h1></body></html>" ]; then
+    yaimlog INFO "${FUNCTION}: the command /usr/bin/curl -s http://$2:$3/info/status/$1 return Internal Error; check storm backend info service status."
+    yaimlog DEBUG "${FUNCTION}: set a temporary value."
+    total=$4
+    used=0
+    reserved=0
+    free=$4
+    available=$4
   else
     # convert in GB (base 10)
     used=`echo $size | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
