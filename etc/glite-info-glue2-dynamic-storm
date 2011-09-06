@@ -28,22 +28,10 @@ function get_size () {
 
   ERROR=1
   SIZE=`/usr/bin/curl -s http://$2:$3/info/status/$1`
-  if [ -z ${SIZE} ]; then
+  if [ -z "${SIZE}" ]; then
     echo "${FUNCTION}: the command /usr/bin/curl -s http://$2:$3/info/status/$1 return no value; check storm backend service status."
-    echo "${FUNCTION}: set a temporary value."
-    #total=$4
-    #used=0
-    #reserved=0
-    #free=$4
-    #available=$4
-  elif [ "${size}" == "<html><body><h1>Internal Error</h1></body></html>" ]; then
+  elif [ "${SIZE}" == "<html><body><h1>Internal Error</h1></body></html>" ]; then
     echo "${FUNCTION}: the command /usr/bin/curl -s http://$2:$3/info/status/$1 return Internal Error; check storm backend info service status."
-    echo "${FUNCTION}: set a temporary value."
-    #total=$4
-    #used=0
-    #reserved=0
-    #free=$4
-    #available=$4
   else
     # convert in GB (base 10)
     used=`echo $SIZE | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
@@ -55,6 +43,11 @@ function get_size () {
     if [ "${available}" -eq "0" ]; then
       available=$((${total} - ${busy}))
     fi
+    used=$((${used}*(1000*1000*1000)/(1024*1024*1024)))
+    free=$((${free}*(1000*1000*1000)/(1024*1024*1024)))
+    reserved=$((${reserved}*(1000*1000*1000)/(1024*1024*1024)))
+    total=$((${total}*(1000*1000*1000)/(1024*1024*1024)))
+    available=$((${available}*(1000*1000*1000)/(1024*1024*1024)))
     ERROR=0
     export $5=${total}
     export $6=${available}
@@ -62,11 +55,6 @@ function get_size () {
     export $8=${free}
     export $9=${reserved}
   fi
-  #export $5=${total}
-  #export $6=${available}
-  #export $7=${used}
-  #export $8=${free}
-  #export $9=${reserved}
 
   return ${ERROR}
 
@@ -118,7 +106,7 @@ for SA in ${STORM_STORAGEAREA_LIST}; do
 
   hash_insert SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP} 0        # default
 
-  SA_SIZE=1                          #default
+  x=STORM_${SA_UPP}_ONLINE_SIZE;   SA_SIZE=${!x}
 
   if ! [ -z "${SA_STORAGECLASS}" ]; then
     case ${SA_STORAGECLASS} in
@@ -138,17 +126,18 @@ for SA in ${STORM_STORAGEAREA_LIST}; do
     esac
   fi
 
-  ERROR=`get_size  ${SA_TOKEN} ${STORM_BACKEND_HOST} ${STORM_BACKEND_REST_SERVICES_PORT} ${SA_SIZE} TOTAL AVAILABLE USED FREE RESERVED`
+  get_size  ${SA_TOKEN} ${STORM_BACKEND_HOST} ${STORM_BACKEND_REST_SERVICES_PORT} ${SA_SIZE} TOTAL AVAILABLE USED FREE RESERVED
+
+  if [ $? -eq 1 ]; then
+    ERROR=1
+    break
+  fi
 
   if ! [ -z "${SA_STORAGECLASS}" ]; then
     if [ "${SA_STORAGECLASS}" == "T1D0" ] ; then
         # Get size values on SA_TOKEN (in GB)
         hash_insert SA_TOTAL_NEARLINE_SIZE_GB ${SA_UPP} $((${SA_NL_SIZE}/(1000*1000*1000)))
     fi
-  fi
-
-  if [ "${ERROR}" -eq "1" ]; then
-    break
   fi
 
   # Get size values on SA_TOKEN (in GB)
@@ -210,7 +199,7 @@ done
 #==========================================================
 # Create GlueSE entries
 
-if [ "${ERROR}" -eq "0" ]; then
+if [ ${ERROR} -eq 0 ]; then
   cat >> ${FILE} << EOF
 dn: GLUE2StorageServiceCapacityId=${STORM_FRONTEND_PUBLIC_HOST}/capacity/online,GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupId=resource,o=glue
 GLUE2StorageServiceCapacityTotalSize: $((GLOBAL_TOTAL_ONLINE_SIZE_GB))
