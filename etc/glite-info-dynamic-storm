@@ -29,9 +29,9 @@ function get_size () {
   ERROR=1
   SIZE=`/usr/bin/curl -s http://$2:$3/info/status/$1`
   if [ -z "${SIZE}" ]; then
-    echo "${FUNCTION}: the command /usr/bin/curl -s http://$2:$3/info/status/$1 return no value - check storm backend service status."
+    echo "${FUNCTION}: the command /usr/bin/curl -s http://$2:$3/info/status/$1 return no value - check StoRM Backend service status."
   elif [ "${SIZE}" == "<html><body><h1>Internal Error</h1></body></html>" ]; then
-    echo "${FUNCTION}: the command /usr/bin/curl -s http://$2:$3/info/status/$1 return Internal Error - check storm backend info service status."
+    echo "${FUNCTION}: the command /usr/bin/curl -s http://$2:$3/info/status/$1 return Internal Error - check StoRM Backend info service status."
   else
     # convert in GB (base 10)
     used=`echo $SIZE | sed -e 's/[{}]/''/g' | awk -v RS=',"' -F: '/^used-space/ {print $2}'`
