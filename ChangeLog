@@ -1,3 +1,9 @@
+2011-10-06  Elisabetta Ronchieri  <elisabetta.ronchieri@cnaf.infn.it>
+
+    * applied changes to manage sa online and nearline size as input
+    * applied fix to handle floating point by using a python script
+    * fixed issues 
+
 2011-08-05  Elisabetta Ronchieri  <elisabetta.ronchieri@cnaf.infn.it>
 
     * optimized query to the REST interface to publish Size information
