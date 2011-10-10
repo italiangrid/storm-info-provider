@@ -43,7 +43,7 @@ function get_size () {
     if [ "${available}" -eq "0" ]; then
       available=$((${total} - ${busy}))
     fi
-    NSIZE=`/usr/libexec/storm-dynamic-info-provider/storm-tb-size -u $used -f $free -r $reserved -t $total -a $available`
+    NSIZE=`/usr/libexec/storm-dynamic-info-provider/storm-base-ten-converter -u $used -f $free -r $reserved -t $total -a $available`
     used=`echo $NSIZE | sed -e 's/[{}]/''/g' | awk -v RS=',' -F': ' '/used-space/ {print $2}'`
     free=`echo $NSIZE | sed -e 's/[{}]/''/g' | awk -v RS=',' -F': ' '/free-space/ {print $2}'`
     reserved=`echo $NSIZE | sed -e 's/[{}]/''/g' | awk -v RS=',' -F': ' '/reserved-space/ {print $2}'`

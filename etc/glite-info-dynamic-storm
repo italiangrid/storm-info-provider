@@ -43,22 +43,12 @@ function get_size () {
     if [ "${available}" -eq "0" ]; then
       available=$((${total} - ${busy}))
     fi
-    NSIZE=`/usr/libexec/storm-dynamic-info-provider/storm-tb-size -u $used -f $free -r $reserved -t $total -a $available`
+    NSIZE=`/usr/libexec/storm-dynamic-info-provider/storm-base-ten-converter -u $used -f $free -r $reserved -t $total -a $available`
     used=`echo $NSIZE | sed -e 's/[{}]/''/g' | awk -v RS=',' -F': ' '/used-space/ {print $2}'`
     free=`echo $NSIZE | sed -e 's/[{}]/''/g' | awk -v RS=',' -F': ' '/free-space/ {print $2}'`
     reserved=`echo $NSIZE | sed -e 's/[{}]/''/g' | awk -v RS=',' -F': ' '/reserved-space/ {print $2}'`
     total=`echo $NSIZE | sed -e 's/[{}]/''/g' | awk -v RS=',' -F': ' '/total-space/ {print $2}'`
     available=`echo $NSIZE | sed -e 's/[{}]/''/g' | awk -v RS=',' -F': ' '/available-space/ {print $2}'`
-#    used=$((${used}/(1024*1024*1024)))
-#    used=$((${used}*1000*1000*1000))
-#    free=$((${free}/(1024*1024*1024)))
-#    free=$((${free}*1000*1000*1000))
-#    reserved=$((${reserved}/(1024*1024*1024)))
-#    reserved=$((${reserved}*1000*1000*1000))
-#    total=$((${total}/(1024*1024*1024)))
-#    total=$((${total}*1000*1000*1000))
-#    available=$((${available}/(1024*1024*1024)))
-#    available=$((${available}*1000*1000*1000))
     ERROR=0
     export $5=${total}
     export $6=${available}
