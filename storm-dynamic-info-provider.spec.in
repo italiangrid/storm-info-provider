@@ -1,0 +1,88 @@
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2006-2010.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+%define name         @PACKAGE@
+%define version      @VERSION@
+%define release      @STORM_DIP_AGE_NUMBER@.@STORM_DIP_SO@
+
+%define builddir     @RPM_BUILD_DIR@/build-%{name}-%{version}
+
+%define default_user root
+
+Name:           %{name}
+Version:        %{version}
+Release:        %{release}
+Vendor:         EMI
+Packager:       Elisabetta Ronchieri <elisabetta.ronchieri@cnaf.infn.it>
+License:        Apache License
+URL:            http://grid-it.cnaf.infn.it
+Source:         @PACKAGE@-%{version}.tar.gz
+Group:          System Environment/Shells
+AutoReqProv:    yes
+BuildArch:      noarch
+BuildRoot:      %{_builddir}/var/tmp/%{name}-%{version}
+Summary:        Provides the utility files. 
+
+%define _sysconfdir    /etc
+%define _generalprefix storm
+
+BuildRequires: libtool
+BuildRequires: automake
+BuildRequires: autoconf
+
+%define debug_package %{nil}
+
+%description
+This contains information to configure StoRM nodes.
+
+%prep
+%setup -n @PACKAGE@-%{version}
+
+%build
+./bootstrap
+./configure --prefix=/usr --libexecdir=/usr/libexec --datadir=/usr/share --sysconfdir=/etc
+make
+
+%pre
+
+%post
+
+%install
+if [ -d $RPM_BUILD_ROOT ]; then rm -rf $RPM_BUILD_ROOT; fi
+mkdir -p $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files 
+%defattr(-,%{default_user},%{default_user},-)
+
+%{_libexecdir}/%{name}/glite-info-dynamic-storm
+%{_libexecdir}/%{name}/glite-info-glue2-dynamic-storm
+%{_libexecdir}/%{name}/glite-info-service-storm
+%{_libexecdir}/%{name}/storm-base-ten-converter
+%attr(750,%{default_user},%{default_user}) %{_sysconfdir}/glite/info/service/glite-info-service-glue2-srm-storm-v2.conf.template
+%attr(750,%{default_user},%{default_user}) %{_sysconfdir}/glite/info/service/glite-info-service-srm-storm-v2.conf.template
+%doc %{_datadir}/doc/%{name}-%{version}/AUTHORS
+%doc %{_datadir}/doc/%{name}-%{version}/ChangeLog
+%doc %{_datadir}/doc/%{name}-%{version}/CREDITS
+%doc %{_datadir}/doc/%{name}-%{version}/LICENSE
+%doc %{_datadir}/doc/%{name}-%{version}/README
+
+%changelog
+
+* Fri Jan 20 2012 Elisabetta Ronchieri <elisabetta.ronchieri@cnaf.infn.it> - 1.7.4-1.sl5
+- changed packager
+
