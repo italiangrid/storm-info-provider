@@ -41,6 +41,8 @@ BuildRequires: libtool
 BuildRequires: automake
 BuildRequires: autoconf
 
+
+
 %define debug_package %{nil}
 
 %description
@@ -69,12 +71,16 @@ rm -rf $RPM_BUILD_ROOT
 %files 
 %defattr(-,%{default_user},%{default_user},-)
 
+%dir %{_libexecdir}/%{name}
 %{_libexecdir}/%{name}/glite-info-dynamic-storm
 %{_libexecdir}/%{name}/glite-info-glue2-dynamic-storm
 %{_libexecdir}/%{name}/glite-info-service-storm
 %{_libexecdir}/%{name}/storm-base-ten-converter
+
 %attr(750,%{default_user},%{default_user}) %{_sysconfdir}/glite/info/service/glite-info-service-glue2-srm-storm-v2.conf.template
 %attr(750,%{default_user},%{default_user}) %{_sysconfdir}/glite/info/service/glite-info-service-srm-storm-v2.conf.template
+
+%doc %dir %{_datadir}/doc/%{name}-%{version}
 %doc %{_datadir}/doc/%{name}-%{version}/AUTHORS
 %doc %{_datadir}/doc/%{name}-%{version}/ChangeLog
 %doc %{_datadir}/doc/%{name}-%{version}/CREDITS
