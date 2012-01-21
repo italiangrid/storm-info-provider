@@ -40,8 +40,10 @@ Summary:        Provides the utility files.
 BuildRequires: libtool
 BuildRequires: automake
 BuildRequires: autoconf
-
-
+Requires: bdii
+Requires: glite-info-provider-service
+Requires: glue-schema
+Requires: python
 
 %define debug_package %{nil}
 

@@ -87,12 +87,12 @@ stage:
 
 distsrc:
 	mkdir -p @DISTSOURCE@
-	cp $(distdir).tar.gz @DISTSOURCE@/$(distdir)-@STORM_UTILITY_AGE_NUMBER@.@STORM_UTILITY_SO@.src.tar.gz
+	cp $(distdir).tar.gz @DISTSOURCE@/$(distdir)-@STORM_DIP_AGE_NUMBER@.@STORM_DIP_SO@.src.tar.gz
 	cp $(RPM_SRPM)/*.rpm @DISTSOURCE@
 
 distbin: stage  
 	mkdir -p @DISTBIN@; \
-	cd etics-tmp; tar -zcf $(distdir).noarch.tar.gz etc usr; cp $(distdir).noarch.tar.gz @DISTBIN@/$(distdir)-@STORM_UTILITY_AGE_NUMBER@.@STORM_UTILITY_SO@.noarch.tar.gz; cd ..; \
+	cd etics-tmp; tar -zcf $(distdir).noarch.tar.gz etc usr; cp $(distdir).noarch.tar.gz @DISTBIN@/$(distdir)-@STORM_DIP_AGE_NUMBER@.@STORM_DIP_SO@.noarch.tar.gz; cd ..; \
 	cp $(RPM_RPM)/*/*.rpm @DISTBIN@
 
 clean-local:
