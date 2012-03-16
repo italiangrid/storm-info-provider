@@ -48,6 +48,15 @@ AC_DEFUN([AC_STORM],
     DISTSOURCE=$with_dist_source_location
     AC_SUBST([DISTSOURCE])
 
+    AC_ARG_WITH(module_location,
+                [  --with-module-location=PFX     prefix where module location is. (pwd)],
+                [],
+                with_module_location=$PWD
+               )
+
+    MODULELOCATION=$with_module_location
+    AC_SUBST([MODULELOCATION])
+
     if test "x$host_cpu" = "xx86_64"; then
         AC_SUBST([libdir], ['${exec_prefix}/lib64'])
         libtype='lib64'

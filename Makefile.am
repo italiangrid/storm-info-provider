@@ -48,7 +48,16 @@ MAINTAINERCLEANFILES = Makefile.in
 SPEC_FILE = \
     storm-dynamic-info-provider.spec
 
-RPM_MAIN_DIR = $(PWD)/rpm
+#RPM_MAIN_DIR = $(PWD)/rpm
+#RPM_TMP_DIR = $(RPM_MAIN_DIR)/tmp
+#RPM_SOURCE = $(RPM_MAIN_DIR)/SOURCES
+#RPM_SPEC = $(RPM_MAIN_DIR)/SPECS
+#RPM_BUILD = $(RPM_MAIN_DIR)/BUILD
+#RPM_RPM = $(RPM_MAIN_DIR)/RPMS
+#RPM_SRPM = $(RPM_MAIN_DIR)/SRPMS
+#RPM_DIRS = $(RPM_MAIN_DIR) $(RPM_SOURCE) $(RPM_SPEC) $(RPM_BUILD) $(RPM_RPM) $(RPM_SRPM)
+
+RPM_MAIN_DIR = @MODULELOCATION@/rpm-build-test
 RPM_TMP_DIR = $(RPM_MAIN_DIR)/tmp
 RPM_SOURCE = $(RPM_MAIN_DIR)/SOURCES
 RPM_SPEC = $(RPM_MAIN_DIR)/SPECS
@@ -56,6 +65,16 @@ RPM_BUILD = $(RPM_MAIN_DIR)/BUILD
 RPM_RPM = $(RPM_MAIN_DIR)/RPMS
 RPM_SRPM = $(RPM_MAIN_DIR)/SRPMS
 RPM_DIRS = $(RPM_MAIN_DIR) $(RPM_SOURCE) $(RPM_SPEC) $(RPM_BUILD) $(RPM_RPM) $(RPM_SRPM)
+
+packaging: dist
+	/bin/mkdir -p $(RPM_DIRS)
+	/bin/cp -u @PACKAGE@-@VERSION@.tar.gz $(RPM_SOURCE)
+	/bin/cp $(SPEC_FILE) $(RPM_SPEC)
+	/usr/bin/rpmbuild  --define "_topdir $(RPM_MAIN_DIR)" --nodeps -bs $(RPM_SPEC)/$(SPEC_FILE)
+	/bin/mkdir -p @MODULELOCATION@/RPMS
+	/bin/mkdir -p @MODULELOCATION@/SRPMS
+	/bin/cp $(RPM_SRPM)/* @MODULELOCATION@/RPMS
+	/bin/ls $(RPM_RPM)
 
 rpm: dist
 	/bin/mkdir -p $(RPM_DIRS)
