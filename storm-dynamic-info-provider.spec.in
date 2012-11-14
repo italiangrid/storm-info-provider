@@ -14,7 +14,7 @@
 
 %define name         @PACKAGE@
 %define version      @VERSION@
-%define release      @STORM_DIP_AGE_NUMBER@.@STORM_DIP_SO@
+%define release      @STORM_DIP_AGE_NUMBER@
 
 %define builddir     @RPM_BUILD_DIR@/build-%{name}-%{version}
 
@@ -22,7 +22,7 @@
 
 Name:           %{name}
 Version:        %{version}
-Release:        %{release}
+Release:        %{release}%{?dist}
 Vendor:         EMI
 Packager:       Elisabetta Ronchieri <elisabetta.ronchieri@cnaf.infn.it>
 License:        Apache License
