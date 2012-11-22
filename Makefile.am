@@ -85,14 +85,6 @@ packaging: dist
 	/bin/cp $(RPM_SRPM)/* @MODULELOCATION@/RPMS
 	/bin/ls $(RPM_RPM)
 
-rpm: dist
-	/bin/mkdir -p $(RPM_DIRS)
-	/bin/cp -u @PACKAGE@-@VERSION@.tar.gz $(RPM_SOURCE)
-	/bin/cp $(SPEC_FILE) $(RPM_SPEC)
-	cd $(RPM_SPEC); \
-        /usr/bin/rpmbuild  --define "_topdir $(RPM_MAIN_DIR)" --nodeps -ba $(RPM_SPEC)/$(SPEC_FILE)
-	mkdir -p @DISTSOURCE@ @DISTBIN@
-
 stage:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
         dot_seen=no; \
