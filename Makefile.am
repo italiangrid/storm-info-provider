@@ -66,6 +66,15 @@ RPM_RPM = $(RPM_MAIN_DIR)/RPMS
 RPM_SRPM = $(RPM_MAIN_DIR)/SRPMS
 RPM_DIRS = $(RPM_MAIN_DIR) $(RPM_SOURCE) $(RPM_SPEC) $(RPM_BUILD) $(RPM_RPM) $(RPM_SRPM)
 
+srpm: dist
+	/bin/mkdir -p $(RPM_DIRS)
+	/bin/cp -u @PACKAGE@-@VERSION@.tar.gz $(RPM_SOURCE)
+	/bin/cp $(SPEC_FILE) $(RPM_SPEC)
+	/usr/bin/rpmbuild  --define "_topdir $(RPM_MAIN_DIR)" --nodeps -bs $(RPM_SPEC)/$(SPEC_FILE)
+
+rpm: srpm
+	/usr/bin/rpmbuild  --rebuild --define "_topdir $(RPM_MAIN_DIR)" --define "dist .@STORM_DIP_SO@"  $(RPM_SRPM)/@PACKAGE@-@VERSION@-@STORM_DIP_AGE_NUMBER@.src.rpm
+
 packaging: dist
 	/bin/mkdir -p $(RPM_DIRS)
 	/bin/cp -u @PACKAGE@-@VERSION@.tar.gz $(RPM_SOURCE)
