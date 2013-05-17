@@ -17,7 +17,7 @@
 #
 
 AC_PREREQ([2.59])
-AC_INIT([storm dynamic info provider], [1.7.4])
+AC_INIT([storm dynamic info provider], [1.7.5])
 AC_CONFIG_AUX_DIR([./project])
 AC_CONFIG_SRCDIR([etc/storm-base-ten-converter])
 AM_INIT_AUTOMAKE
@@ -26,7 +26,7 @@ AC_CONFIG_MACRO_DIR([m4])
 # Release number
 osdist=`cat /etc/redhat-release | awk 'BEGIN {FS="release "} {print $2}'| awk 'BEGIN {FS="."} {print $1}'`
 AC_SUBST([STORM_DIP_SO], [sl$osdist])
-AC_SUBST([STORM_DIP_AGE_NUMBER], [4])
+AC_SUBST([STORM_DIP_AGE_NUMBER], [1])
 
 # Notices.
 AC_COPYRIGHT([See LICENCE file for details])
