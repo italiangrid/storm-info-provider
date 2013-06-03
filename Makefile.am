@@ -64,7 +64,7 @@ srpm: dist
 	/usr/bin/rpmbuild  --define "_topdir $(RPM_MAIN_DIR)" --nodeps -bs $(RPM_SPEC)/$(SPEC_FILE)
 
 rpm: srpm
-	/usr/bin/rpmbuild  --rebuild --define "_topdir $(RPM_MAIN_DIR)" --define "dist .@STORM_DIP_SO@"  $(RPM_SRPM)/@PACKAGE@-@VERSION@-@STORM_DIP_AGE_NUMBER@.src.rpm
+	/usr/bin/rpmbuild  --rebuild --define "_topdir $(RPM_MAIN_DIR)" $(RPM_SRPM)/@PACKAGE@-@VERSION@-@STORM_DIP_AGE_NUMBER@.src.rpm
 
 packaging: dist
 	/bin/mkdir -p $(RPM_DIRS)
@@ -98,12 +98,12 @@ stage:
 
 distsrc:
 	mkdir -p @DISTSOURCE@
-	cp $(distdir).tar.gz @DISTSOURCE@/$(distdir)-@STORM_DIP_AGE_NUMBER@.@STORM_DIP_SO@.src.tar.gz
+	cp $(distdir).tar.gz @DISTSOURCE@/$(distdir)-@STORM_DIP_AGE_NUMBER@.src.tar.gz
 	cp $(RPM_SRPM)/*.rpm @DISTSOURCE@
 
 distbin: stage  
 	mkdir -p @DISTBIN@; \
-	cd etics-tmp; tar -zcf $(distdir).noarch.tar.gz etc usr; cp $(distdir).noarch.tar.gz @DISTBIN@/$(distdir)-@STORM_DIP_AGE_NUMBER@.@STORM_DIP_SO@.noarch.tar.gz; cd ..; \
+	cd etics-tmp; tar -zcf $(distdir).noarch.tar.gz etc usr; cp $(distdir).noarch.tar.gz @DISTBIN@/$(distdir)-@STORM_DIP_AGE_NUMBER@.noarch.tar.gz; cd ..; \
 	cp $(RPM_RPM)/*/*.rpm @DISTBIN@
 
 clean-local:

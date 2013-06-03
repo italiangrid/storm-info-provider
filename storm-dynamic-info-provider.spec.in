@@ -90,6 +90,8 @@ rm -rf $RPM_BUILD_ROOT
 %doc %{_datadir}/doc/%{name}-%{version}/README
 
 %changelog
+* Mon Jun 03 2013 Andrea Ceccanti <andrea.ceccanti@cnaf.infn.it> - 1.7.5-2
+- Removed dist from packaging
 * Fri May 17 2013 Andrea Ceccanti <andrea.ceccanti@cnaf.infn.it> - 1.7.5-1
 - Fix for https://issues.infn.it:8443/browse/STOR-172
 * Fri Jan 20 2012 Elisabetta Ronchieri <elisabetta.ronchieri@cnaf.infn.it> - 1.7.4-1
