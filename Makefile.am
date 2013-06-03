@@ -16,6 +16,8 @@
 # Authors: Elisabetta Ronchieri <elisabetta.ronchieri@cnaf.infn.it>
 #
 
+dist=.sl5
+
 EXTRA_DIST = \
     AUTHORS \
     bootstrap \
@@ -61,10 +63,10 @@ srpm: dist
 	/bin/mkdir -p $(RPM_DIRS)
 	/bin/cp -u @PACKAGE@-@VERSION@.tar.gz $(RPM_SOURCE)
 	/bin/cp $(SPEC_FILE) $(RPM_SPEC)
-	/usr/bin/rpmbuild  --define "_topdir $(RPM_MAIN_DIR)" --nodeps -bs $(RPM_SPEC)/$(SPEC_FILE)
+	/usr/bin/rpmbuild  --define "dist $(dist)" --define "_topdir $(RPM_MAIN_DIR)" --nodeps -bs $(RPM_SPEC)/$(SPEC_FILE)
 
 rpm: srpm
-	/usr/bin/rpmbuild  --rebuild --define "_topdir $(RPM_MAIN_DIR)" $(RPM_SRPM)/@PACKAGE@-@VERSION@-@STORM_DIP_AGE_NUMBER@.*.src.rpm
+	/usr/bin/rpmbuild  --rebuild --define "dist $(dist)" --define "_topdir $(RPM_MAIN_DIR)" $(RPM_SRPM)/@PACKAGE@-@VERSION@-@STORM_DIP_AGE_NUMBER@$(dist).src.rpm
 
 packaging: dist
 	/bin/mkdir -p $(RPM_DIRS)
