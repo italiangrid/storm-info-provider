@@ -62,6 +62,56 @@ function get_size () {
 
 }
 
+function check_storm_backend_server_status () {
+
+    FUNCTION="check_storm_backend_server_status"
+
+    if [ "$#" -ne "2" ]; then
+      echo "Internal Error"
+      exit 2
+    fi
+
+    ERROR=1
+
+    OUTPUT=`/sbin/service storm-backend-server status`
+    STORM_BACKEND_SERVER_STATUS=$?
+
+    if [ -z "${OUTPUT}" ]; then
+      echo "${FUNCTION}: ${OUTPUT} the command service storm_backend_server status return no value; check storm backend service status."
+    elif [ "${STORM_BACKEND_SERVER_STATUS}" -ne "0" ]; then
+      echo "${FUNCTION}: the command service storm_backend_server status return Internal Error; check storm backend service status."
+    else
+
+      if [[ ${OUTPUT} == *RUNNING* ]]; then
+        serving_state=4
+        serving_state_value=production
+      else
+        serving_state=1
+        serving_state_value=closed
+      fi
+      ERROR=0
+    fi
+
+    export $1=${serving_state}
+    export $2=${serving_state_value}
+
+    return ${ERROR}
+}
+
+function change_a_line_in_a_file () {
+
+    FUNCTION="change_a_line_in_a_file"
+
+    INFO_SERVICE_CONFIG=/etc/glite/info/service
+    REFRESHFILE="${INFO_SERVICE_CONFIG}/glite-info-service-glue2-srm-storm-v2.conf"
+
+    OLD="get_servingstate = echo [1/4]"
+    NEW="get_servingstate = echo $1"
+    echo "${FUNCTION}: ${NEW}"
+    sed -i "s/${OLD}/${NEW}/g" "${REFRESHFILE}"
+
+}
+
 ###
 ### Main section
 ###
@@ -81,15 +131,14 @@ else
   exit 1
 fi
 
-if [ "${STORM_ENDPOINT_SERVING_STATE}" -eq "1" ]; then
-  SERVING_STATE=closed
-elif [ "${STORM_ENDPOINT_SERVING_STATE}" -eq "2" ]; then
-  SERVING_STATE=draining
-elif [ "${STORM_ENDPOINT_SERVING_STATE}" -eq "3" ]; then
-  SERVING_STATE=queueing
-elif [ "${STORM_ENDPOINT_SERVING_STATE}" -eq "4" ]; then
-  SERVING_STATE=production
+check_storm_backend_server_status  SERVING_STATE SERVING_STATE_VALUE
+
+if [ $? -eq 1 ]; then
+  ERROR=1
+  break
 fi
+
+change_a_line_in_a_file ${SERVING_STATE}
 
 FILE=`mktemp`
 
@@ -97,7 +146,7 @@ ERROR=0
 
 cat >> ${FILE} << EOF
 dn: GLUE2EndpointId=${STORM_FRONTEND_PUBLIC_HOST}/srm/2.2.0,GLUE2ServiceId=${STORM_FRONTEND_PUBLIC_HOST},GLUE2GroupID=resource,o=glue
-GLUE2EndpointServingState: ${SERVING_STATE}
+GLUE2EndpointServingState: ${SERVING_STATE_VALUE}
 
 EOF
 
@@ -115,7 +164,7 @@ for SA in ${STORM_STORAGEAREA_LIST}; do
   x=STORM_${SA_UPP}_QUOTA;           SA_QUOTA=${!x:-false}
   x=STORM_${SA_UPP}_VONAME;          SA_VONAME=${!x:-${SA_LOW}}
   x=STORM_${SA_UPP}_STORAGECLASS;    SA_STORAGECLASS=${!x:-${STORM_STORAGECLASS}}
-  x=STORM_${SA_UPP}_SERVINGSTATE;    SA_SERVING_STATE=${!x:-${SERVING_STATE}} 
+  x=STORM_${SA_UPP}_SERVINGSTATE;    SA_SERVING_STATE=${!x:-${SERVING_STATE_VALUE}} 
 
   hash_insert SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP} 0          # default
   hash_insert SA_FREE_ONLINE_SIZE_GB  ${SA_UPP} 0           # default
@@ -256,7 +305,7 @@ EOF
     x=STORM_${SA_UPP}_TOKEN;           SA_TOKEN=${!x}
     x=STORM_${SA_UPP}_VONAME;          SA_VONAME=${!x:-${SA_LOW}}
     x=STORM_${SA_UPP}_STORAGECLASS;    SA_STORAGECLASS=${!x:-${STORM_STORAGECLASS}}
-    x=STORM_${SA_UPP}_SERVINGSTATE;    SA_SERVING_STATE=${!x:-/${SERVING_STATE}}
+    x=STORM_${SA_UPP}_SERVINGSTATE;    SA_SERVING_STATE=${!x:-${SERVING_STATE_VALUE}}
     # Convert in uppercase
     SA_STORAGECLASS=`echo ${SA_STORAGECLASS} | tr '[:lower:]' '[:upper:]'`
 
