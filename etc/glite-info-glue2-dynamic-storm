@@ -81,6 +81,16 @@ else
   exit 1
 fi
 
+if [ "${STORM_ENDPOINT_SERVING_STATE}" -eq "1" ]; then
+  SERVING_STATE=closed
+elif [ "${STORM_ENDPOINT_SERVING_STATE}" -eq "2" ]; then
+  SERVING_STATE=draining
+elif [ "${STORM_ENDPOINT_SERVING_STATE}" -eq "3" ]; then
+  SERVING_STATE=queueing
+elif [ "${STORM_ENDPOINT_SERVING_STATE}" -eq "4" ]; then
+  SERVING_STATE=production
+fi
+
 FILE=`mktemp`
 
 ERROR=0
@@ -98,6 +108,7 @@ for SA in ${STORM_STORAGEAREA_LIST}; do
   x=STORM_${SA_UPP}_QUOTA;           SA_QUOTA=${!x:-false}
   x=STORM_${SA_UPP}_VONAME;          SA_VONAME=${!x:-${SA_LOW}}
   x=STORM_${SA_UPP}_STORAGECLASS;    SA_STORAGECLASS=${!x:-${STORM_STORAGECLASS}}
+  x=STORM_${SA_UPP}_SERVINGSTATE;    SA_SERVING_STATE=${!x:-${SERVING_STATE}} 
 
   hash_insert SA_TOTAL_ONLINE_SIZE_GB ${SA_UPP} 0          # default
   hash_insert SA_FREE_ONLINE_SIZE_GB  ${SA_UPP} 0           # default
@@ -238,7 +249,7 @@ EOF
     x=STORM_${SA_UPP}_TOKEN;           SA_TOKEN=${!x}
     x=STORM_${SA_UPP}_VONAME;          SA_VONAME=${!x:-${SA_LOW}}
     x=STORM_${SA_UPP}_STORAGECLASS;    SA_STORAGECLASS=${!x:-${STORM_STORAGECLASS}}
-    x=STORM_${SA_UPP}_SERVINGSTATE;    SA_SERVING_STATE=${!x:-/${SA_SERVING_STATE}}
+    x=STORM_${SA_UPP}_SERVINGSTATE;    SA_SERVING_STATE=${!x:-/${SERVING_STATE}}
     # Convert in uppercase
     SA_STORAGECLASS=`echo ${SA_STORAGECLASS} | tr '[:lower:]' '[:upper:]'`
 
