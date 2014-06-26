@@ -1,0 +1,12 @@
+
+#
+# GLUE2PolicyID
+#
+dn: GLUE2PolicyID=$GLUE2PolicyID,GLUE2EndpointId=$GLUE2EndpointId,GLUE2ServiceId=$GLUE2ServiceId,GLUE2GroupId=resource,o=glue
+objectClass: GLUE2Policy
+objectClass: GLUE2AccessPolicy
+GLUE2PolicyID: GLUE2PolicyID
+GLUE2PolicyScheme: org.glite.standard
+GLUE2PolicyRule: $GLUE2PolicyRule
+GLUE2PolicyUserDomainForeignKey: $GLUE2PolicyUserDomainForeignKey
+GLUE2AccessPolicyEndpointForeignKey: $GLUE2AccessPolicyEndpointForeignKey

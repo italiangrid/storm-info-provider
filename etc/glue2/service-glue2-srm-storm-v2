@@ -1,0 +1,4 @@
+#!/bin/sh
+# glue13 service file
+. /etc/profile.d/grid-env.sh
+$info_service $service_config_file $sitename $srm_endpoint

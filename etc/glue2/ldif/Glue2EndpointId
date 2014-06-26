@@ -1,0 +1,29 @@
+
+#
+# GLUE2EndpointId
+#
+dn: GLUE2EndpointId=$GLUE2EndpointId,GLUE2ServiceId=$GLUE2ServiceId,GLUE2GroupID=resource,o=glue
+objectClass: GLUE2Endpoint
+objectClass: GLUE2StorageEndpoint
+GLUE2EndpointId: $GLUE2EndpointId
+GLUE2EndpointURL: $GLUE2EndpointURL
+GLUE2EndpointCapability: $GLUE2EndpointCapability
+GLUE2EndpointTechnology: webservice
+GLUE2EndpointInterfaceName: SRM
+GLUE2EndpointInterfaceVersion: 2.2.0
+#GLUE2EndpointInterfaceExtension:
+GLUE2EndpointWSDL: http://sdm.lbl.gov/srm-wg/srm.v2.2.wsdl
+#GLUE2EndpointSupportedProfile:
+GLUE2EndpointSemantics: http://sdm.lbl.gov/srm-wg/doc/srm.v2.2.wsdl
+GLUE2EndpointImplementor: emi.storm
+GLUE2EndpointImplementationName: StoRM
+GLUE2EndpointImplementationVersion: `rpm -q --queryformat='%{VERSION}' storm-backend-server`
+GLUE2EndpointQualityLevel: $GLUE2EndpointQualityLevel
+GLUE2EndpointHealthState: ok
+GLUE2EndpointHealthStateInfo: No Problems for storm-backend-server
+GLUE2EndpointServingState: $GLUE2EndpointServingState
+GLUE2EndpointIssuerCA: `openssl x509 -issuer -noout -in /etc/grid-security/hostcert.pem | sed 's/^[^/]*//'`
+#GLUE2EndpointTrustedCA: to be defined
+#GLUE2EndpointDowntimeAnnounce: No
+GLUE2EndpointServiceForeignKey: $GLUE2EndpointServiceForeignKey
+GLUE2StorageEndpointStorageServiceForeignKey: $GLUE2StorageEndpointStorageServiceForeignKey

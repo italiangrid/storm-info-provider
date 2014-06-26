@@ -1,0 +1,11 @@
+
+#
+# GLUE2StorageAccessProtocolID $GLUE2StorageAccessProtocolType
+#
+dn: GLUE2StorageAccessProtocolID=$GLUE2StorageAccessProtocolID,GLUE2ServiceId=$GLUE2ServiceId,GLUE2GroupId=resource,o=glue
+objectClass: GLUE2StorageAccessProtocol
+GLUE2StorageAccessProtocolID: $GLUE2StorageAccessProtocolID
+GLUE2StorageAccessProtocolType: $GLUE2StorageAccessProtocolType
+GLUE2StorageAccessProtocolVersion: $GLUE2StorageAccessProtocolVersion
+GLUE2StorageAccessProtocolMaxStreams: $GLUE2StorageAccessProtocolMaxStreams
+GLUE2StorageAccessProtocolStorageServiceForeignKey: $GLUE2StorageAccessProtocolStorageServiceForeignKey

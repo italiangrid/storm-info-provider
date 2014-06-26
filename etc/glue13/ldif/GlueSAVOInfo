@@ -1,0 +1,17 @@
+
+#
+# GlueVOInfoLocalID $GlueVOInfoLocalID
+#
+dn: GlueVOInfoLocalID=$GlueVOInfoLocalID,GlueSALocalID=$GlueSALocalID,GlueSEUniqueID=$GlueSEUniqueID,mds-vo-name=resource,o=grid
+objectClass: GlueSATop
+objectClass: GlueVOInfo
+objectClass: GlueKey
+objectClass: GlueSchemaVersion
+GlueVOInfoLocalID: $GlueVOInfoLocalID
+GlueVOInfoPath: $GlueVOInfoPath
+GlueVOInfoTag: $GlueVOInfoTag
+GlueVOInfoAccessControlBaseRule: VO:$GlueSAVOName
+GlueChunkKey: GlueSALocalID=$GlueSALocalID
+GlueChunkKey: GlueSEUniqueID=$GlueSEUniqueID
+GlueSchemaVersionMajor: 1
+GlueSchemaVersionMinor: 3
