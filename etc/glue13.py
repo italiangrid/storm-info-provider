@@ -30,21 +30,20 @@ class Glue13:
         return
 
     def init(self):
-        logging.debug("Stats: %s", self.stats)
         # GLUE13_SERVICE_FILE
-        logging.info("Creating %s ...", self.GLUE13_SERVICE_FILE)
+        logging.debug("Creating %s ...", self.GLUE13_SERVICE_FILE)
         self.create_service_file()
         logging.info("Successfully created %s !", self.GLUE13_SERVICE_FILE)
         # GLUE13_SERVICE_CONFIG_FILE
-        logging.info("Creating %s ...", self.GLUE13_SERVICE_CONFIG_FILE)
+        logging.debug("Creating %s ...", self.GLUE13_SERVICE_CONFIG_FILE)
         self.create_service_config_file()
         logging.info("Successfully created %s !", self.GLUE13_SERVICE_CONFIG_FILE)
         # GLUE13_STATIC_LDIF_FILE
-        logging.info("Creating %s ...", self.GLUE13_STATIC_LDIF_FILE)
+        logging.debug("Creating %s ...", self.GLUE13_STATIC_LDIF_FILE)
         self.create_static_ldif_file()
         logging.info("Successfully created %s !", self.GLUE13_STATIC_LDIF_FILE)
         # GLUE13_PLUGIN_FILE
-        logging.info("Creating %s ...", self.GLUE13_INFO_PLUGIN_FILE)
+        logging.debug("Creating %s ...", self.GLUE13_INFO_PLUGIN_FILE)
         self.create_plugin_file()
         logging.info("Successfully created %s !", self.GLUE13_INFO_PLUGIN_FILE)
         # remove old cron file

@@ -108,11 +108,6 @@ def main():
     # get VFSs, VOs and global space use information from backend
     (vfs, vos, summary) = compute_space_info(configuration)
 
-    # print space info
-    logging.debug('VFS = %s', vfs)
-    logging.debug('VOS = %s', vos)
-    logging.debug('SUMMARY = %s', summary)
-
     # create Glue v1.3 files
     glue13 = Glue13(configuration, {"sas": vfs, "vos": vos, "summary": summary})
     glue13.init()

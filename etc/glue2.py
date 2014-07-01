@@ -33,19 +33,19 @@ class Glue2:
 
     def init(self):
         # GLUE2_SERVICE_FILE
-        logging.info("Creating %s ...", self.GLUE2_SERVICE_FILE)
+        logging.debug("Creating %s ...", self.GLUE2_SERVICE_FILE)
         self.create_service_file()
         logging.info("Successfully created %s !", self.GLUE2_SERVICE_FILE)
         # GLUE2_SERVICE_CONFIG_FILE
-        logging.info("Creating %s ...", self.GLUE2_SERVICE_CONFIG_FILE)
+        logging.debug("Creating %s ...", self.GLUE2_SERVICE_CONFIG_FILE)
         self.create_service_config_file()
         logging.info("Successfully created %s !", self.GLUE2_SERVICE_CONFIG_FILE)
         # GLUE2_STATIC_LDIF_FILE
-        logging.info("Creating %s ...", self.GLUE2_STATIC_LDIF_FILE)
+        logging.debug("Creating %s ...", self.GLUE2_STATIC_LDIF_FILE)
         self.create_static_ldif_file()
         logging.info("Successfully created %s !", self.GLUE2_STATIC_LDIF_FILE)
         # GLUE2_PLUGIN_FILE
-        logging.info("Creating %s ...", self.GLUE2_INFO_PLUGIN_FILE)
+        logging.debug("Creating %s ...", self.GLUE2_INFO_PLUGIN_FILE)
         self.create_plugin_file()
         logging.info("Successfully created %s !", self.GLUE2_INFO_PLUGIN_FILE)
         # remove old cron file
@@ -105,24 +105,23 @@ class Glue2:
             self.GLUE2_STATIC_LDIF_FILE = self.GLUE2_STATIC_LDIF_FILE + ".yaimnew_" + timestamp
             logging.debug("Create new configuration file in %s", self.GLUE2_STATIC_LDIF_FILE)
         
-        # Creation time
+        # Commons
         params = {}
-        params["GLUE2EntityCreationTime"] = time.strftime('%Y-%m-%dT%TZ')
-        
-        # Glue2AdminDomain
-        #tFile = self.TEMPLATES_DIR + "/ldif/Glue2AdminDomain"
+        params["GLUE2EntityCreationTime"] = time.strftime('%Y-%m-%dT%T')
         params["GLUE2DomainID"] = self.configuration["SITE_NAME"]
-        #create_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
 
         # Glue2StorageService
         tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageService"
         params["GLUE2ServiceID"] = "glue:" + self.configuration["STORM_FRONTEND_PUBLIC_HOST"] + "/data"
         params["GLUE2EntityName"] = "storm@" + self.configuration["STORM_FRONTEND_PUBLIC_HOST"] + ":SRM"
-        params["GLUE2ServiceQualityLevel"] = self.configuration['STORM_ENDPOINT_QUALITY_LEVEL']
+        qualitylevels = ["development", "pre-production", "production", "testing"]
+        if self.configuration['STORM_ENDPOINT_QUALITY_LEVEL'].lower() in qualitylevels:
+            params["GLUE2ServiceQualityLevel"] = self.configuration['STORM_ENDPOINT_QUALITY_LEVEL'].lower()
+        else:
+            logging.warn("Invalid STORM_ENDPOINT_QUALITY_LEVEL value '%s' - replaced with 'testing'", self.configuration['STORM_ENDPOINT_QUALITY_LEVEL'])
+            params["GLUE2ServiceQualityLevel"] = "testing"
         append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
         
-        logging.debug("Glue2StorageService... done!")
-
         # Glue2StorageServiceCapacity
         tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageServiceCapacity"
         
@@ -136,8 +135,6 @@ class Glue2:
             params["GLUE2StorageServiceCapacityReservedSize"] = round_div(self.stats["summary"]["reserved-space"],1000000000)
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
         
-            logging.debug("Glue2StorageServiceCapacity (online)... done!")
-
         if self.stats["summary"]["nearline-space"] > 0:
             # Glue2StorageServiceCapacity nearline
             params["GLUE2StorageServiceCapacityID"] = params["GLUE2ServiceID"] + "/ssc/tape"
@@ -148,8 +145,6 @@ class Glue2:
             params["GLUE2StorageServiceCapacityReservedSize"] = 0
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
 
-            logging.debug("Glue2StorageServiceCapacity (nearline)... done!")
-
         # GLUE2StorageAccessProtocol for each protocol
         protocols = []
         tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageAccessProtocol"
@@ -159,7 +154,6 @@ class Glue2:
             params["GLUE2StorageAccessProtocolVersion"] = "1.0.0"        
             params["GLUE2StorageAccessProtocolID"] = params["GLUE2ServiceID"] + "/ap/" + params["GLUE2StorageAccessProtocolType"] + "/" + params["GLUE2StorageAccessProtocolVersion"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2StorageAccessProtocol (file)... done!")
 
         if self.configuration["STORM_INFO_RFIO_SUPPORT"].upper() == "TRUE":
             protocols.append("rfio")
@@ -167,7 +161,6 @@ class Glue2:
             params["GLUE2StorageAccessProtocolVersion"] = "1.0.0"
             params["GLUE2StorageAccessProtocolID"] = params["GLUE2ServiceID"] + "/ap/" + params["GLUE2StorageAccessProtocolType"] + "/" + params["GLUE2StorageAccessProtocolVersion"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2StorageAccessProtocol (rfio)... done!")
 
         if self.configuration["STORM_INFO_GRIDFTP_SUPPORT"].upper() == "TRUE":
             protocols.append("gsiftp")
@@ -175,7 +168,6 @@ class Glue2:
             params["GLUE2StorageAccessProtocolVersion"] = "2.0.0"
             params["GLUE2StorageAccessProtocolID"] = params["GLUE2ServiceID"] + "/ap/" + params["GLUE2StorageAccessProtocolType"] + "/" + params["GLUE2StorageAccessProtocolVersion"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2StorageAccessProtocol (gsiftp)... done!")
 
         if self.configuration["STORM_INFO_ROOT_SUPPORT"].upper() == "TRUE":
             protocols.append("root")
@@ -183,7 +175,6 @@ class Glue2:
             params["GLUE2StorageAccessProtocolVersion"] = "1.0.0"
             params["GLUE2StorageAccessProtocolID"] = params["GLUE2ServiceID"] + "/ap/" + params["GLUE2StorageAccessProtocolType"] + "/" + params["GLUE2StorageAccessProtocolVersion"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2StorageAccessProtocol (root)... done!")
 
         if self.configuration["STORM_INFO_HTTP_SUPPORT"].upper() == "TRUE":
             protocols.append("http")
@@ -191,7 +182,6 @@ class Glue2:
             params["GLUE2StorageAccessProtocolVersion"] = "1.1.0"
             params["GLUE2StorageAccessProtocolID"] = params["GLUE2ServiceID"] + "/ap/" + params["GLUE2StorageAccessProtocolType"] + "/" + params["GLUE2StorageAccessProtocolVersion"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2StorageAccessProtocol (http)... done!")
 
         if self.configuration["STORM_INFO_HTTPS_SUPPORT"].upper() == "TRUE":
             protocols.append("https")
@@ -199,13 +189,11 @@ class Glue2:
             params["GLUE2StorageAccessProtocolVersion"] = "1.1.0"
             params["GLUE2StorageAccessProtocolID"] = params["GLUE2ServiceID"] + "/ap/" + params["GLUE2StorageAccessProtocolType"] + "/" + params["GLUE2StorageAccessProtocolVersion"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2StorageAccessProtocol (https)... done!")
 
         # Glue2StorageManager
         tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageManager"
         params["GLUE2ManagerID"] = params["GLUE2ServiceID"] + "/m/StoRM"
         append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-        logging.debug("Glue2StorageManager... done!")
 
         # Glue2DataStore
         tFile = self.TEMPLATES_DIR + "/ldif/Glue2DataStore"
@@ -217,7 +205,6 @@ class Glue2:
             params["GLUE2DataStoreLatency"] = "online"
             params["GLUE2DataStoreTotalSize"] = round_div(self.stats["summary"]["total-space"],1000000000)
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2DataStore (online)... done!")
 
         if self.stats["summary"]["nearline-space"] > 0:
             # Glue2DataStore tape nearline
@@ -226,7 +213,6 @@ class Glue2:
             params["GLUE2DataStoreLatency"] = "nearline"
             params["GLUE2DataStoreTotalSize"] = round_div(self.stats["summary"]["nearline-space"],1000000000)
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2DataStore (nearline)... done!")
 
         vos = Set()
 
@@ -245,11 +231,10 @@ class Glue2:
                 params["GLUE2StorageShareSharingID"] = ":".join((sa_data["voname"],sa_data["retentionPolicy"],sa_data["accessLatency"]))
             params["GLUE2StorageShareServingState"] = self.configuration['STORM_SERVING_STATE_VALUE']
             params["GLUE2StorageSharePath"] = sa_data["stfnRoot"][0]
-            params["GLUE2StorageShareAccessLatency"] = sa_data["accessLatency"]
-            params["GLUE2StorageShareRetentionPolicy"] = sa_data["retentionPolicy"]
+            params["GLUE2StorageShareAccessLatency"] = sa_data["accessLatency"].lower()
+            params["GLUE2StorageShareRetentionPolicy"] = sa_data["retentionPolicy"].lower()
             params["GLUE2StorageShareTag"] = sa_data["name"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2Share (%s)... done!",sa_name)
 
             # GLUE2MappingPolicy
             tFile = self.TEMPLATES_DIR + "/ldif/Glue2MappingPolicy"
@@ -261,7 +246,6 @@ class Glue2:
             else:
                 params["GLUE2PolicyUserDomainForeignKey"] = sa_data["voname"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2MappingPolicy (%s)... done!",sa_name)
             
             # Glue2StorageShareCapacity
             tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageShareCapacity"
@@ -272,7 +256,6 @@ class Glue2:
             params["GLUE2StorageShareCapacityUsedSize"] = round_div(sa_data["used-space"],1000000000)
             params["GLUE2StorageShareCapacityReservedSize"] = round_div(sa_data["reserved-space"],1000000000)
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2StorageShareCapacity (%s)... done!",sa_name)
 
             if ".*" not in sa_data["voname"]:
                 vos.add(sa_data["voname"])
@@ -293,14 +276,12 @@ class Glue2:
             params["GLUE2EndpointURL"] = "httpg://" + frontend_host + ":" + self.configuration["STORM_FRONTEND_PORT"] + "/srm/managerv2"
             params["GLUE2EntityOtherInfos"] = "GLUE2EntityOtherInfo: SupportedProtocol=" + "\nGLUE2EntityOtherInfo: SupportedProtocol=".join(protocols)
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2StorageEndpoint (%s)... done!",frontend_host)
 
             # Glue2AccessPolicy for each endpoint
             tFile = self.TEMPLATES_DIR + "/ldif/Glue2AccessPolicy"
             params["GLUE2PolicyID"] = params["GLUE2EndpointID"] + "/ap/basic"
             params["GLUE2AccessPolicyRules"] = "GLUE2PolicyRule: vo:" + "\nGLUE2PolicyRule: vo:".join(vos)
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
-            logging.debug("Glue2AccessPolicy (%s)... done!",frontend_host)
 
         # set owner
         uid = pwd.getpwnam("ldap").pw_uid
