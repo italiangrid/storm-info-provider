@@ -264,7 +264,7 @@ class Glue2:
         params["GLUE2EndpointInterfaceName"] = "SRM"
         params["GLUE2EndpointInterfaceVersion"] = "2.2.0"
         params["GLUE2EndpointTechnology"] = "webservice"
-        params["GLUE2EndpointQualityLevel"] = self.configuration['STORM_ENDPOINT_QUALITY_LEVEL'].lower()
+        params["GLUE2EndpointQualityLevel"] = params["GLUE2ServiceQualityLevel"]
         params["GLUE2EndpointServingState"] = self.configuration['STORM_SERVING_STATE_VALUE']
 
         for frontend_host in frontend_host_list:
