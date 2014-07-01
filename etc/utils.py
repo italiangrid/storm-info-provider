@@ -18,13 +18,13 @@ def clean_dns_like_chars(s):
     return s.replace('.','').replace('-','').replace('_','')
 
 def http_get(url, max_attempts=5, min_delay=1):
-    logging.info('GET %s', url)
     seconds = min_delay
     attempt = 0
+    logging.info('GET %s', url)
     while attempt < max_attempts:
         try:
             response = urllib2.urlopen(url)
-            logging.debug("Response is 200 OK")
+            logging.info('200 OK')
             return response
         except Exception, ex:
             logging.error('%s', ex)
