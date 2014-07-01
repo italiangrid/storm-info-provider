@@ -272,7 +272,7 @@ class Glue2:
 
             # Glue2StorageEndpoint SRM
             tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageEndpoint"
-            params["GLUE2EndpointID"] = params["GLUE2ServiceID"] + "/ep/" + frontend_host + "/" + params["GLUE2EndpointInterfaceName"] + "/" + params["GLUE2EndpointInterfaceVersion"]
+            params["GLUE2EndpointID"] = params["GLUE2ServiceID"] + "/ep/" + frontend_host + ":" + self.configuration["STORM_FRONTEND_PORT"] + "/" + params["GLUE2EndpointInterfaceName"] + "/" + params["GLUE2EndpointInterfaceVersion"]
             params["GLUE2EndpointURL"] = "httpg://" + frontend_host + ":" + self.configuration["STORM_FRONTEND_PORT"] + "/srm/managerv2"
             params["GLUE2EntityOtherInfos"] = "GLUE2EntityOtherInfo: SupportedProtocol=" + "\nGLUE2EntityOtherInfo: SupportedProtocol=".join(protocols)
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
@@ -287,6 +287,7 @@ class Glue2:
 
             # Glue2StorageEndpoint - gridhttps list
             gridhttps_host_list = self.configuration["STORM_GRIDHTTPS_POOL_LIST"].split(',')
+            params["GLUE2EndpointInterfaceName"] = "WebDAV"
             params["GLUE2EndpointInterfaceVersion"] = "1.1"
             params["GLUE2EndpointTechnology"] = "webservice"
             params["GLUE2EndpointQualityLevel"] = params["GLUE2ServiceQualityLevel"]
@@ -298,10 +299,9 @@ class Glue2:
 
                 if self.configuration['STORM_GRIDHTTPS_HTTP_ENABLED'].lower() == "true" and self.configuration['STORM_INFO_HTTP_SUPPORT'].lower() == "true":
 
-                    # Glue2StorageEndpoint http
+                    # Glue2StorageEndpoint anonymous webdav
                     tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageEndpoint"
-                    params["GLUE2EndpointInterfaceName"] = "http"
-                    params["GLUE2EndpointID"] = params["GLUE2ServiceID"] + "/ep/" + gridhttps_host + "/" + params["GLUE2EndpointInterfaceName"] + "/" + params["GLUE2EndpointInterfaceVersion"]
+                    params["GLUE2EndpointID"] = params["GLUE2ServiceID"] + "/ep/" + gridhttps_host + ":" + self.configuration["STORM_GRIDHTTPS_HTTP_PORT"] + "/" + params["GLUE2EndpointInterfaceName"] + "/" + params["GLUE2EndpointInterfaceVersion"]
                     params["GLUE2EndpointURL"] = "http://" + gridhttps_host + ":" + self.configuration["STORM_GRIDHTTPS_HTTP_PORT"] + "/webdav/"
                     append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
 
@@ -315,8 +315,7 @@ class Glue2:
 
                     # Glue2StorageEndpoint https
                     tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageEndpoint"
-                    params["GLUE2EndpointInterfaceName"] = "https"
-                    params["GLUE2EndpointID"] = params["GLUE2ServiceID"] + "/ep/" + gridhttps_host + "/" + params["GLUE2EndpointInterfaceName"] + "/" + params["GLUE2EndpointInterfaceVersion"]
+                    params["GLUE2EndpointID"] = params["GLUE2ServiceID"] + "/ep/" + gridhttps_host + ":" + self.configuration["STORM_GRIDHTTPS_HTTPS_PORT"] + "/" + params["GLUE2EndpointInterfaceName"] + "/" + params["GLUE2EndpointInterfaceVersion"]
                     params["GLUE2EndpointURL"] = "https://" + gridhttps_host + ":" + self.configuration["STORM_GRIDHTTPS_HTTPS_PORT"] + "/webdav/"
                     append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
 
