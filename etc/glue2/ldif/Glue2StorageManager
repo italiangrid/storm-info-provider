@@ -2,7 +2,7 @@
 #
 # GLUE2StorageManager
 #
-dn: GLUE2ManagerID=GLUE2ManagerID,GLUE2ServiceID=$GLUE2ServiceID,GLUE2GroupID=resource,o=glue
+dn: GLUE2ManagerID=$GLUE2ManagerID,GLUE2ServiceID=$GLUE2ServiceID,GLUE2GroupID=resource,o=glue
 objectClass: GLUE2Manager
 objectClass: GLUE2StorageManager
 GLUE2EntityCreationTime: $GLUE2EntityCreationTime
@@ -10,4 +10,5 @@ GLUE2EntityName: $GLUE2EntityName
 GLUE2ManagerID: $GLUE2ManagerID
 GLUE2ManagerProductName: StoRM
 GLUE2ManagerProductVersion: `rpm -q --queryformat='%{VERSION}' storm-backend-server`
+GLUE2StorageManagerStorageServiceForeignKey: $GLUE2ServiceID
 GLUE2ManagerServiceForeignKey: $GLUE2ServiceID
