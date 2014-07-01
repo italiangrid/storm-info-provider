@@ -75,7 +75,7 @@ def create_file_from_template(file_target, file_template, params):
     # read template
     src = string.Template(filein.read())
     # do the substitution and write it
-    fileout.write(src.substitute(params))
+    fileout.write(src.substitute(params) + "\n")
     # close files
     filein.close()
     fileout.close()
@@ -89,7 +89,7 @@ def append_file_from_template(file_target, file_template, params):
     # read template
     src = string.Template(filein.read())
     # do the substitution and write it
-    fileout.write(src.substitute(params))
+    fileout.write(src.substitute(params) + "\n")
     # close files
     filein.close()
     fileout.close()

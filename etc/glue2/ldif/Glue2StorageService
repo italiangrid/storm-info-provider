@@ -1,15 +1,19 @@
 #
 # GLUE2StorageService
 #
-dn: GLUE2ServiceId=$GLUE2ServiceId,GLUE2GroupID=resource,o=glue
+dn: GLUE2ServiceID=$GLUE2ServiceID,GLUE2GroupID=resource,o=glue
 objectClass: GLUE2Service
 objectClass: GLUE2StorageService
 GLUE2EntityCreationTime: $GLUE2EntityCreationTime
+GLUE2EntityName: $GLUE2EntityName
+GLUE2ServiceID: $GLUE2ServiceID
+GLUE2ServiceType: org.storm.storage
+GLUE2ServiceQualityLevel: $GLUE2ServiceQualityLevel
+GLUE2ServiceCapability: data.management.storage
+GLUE2ServiceCapability: data.management.transfer
+GLUE2ServiceCapability: data.transfer
+GLUE2ServiceCapability: data.access.flatfiles
 GLUE2EntityOtherInfo: ProfileName=EGI
 GLUE2EntityOtherInfo: ProfileVersion=1.0
-GLUE2ServiceId: $GLUE2ServiceId
-GLUE2ServiceCapability: $GLUE2ServiceCapability
-GLUE2ServiceType: it.grid.storm
-GLUE2ServiceQualityLevel: $GLUE2ServiceQualityLevel
-GLUE2ServiceStatusInfo: $GLUE2ServiceStatusInfo
-GLUE2ServiceAdminDomainForeignKey: $GLUE2ServiceAdminDomainForeignKey
+GLUE2ServiceAdminDomainForeignKey: $GLUE2DomainID
+
