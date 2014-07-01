@@ -259,13 +259,13 @@ class Glue2:
             if ".*" not in sa_data["voname"]:
                 vos.add(sa_data["voname"])
         
-        # Glue2StorageEndpoint
+        # Glue2StorageEndpoint - frontend list
         frontend_host_list = self.configuration["STORM_FRONTEND_HOST_LIST"].split(',')
         params["GLUE2EndpointInterfaceName"] = "SRM"
         params["GLUE2EndpointInterfaceVersion"] = "2.2.0"
         params["GLUE2EndpointTechnology"] = "webservice"
         params["GLUE2EndpointQualityLevel"] = params["GLUE2ServiceQualityLevel"]
-        params["GLUE2EndpointServingState"] = self.configuration['STORM_SERVING_STATE_VALUE']
+        params["GLUE2EndpointServingState"] = self.configuration['STORM_SERVING_STATE_VALUE'].lower()
 
         for frontend_host in frontend_host_list:
 
@@ -281,6 +281,48 @@ class Glue2:
             params["GLUE2PolicyID"] = params["GLUE2EndpointID"] + "/ap/basic"
             params["GLUE2AccessPolicyRules"] = "GLUE2PolicyRule: vo:" + "\nGLUE2PolicyRule: vo:".join(vos)
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
+
+        if self.configuration['STORM_GRIDHTTPS_ENABLED'].lower() == "true":
+
+            # Glue2StorageEndpoint - gridhttps list
+            gridhttps_host_list = self.configuration["STORM_GRIDHTTPS_POOL_LIST"].split(',')
+            params["GLUE2EndpointInterfaceVersion"] = "1.1"
+            params["GLUE2EndpointTechnology"] = "webservice"
+            params["GLUE2EndpointQualityLevel"] = params["GLUE2ServiceQualityLevel"]
+            params["GLUE2EndpointServingState"] = self.configuration['STORM_SERVING_STATE_VALUE'].lower()
+            params["GLUE2EntityOtherInfos"] = "GLUE2EntityOtherInfo: SupportedProtocol=WebDAV"
+
+            for gridhttps_host in gridhttps_host_list:
+
+                if self.configuration['STORM_GRIDHTTPS_HTTP_ENABLED'].lower() == "true" and self.configuration['STORM_INFO_HTTP_SUPPORT'].lower() == "true":
+
+                    # Glue2StorageEndpoint http
+                    tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageEndpoint"
+                    params["GLUE2EndpointInterfaceName"] = "http"
+                    params["GLUE2EndpointID"] = params["GLUE2ServiceID"] + "/ep/" + gridhttps_host + "/" + params["GLUE2EndpointInterfaceName"] + "/" + params["GLUE2EndpointInterfaceVersion"]
+                    params["GLUE2EndpointURL"] = "http://" + gridhttps_host + ":" + self.configuration["STORM_GRIDHTTPS_HTTP_PORT"] + "/webdav/"
+                    append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
+
+                    # Glue2AccessPolicy for each endpoint http
+                    tFile = self.TEMPLATES_DIR + "/ldif/Glue2AccessPolicy"
+                    params["GLUE2PolicyID"] = params["GLUE2EndpointID"] + "/ap/basic"
+                    params["GLUE2AccessPolicyRules"] = "GLUE2PolicyRule: 'ALL'"
+                    append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
+
+                if self.configuration['STORM_INFO_HTTPS_SUPPORT'].lower() == "true":
+
+                    # Glue2StorageEndpoint https
+                    tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageEndpoint"
+                    params["GLUE2EndpointInterfaceName"] = "https"
+                    params["GLUE2EndpointID"] = params["GLUE2ServiceID"] + "/ep/" + gridhttps_host + "/" + params["GLUE2EndpointInterfaceName"] + "/" + params["GLUE2EndpointInterfaceVersion"]
+                    params["GLUE2EndpointURL"] = "https://" + gridhttps_host + ":" + self.configuration["STORM_GRIDHTTPS_HTTPS_PORT"] + "/webdav/"
+                    append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
+
+                    # Glue2AccessPolicy for each endpoint https
+                    tFile = self.TEMPLATES_DIR + "/ldif/Glue2AccessPolicy"
+                    params["GLUE2PolicyID"] = params["GLUE2EndpointID"] + "/ap/basic"
+                    params["GLUE2AccessPolicyRules"] = "GLUE2PolicyRule: vo:" + "\nGLUE2PolicyRule: vo:".join(vos)
+                    append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
 
         # set owner
         uid = pwd.getpwnam("ldap").pw_uid
