@@ -18,7 +18,7 @@ INFO_PLUGIN_PATH = "/var/lib/bdii/gip/plugin"
 
 class Glue2:
 
-    TEMPLATES_DIR = "./glue2" # "/etc/storm/info-provider/templates/glue2"
+    TEMPLATES_DIR = "/etc/storm/info-provider/templates/glue2"
 
     GLUE2_INFO_SERVICE = INFO_SERVICE_SCRIPT + "/glite-info-glue2-simple"
     GLUE2_SERVICE_FILE = INFO_PROVIDER_PATH + "/service-glue2-srm-storm-v2"
