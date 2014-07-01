@@ -1,0 +1,14 @@
+
+#
+# GLUE2StorageShareCapacity $vfs ($voname VO)
+#
+dn: GLUE2StorageShareCapacityID=$GLUE2StorageShareCapacityID,GLUE2ShareID=$GLUE2ShareID,GLUE2ServiceID=$GLUE2ServiceID,GLUE2GroupID=resource,o=glue
+objectClass: GLUE2StorageShareCapacity
+GLUE2EntityCreationTime: $GLUE2EntityCreationTime
+GLUE2StorageShareCapacityID: $GLUE2StorageShareCapacityID
+GLUE2StorageShareCapacityType: $GLUE2StorageShareCapacityType
+GLUE2StorageShareCapacityTotalSize: $GLUE2StorageShareCapacityTotalSize
+GLUE2StorageShareCapacityFreeSize: $GLUE2StorageShareCapacityFreeSize
+GLUE2StorageShareCapacityUsedSize: $GLUE2StorageShareCapacityUsedSize
+GLUE2StorageShareCapacityReservedSize: $GLUE2StorageShareCapacityReservedSize
+GLUE2StorageShareCapacityStorageShareForeignKey: $GLUE2ShareID

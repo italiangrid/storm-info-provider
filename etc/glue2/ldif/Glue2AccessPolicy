@@ -1,0 +1,11 @@
+#
+# GLUE2AccessPolicy
+#
+dn: GLUE2PolicyID=$GLUE2PolicyID,GLUE2EndpointID=$GLUE2EndpointID,GLUE2ServiceID=$GLUE2ServiceID,GLUE2GroupID=resource,o=glue
+objectClass: GLUE2Policy
+objectClass: GLUE2AccessPolicy
+GLUE2PolicyID: $GLUE2PolicyID
+GLUE2EntityCreationTime: $GLUE2EntityCreationTime
+GLUE2PolicyScheme: basic
+$GLUE2AccessPolicyRules
+GLUE2AccessPolicyEndpointForeignKey: $GLUE2EndpointID

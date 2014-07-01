@@ -1,0 +1,13 @@
+
+#
+# GLUE2MappingPolicy
+#
+dn: GLUE2PolicyID=$GLUE2PolicyID,GLUE2ShareID=$GLUE2ShareID,GLUE2ServiceID=$GLUE2ServiceID,GLUE2GroupID=resource,o=glue
+objectClass: GLUE2Policy
+objectClass: GLUE2MappingPolicy
+GLUE2PolicyID: $GLUE2PolicyID
+GLUE2EntityCreationTime: $GLUE2EntityCreationTime
+GLUE2PolicyScheme: basic
+$GLUE2MappingPolicyRules
+GLUE2MappingPolicyShareForeignKey: $GLUE2ShareID
+GLUE2PolicyUserDomainForeignKey: $GLUE2PolicyUserDomainForeignKey

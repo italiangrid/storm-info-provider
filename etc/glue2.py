@@ -230,17 +230,16 @@ class Glue2:
             else:
                 params["GLUE2StorageShareSharingID"] = ":".join((sa_data["voname"],sa_data["retentionPolicy"],sa_data["accessLatency"]))
             params["GLUE2StorageShareServingState"] = self.configuration['STORM_SERVING_STATE_VALUE']
-            params["GLUE2StorageSharePath"] = sa_data["stfnRoot"][0]
+            #params["GLUE2StorageSharePath"] = sa_data["stfnRoot"][0]
             params["GLUE2StorageShareAccessLatency"] = sa_data["accessLatency"].lower()
             params["GLUE2StorageShareRetentionPolicy"] = sa_data["retentionPolicy"].lower()
-            params["GLUE2StorageShareTag"] = sa_data["name"]
+            #params["GLUE2StorageShareTag"] = sa_data["name"]
             append_file_from_template(self.GLUE2_STATIC_LDIF_FILE, tFile, params)
 
             # GLUE2MappingPolicy
             tFile = self.TEMPLATES_DIR + "/ldif/Glue2MappingPolicy"
             params["GLUE2PolicyID"] = params["GLUE2ShareID"] + "/mp/basic"
             params["GLUE2MappingPolicyRules"] = "GLUE2PolicyRule: " + "\nGLUE2PolicyRule: ".join(sa_data["approachableRules"])
-            #params["GLUE2MappingPolicyRules"] = "GLUE2PolicyRule: 'ALL'"
             if "*" in sa_data["voname"]:
                 params["GLUE2PolicyUserDomainForeignKey"] = "anonymous"
             else:
@@ -250,7 +249,7 @@ class Glue2:
             # Glue2StorageShareCapacity
             tFile = self.TEMPLATES_DIR + "/ldif/Glue2StorageShareCapacity"
             params["GLUE2StorageShareCapacityID"] = params["GLUE2ShareID"] + "/disk"
-            params["GLUE2StorageShareCapacityType"] = sa_data["accessLatency"]
+            params["GLUE2StorageShareCapacityType"] = sa_data["accessLatency"].lower()
             params["GLUE2StorageShareCapacityTotalSize"] = round_div(sa_data["total-space"],1000000000)
             params["GLUE2StorageShareCapacityFreeSize"] = round_div(sa_data["free-space"],1000000000)
             params["GLUE2StorageShareCapacityUsedSize"] = round_div(sa_data["used-space"],1000000000)

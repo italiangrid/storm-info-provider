@@ -1,0 +1,11 @@
+
+#
+# GLUE2StorageAccessProtocol $GLUE2StorageAccessProtocolType
+#
+dn: GLUE2StorageAccessProtocolID=$GLUE2StorageAccessProtocolID,GLUE2ServiceID=$GLUE2ServiceID,GLUE2GroupID=resource,o=glue
+objectClass: GLUE2StorageAccessProtocol
+GLUE2StorageAccessProtocolID: $GLUE2StorageAccessProtocolID
+GLUE2EntityCreationTime: $GLUE2EntityCreationTime
+GLUE2StorageAccessProtocolType: $GLUE2StorageAccessProtocolType
+GLUE2StorageAccessProtocolVersion: $GLUE2StorageAccessProtocolVersion
+GLUE2StorageAccessProtocolStorageServiceForeignKey: $GLUE2ServiceID
