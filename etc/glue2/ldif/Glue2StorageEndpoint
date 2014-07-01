@@ -18,6 +18,5 @@ GLUE2EndpointQualityLevel: $GLUE2EndpointQualityLevel
 GLUE2EndpointHealthState: ok
 GLUE2EndpointServingState: $GLUE2EndpointServingState
 GLUE2EndpointIssuerCA: `openssl x509 -issuer -noout -in /etc/grid-security/hostcert.pem | sed 's/^[^/]*//'`
-GLUE2EndpointCapability: data.management.storage
-GLUE2EndpointCapability: data.management.transfer
+$GLUE2EndpointCapabilities
 GLUE2EndpointServiceForeignKey: $GLUE2ServiceID

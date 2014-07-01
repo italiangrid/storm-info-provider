@@ -266,6 +266,7 @@ class Glue2:
         params["GLUE2EndpointTechnology"] = "webservice"
         params["GLUE2EndpointQualityLevel"] = params["GLUE2ServiceQualityLevel"]
         params["GLUE2EndpointServingState"] = self.configuration['STORM_SERVING_STATE_VALUE'].lower()
+        params["GLUE2EndpointCapabilities"] = "GLUE2EndpointCapability: data.management.storage"
 
         for frontend_host in frontend_host_list:
 
@@ -291,6 +292,7 @@ class Glue2:
             params["GLUE2EndpointQualityLevel"] = params["GLUE2ServiceQualityLevel"]
             params["GLUE2EndpointServingState"] = self.configuration['STORM_SERVING_STATE_VALUE'].lower()
             params["GLUE2EntityOtherInfos"] = "GLUE2EntityOtherInfo: SupportedProtocol=WebDAV"
+            params["GLUE2EndpointCapabilities"] = "GLUE2EndpointCapability: " + "\nGLUE2EndpointCapability: ".join(("data.management.storage", "data.management.transfer"))
 
             for gridhttps_host in gridhttps_host_list:
 
