@@ -10,3 +10,4 @@ GLUE2DataStoreType: $GLUE2DataStoreType
 GLUE2DataStoreLatency: $GLUE2DataStoreLatency
 GLUE2DataStoreTotalSize: $GLUE2DataStoreTotalSize
 GLUE2ResourceManagerForeignKey: $GLUE2ManagerID
+GLUE2DataStoreStorageManagerForeignKey: $GLUE2ManagerID
