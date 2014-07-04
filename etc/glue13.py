@@ -50,13 +50,17 @@ class Glue13:
         self.remove_old_cron_file_if_exists()
         return
 
+    def update(self):
+
+        return self.generate_update_ldif()
+
     def create_service_file(self):
         tFile = self.TEMPLATES_DIR + "/service-srm-storm-v2"
         params = { 
             "info_service": self.GLUE13_INFO_SERVICE,
             "service_config_file": self.GLUE13_SERVICE_CONFIG_FILE,
             "sitename": self.configuration['SITE_NAME'], 
-            "srm_endpoint": self.configuration['STORM_FRONTEND_ENDPOINT']
+            "srm_endpoint": "httpg://" + self.configuration["STORM_FRONTEND_PUBLIC_HOST"] + ":" + self.configuration["STORM_FRONTEND_PORT"] + self.configuration["STORM_FRONTEND_PATH"]
         }
         create_file_from_template(self.GLUE13_SERVICE_FILE, tFile, params)
         # Set execute permissions: chmod +x
@@ -66,6 +70,8 @@ class Glue13:
     def create_service_config_file(self):
         tFile = self.TEMPLATES_DIR + "/glite-info-service-srm-storm-v2.conf"
         params = {} 
+        params["GLITE_INFO_SERVICE_VERSION"] = "2.2.0"
+        params["GLITE_INFO_SERVICE_ENDPOINT"] = "httpg://" + self.configuration["STORM_FRONTEND_PUBLIC_HOST"] + ":" + self.configuration["STORM_FRONTEND_PORT"] + self.configuration["STORM_FRONTEND_PATH"]
         params["info_service_script"] = INFO_SERVICE_SCRIPT
         params["owner"] = ""
         params["acbr"] = ""
@@ -142,7 +148,7 @@ class Glue13:
         # GlueSEControlProtocol
         params = {}
         params["GlueSEUniqueID"] = self.configuration["STORM_FRONTEND_PUBLIC_HOST"]
-        params["GlueSEControlProtocolEndpoint"] = self.configuration["STORM_FRONTEND_ENDPOINT"]
+        params["GlueSEControlProtocolEndpoint"] = "httpg://" + self.configuration["STORM_FRONTEND_PUBLIC_HOST"] + ":" + self.configuration["STORM_FRONTEND_PORT"] + self.configuration["STORM_FRONTEND_PATH"]
         tFile = self.TEMPLATES_DIR + "/ldif/GlueSEControlProtocol"
         append_file_from_template(self.GLUE13_STATIC_LDIF_FILE, tFile, params)
         # GlueSEAccessProtocol for each protocol
@@ -199,3 +205,11 @@ class Glue13:
         if os.path.isfile(cFile):
             os.remove(cFile)
         return
+
+    def generate_update_ldif(self):
+
+
+        return
+
+
+

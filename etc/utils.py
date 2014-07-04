@@ -7,6 +7,7 @@ import logging
 import time
 import sys
 import string
+import fileinput
 
 def clear_quotes(s):
     return s.replace('\"','').replace("\'",'')
@@ -59,6 +60,7 @@ def load_configuration_from_file(filepath):
             configuration[key] = clear_quotes(clear_newlines(val.strip()))
     finally:
         f.close()
+        logging.debug('loaded configuration = %s', configuration)
     return configuration
 
 def are_keys_in_dictionary(dic, keys):
@@ -93,6 +95,12 @@ def append_file_from_template(file_target, file_template, params):
     # close files
     filein.close()
     fileout.close()
+    return
+
+def change_line_in_a_file(file_target, line_pattern, line_new):
+    for line in fileinput.input(file_target):
+        if line_pattern in line:
+            line.replace(line, line_new)
     return
 
 def round_div(num, value):
