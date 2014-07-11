@@ -1,34 +1,24 @@
 import logging
-import stat
 import pwd
 import grp
 import time
-import csv
-import tempfile
 import os
 import re
-import shutil
-import csv
 
+from glueutils import *
 from sets import Set
-from ldif import LDIFWriter
 from utils import *
 
-INFO_SERVICE_CONFIG = "/etc/glite/info/service"
-INFO_SERVICE_SCRIPT = "/usr/bin"
-INFO_PROVIDER_PATH = "/var/lib/bdii/gip/provider"
-INFO_LDIF_PATH = "/var/lib/bdii/gip/ldif"
-INFO_PLUGIN_PATH = "/var/lib/bdii/gip/plugin"
+class Glue2(Glue):
 
-class Glue2:
+    FROM_BYTES_TO_GB = 1000000000
+    FROM_BYTES_TO_KB = 1000
 
-    GLUE2_INFO_SERVICE = INFO_SERVICE_SCRIPT + "/glite-info-glue2-simple"
-    GLUE2_SERVICE_FILE = INFO_PROVIDER_PATH + "/service-glue2-srm-storm-v2"
-    GLUE2_SERVICE_CONFIG_FILE = INFO_SERVICE_CONFIG + "/glite-info-service-glue2-srm-storm-v2.conf"
-    GLUE2_STATIC_LDIF_FILE = INFO_LDIF_PATH + "/static-file-glue2-storm.ldif"
-    GLUE2_INFO_PLUGIN_FILE = INFO_PLUGIN_PATH + "/glite-info-glue2-dynamic-storm"
-
-    TEMPLATES_DIR = "/etc/storm/info-provider/templates/glue2"
+    GLUE2_INFO_SERVICE = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-glue2-simple"
+    GLUE2_SERVICE_FILE = GlueConstants.INFO_PROVIDER_PATH + "/service-glue2-srm-storm-v2"
+    GLUE2_SERVICE_CONFIG_FILE = GlueConstants.INFO_SERVICE_CONFIG + "/glite-info-service-glue2-srm-storm-v2.conf"
+    GLUE2_STATIC_LDIF_FILE = GlueConstants.INFO_LDIF_PATH + "/static-file-glue2-storm.ldif"
+    GLUE2_INFO_PLUGIN_FILE = GlueConstants.INFO_PLUGIN_PATH + "/glite-info-glue2-dynamic-storm"
 
     def __init__(self):
         self.creation_time = time.strftime('%Y-%m-%dT%T')
@@ -65,57 +55,36 @@ class Glue2:
         self.remove_old_cron_file_if_exists()
         return
 
+    def update(self, configuration, stats):
+        # generates the updater node list
+        node_list = self.get_update_nodes(configuration, stats)
+        # print LDIF
+        return GlueUtils.print_update_ldif(node_list)
+
     def create_service_file(self, configuration):
-        srm_endpoint = "httpg://" + configuration["STORM_FRONTEND_PUBLIC_HOST"] + ":" + configuration["STORM_FRONTEND_PORT"] + configuration["STORM_FRONTEND_PATH"]
-        f = open(self.GLUE2_SERVICE_FILE, "w")
-        f.write("#!/bin/sh\n")
-        f.write(". /etc/profile.d/grid-env.sh\n")
-        f.write("%s %s " % (self.GLUE2_INFO_SERVICE, self.GLUE2_SERVICE_CONFIG_FILE))
-        f.write("%s %s\n" % (configuration['SITE_NAME'], srm_endpoint))
-        f.close()
-        # Set execute permissions: chmod +x
-        os.chmod(self.GLUE2_SERVICE_FILE, 0755)
-        return self.GLUE2_SERVICE_FILE
+        params = []
+        params.append(configuration['SITE_NAME'])
+        params.append("httpg://" + configuration["STORM_FRONTEND_PUBLIC_HOST"] + ":" + configuration["STORM_FRONTEND_PORT"] + configuration["STORM_FRONTEND_PATH"])        
+        return super(Glue2, self).create_service_file(self.GLUE2_SERVICE_FILE, self.GLUE2_INFO_SERVICE, self.GLUE2_SERVICE_CONFIG_FILE, params)
 
     def create_service_config_file(self, configuration, stats):
         content = self.get_service_configuration(configuration, self.get_vos(stats["sas"]))
-        f = open(self.GLUE2_SERVICE_CONFIG_FILE, "w")
-        for key, val in content.items():
-            f.write("%s=%s\n" % (key, val))
-        f.close()
-        # set owner
-        uid = pwd.getpwnam("ldap").pw_uid
-        gid = grp.getgrnam("ldap").gr_gid
-        os.chown(self.GLUE2_SERVICE_CONFIG_FILE, uid, gid)
-        return
+        return super(Glue2, self).create_service_config_file(self.GLUE2_SERVICE_CONFIG_FILE, content)
 
     def create_plugin_file(self):
-        conf_file_path = "/etc/storm/backend-server/storm-yaim-variables.conf"
-        f = open(self.GLUE2_INFO_PLUGIN_FILE, "w")
-        f.write("#!/bin/sh\n")
-        f.write("/usr/libexec/storm-dynamic-info-provider/glite-info-glue2-dynamic-storm %s\n" % conf_file_path)
-        f.close()
-        # set owner
-        uid = pwd.getpwnam("ldap").pw_uid
-        gid = grp.getgrnam("ldap").gr_gid
-        os.chown(self.GLUE2_INFO_PLUGIN_FILE, uid, gid)
-        os.chmod(self.GLUE2_INFO_PLUGIN_FILE, 0755)
-        return
+        params = ["/etc/storm/backend-server/storm-yaim-variables.conf"]
+        info_service = "/usr/libexec/storm-dynamic-info-provider/glite-info-glue2-dynamic-storm"
+        return super(Glue2, self).create_plugin_file(self.GLUE2_INFO_PLUGIN_FILE, info_service, params)
 
     def create_static_ldif_file(self, configuration, stats):
 
-        # Create and open tmp file
-        target = tempfile.mkstemp()
-        logging.debug("Created temporary file '%s'...", target[1])
-        f = os.fdopen(target[0], "w")
-        # Init LDIF writer
-        ldif_writer = LDIFWriter(f, cols=512)
+        node_list = []
 
         # Glue2StorageService
         GLUE2DomainID = configuration["SITE_NAME"]
         GLUE2ServiceID = "glue:" + configuration["STORM_FRONTEND_PUBLIC_HOST"] + "/data"
         (dn, entry) = self.get_GLUE2StorageService(GLUE2ServiceID, GLUE2DomainID, self.quality_levels[int(configuration['STORM_ENDPOINT_QUALITY_LEVEL'])])
-        ldif_writer.unparse(dn, entry)
+        node_list.append({ "dn": dn, "entries": entry })
 
         # Glue2StorageServiceCapacity online
         if stats["summary"]["total-space"] > 0:
@@ -123,39 +92,39 @@ class Glue2:
             (dn, entry) = self.get_GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID, "online", 
                 round_div(stats["summary"]["total-space"],1000000000), round_div(stats["summary"]["free-space"],1000000000),
                 round_div(stats["summary"]["used-space"],1000000000), round_div(stats["summary"]["reserved-space"],1000000000))
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
 
         # Glue2StorageServiceCapacity nearline
         if stats["summary"]["nearline-space"] > 0:
             GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/tape"
             (dn, entry) = self.get_GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID, "nearline", 
-                round_div(stats["summary"]["nearline-space"],1000000000), 0, 0, 0)
-            ldif_writer.unparse(dn, entry)
+                round_div(stats["summary"]["nearline-space"],1000000000), round_div(stats["summary"]["nearline-space"],1000000000), 0, 0)
+            node_list.append({ "dn": dn, "entries": entry })
 
         # GLUE2StorageAccessProtocol for each protocol
         protocol_versions = self.get_enabled_protocols(configuration)
         for protocol in protocol_versions:
             GLUE2StorageAccessProtocolID = GLUE2ServiceID + "/ap/" + protocol + "/" + protocol_versions[protocol]
             (dn, entry) = self.get_GLUE2StorageAccessProtocol(GLUE2StorageAccessProtocolID, GLUE2ServiceID, protocol, protocol_versions[protocol])
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
 
         # Glue2StorageManager
         GLUE2ManagerID = GLUE2ServiceID + "/m/StoRM"
         (dn, entry) = self.get_GLUE2StorageManager(GLUE2ManagerID, GLUE2ServiceID)
-        ldif_writer.unparse(dn, entry)
+        node_list.append({ "dn": dn, "entries": entry })
 
         # Glue2DataStore
         if stats["summary"]["total-space"] > 0:
             # Glue2DataStore disk online
             GLUE2ResourceID = GLUE2ServiceID + "/ds/StoRM/disk"
             (dn, entry) = self.get_GLUE2DataStore(GLUE2ResourceID, GLUE2ManagerID, GLUE2ServiceID, "disk", "online", round_div(stats["summary"]["total-space"],1000000000))
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
 
         if stats["summary"]["nearline-space"] > 0:
             # Glue2DataStore tape nearline
             GLUE2ResourceID = GLUE2ServiceID + "/ds/StoRM/tape"
             (dn, entry) = self.get_GLUE2DataStore(GLUE2ResourceID, GLUE2ManagerID, GLUE2ServiceID, "tape", "nearline", round_div(stats["summary"]["nearline-space"],1000000000))
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
 
         # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each VFS
         for sa_name in stats["sas"]:
@@ -167,7 +136,7 @@ class Glue2:
             if "*" in sa_data["voname"]:
                 sharingID = "dedicated"                
             (dn, entry) = self.get_GLUE2StorageShare(GLUE2ShareID, GLUE2ServiceID, sa_data["accessLatency"].lower(), sa_data["retentionPolicy"].lower(), "production", sharingID)
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
 
             # GLUE2MappingPolicy
             GLUE2PolicyID = GLUE2ShareID + "/mp/basic"
@@ -175,14 +144,14 @@ class Glue2:
             if "*" in sa_data["voname"]:
                 user_domain = "anonymous" 
             (dn, entry) = self.get_GLUE2MappingPolicy(GLUE2PolicyID, GLUE2ShareID, GLUE2ServiceID, user_domain, sa_data["approachableRules"])
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
             
             # Glue2StorageShareCapacity
             GLUE2StorageShareCapacityID = GLUE2ShareID + "/disk"
             (dn, entry) = self.get_GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID, sa_data["accessLatency"].lower(), 
                 round_div(sa_data["total-space"],1000000000), round_div(sa_data["free-space"],1000000000), round_div(sa_data["used-space"],1000000000),
                 round_div(sa_data["reserved-space"],1000000000))
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
 
         vos = self.get_vos(stats["sas"])
 
@@ -205,14 +174,14 @@ class Glue2:
                 GLUE2EntityOtherInfo.append("SupportedProtocol=" + protocol)
             (dn, entry) = self.get_GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID, GLUE2EndpointURL, GLUE2EntityOtherInfo, GLUE2EndpointTechnology, GLUE2EndpointInterfaceName, 
                 GLUE2EndpointInterfaceVersion, GLUE2EndpointQualityLevel, GLUE2EndpointServingState, GLUE2EndpointCapability)
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
             # Glue2AccessPolicy for the endpoint
             GLUE2PolicyID = GLUE2EndpointID + "/ap/basic"
             GLUE2AccessPolicyRule = []
             for vo in vos:
                 GLUE2AccessPolicyRule.append("vo:" + vo)
             (dn, entry) = self.get_GLUE2AccessPolicy(GLUE2PolicyID, GLUE2EndpointID, GLUE2ServiceID, GLUE2AccessPolicyRule)
-            ldif_writer.unparse(dn, entry)
+            node_list.append({ "dn": dn, "entries": entry })
 
         if configuration['STORM_GRIDHTTPS_ENABLED'].lower() == "true":
 
@@ -235,13 +204,13 @@ class Glue2:
                     GLUE2EndpointURL = "http://" + gridhttps_host + ":" + configuration["STORM_GRIDHTTPS_HTTP_PORT"] + "/webdav/"
                     (dn, entry) = self.get_GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID, GLUE2EndpointURL, GLUE2EntityOtherInfo, GLUE2EndpointTechnology, GLUE2EndpointInterfaceName, 
                         GLUE2EndpointInterfaceVersion, GLUE2EndpointQualityLevel, GLUE2EndpointServingState, GLUE2EndpointCapability)
-                    ldif_writer.unparse(dn, entry)
+                    node_list.append({ "dn": dn, "entries": entry })
 
                     # Glue2AccessPolicy for the endpoint
                     GLUE2PolicyID = GLUE2EndpointID + "/ap/basic"
                     GLUE2AccessPolicyRule = ["'ALL'"]
                     (dn, entry) = self.get_GLUE2AccessPolicy(GLUE2PolicyID, GLUE2EndpointID, GLUE2ServiceID, GLUE2AccessPolicyRule)
-                    ldif_writer.unparse(dn, entry)
+                    node_list.append({ "dn": dn, "entries": entry })
 
                 if configuration['STORM_INFO_HTTPS_SUPPORT'].lower() == "true":
 
@@ -251,7 +220,7 @@ class Glue2:
                     GLUE2EndpointURL = "https://" + gridhttps_host + ":" + configuration["STORM_GRIDHTTPS_HTTPS_PORT"] + "/webdav/"
                     (dn, entry) = self.get_GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID, GLUE2EndpointURL, GLUE2EntityOtherInfo, GLUE2EndpointTechnology, GLUE2EndpointInterfaceName, 
                         GLUE2EndpointInterfaceVersion, GLUE2EndpointQualityLevel, GLUE2EndpointServingState, GLUE2EndpointCapability)
-                    ldif_writer.unparse(dn, entry)
+                    node_list.append({ "dn": dn, "entries": entry })
 
                     # Glue2AccessPolicy for the endpoint
                     GLUE2PolicyID = GLUE2EndpointID + "/ap/basic"
@@ -259,23 +228,18 @@ class Glue2:
                     for vo in vos:
                         GLUE2PolicyRule.append("vo:" + vo)
                     (dn, entry) = self.get_GLUE2AccessPolicy(GLUE2PolicyID, GLUE2EndpointID, GLUE2ServiceID, GLUE2PolicyRule)
-                    ldif_writer.unparse(dn, entry)
+                    node_list.append({ "dn": dn, "entries": entry })
 
-        f.close()
         # remove old backup files
-        self.clear_old_backup_files()
-        # create final file
-        target_file = self.get_static_ldif_target_file(configuration)        
-        logging.debug("Renaming '%s' to '%s' ...", target[1], target_file)
-        shutil.copyfile(target[1], target_file)
-        logging.debug("Deleting '%s' ...", target[1])
-        os.remove(target[1])
-        # set owner
-        uid = pwd.getpwnam("ldap").pw_uid
-        gid = grp.getgrnam("ldap").gr_gid
-        os.chown(target_file, uid, gid)
-        os.chmod(target_file, 0644)
-        return target_file
+        self.delete_backup_files()
+        # create LDIF file
+        return super(Glue2, self).create_static_ldif_file(self.GLUE2_STATIC_LDIF_FILE, node_list, configuration["STORM_INFO_OVERWRITE"].lower())
+
+    def delete_backup_files(self):
+        directory = os.path.dirname(self.GLUE2_STATIC_LDIF_FILE)
+        removed_list = delete_files(directory, r'static-file-glue2-storm\.ldif\.bkp_.*')
+        logging.debug("Removed backup files: [%s]", removed_list)
+        return
 
     def get_enabled_protocols(self, configuration):
         enabled = {}
@@ -300,25 +264,6 @@ class Glue2:
                 vos.add(sas[sa_name]["voname"])
         return vos
 
-    def clear_old_backup_files(self):
-        # list GLUE2_STATIC_LDIF_FILE directory
-        for f in os.listdir(os.path.dirname(self.GLUE2_STATIC_LDIF_FILE)):
-            if re.search(r'static-file-glue2-storm\.ldif\.bkp_.*',f):
-                os.remove(os.path.join(os.path.dirname(self.GLUE2_STATIC_LDIF_FILE), f))
-                logging.debug("Removed %s", f)
-
-    def get_static_ldif_target_file(self, configuration):
-        if not os.path.isfile(self.GLUE2_STATIC_LDIF_FILE):
-            return self.GLUE2_STATIC_LDIF_FILE
-        logging.info("File '%s' already exists", self.GLUE2_STATIC_LDIF_FILE)
-        if configuration["STORM_INFO_OVERWRITE"].lower() == "true":
-            backup_file = self.GLUE2_STATIC_LDIF_FILE + ".bkp_" + time.strftime('%Y%m%d_%H%M%S')
-            os.rename(self.GLUE2_STATIC_LDIF_FILE, backup_file)
-            logging.info("Backup old configuration file in '%s'", backup_file)
-            return self.GLUE2_STATIC_LDIF_FILE
-        logging.warn("Can't overwrite old configuration file '%s'", self.GLUE2_STATIC_LDIF_FILE)
-        return self.GLUE2_STATIC_LDIF_FILE + ".yaimnew_" + timestamp
-
     def remove_old_cron_file_if_exists(self):
         cFile = "/etc/cron.d/glite-info-glue2-dynamic-storm"
         if os.path.isfile(cFile):
@@ -329,7 +274,7 @@ class Glue2:
         GLITE_INFO_SERVICE_VERSION = "2.2.0"
         GLITE_INFO_SERVICE_ENDPOINT = "httpg://" + configuration["STORM_FRONTEND_PUBLIC_HOST"] + ":" + configuration["STORM_FRONTEND_PORT"] + configuration["STORM_FRONTEND_PATH"]
         QUALITY_LEVEL = self.quality_levels[int(configuration['STORM_ENDPOINT_QUALITY_LEVEL'])]
-        STATUS_CMD = INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && /usr/libexec/storm-dynamic-info-provider/storm-info-provider status"
+        STATUS_CMD = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && /usr/libexec/storm-dynamic-info-provider/storm-info-provider status"
         OWNER = "echo " + "; echo ".join(vos)
         ACBR = "echo VO:" + "; echo VO:".join(vos)
         content = {

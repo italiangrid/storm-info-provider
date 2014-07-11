@@ -8,6 +8,8 @@ import time
 import sys
 import string
 import fileinput
+import os
+import re
 
 def clear_quotes(s):
     return s.replace('\"','').replace("\'",'')
@@ -21,11 +23,11 @@ def clean_dns_like_chars(s):
 def http_get(url, max_attempts=5, min_delay=1):
     seconds = min_delay
     attempt = 0
-    logging.info('GET %s', url)
+    # logging.info('GET %s', url)
     while attempt < max_attempts:
         try:
             response = urllib2.urlopen(url)
-            logging.info('200 OK')
+            #logging.info('200 OK')
             return response
         except Exception, ex:
             logging.error('%s', ex)
@@ -69,34 +71,6 @@ def are_keys_in_dictionary(dic, keys):
             return False
     return True
 
-def create_file_from_template(file_target, file_template, params):
-    # open template file
-    filein = open(file_template, 'r')
-    # open target file
-    fileout = open(file_target, 'w')
-    # read template
-    src = string.Template(filein.read())
-    # do the substitution and write it
-    fileout.write(src.substitute(params) + "\n")
-    # close files
-    filein.close()
-    fileout.close()
-    return
-
-def append_file_from_template(file_target, file_template, params):
-    # open template file
-    filein = open(file_template, 'r')
-    # open target file
-    fileout = open(file_target, 'a')
-    # read template
-    src = string.Template(filein.read())
-    # do the substitution and write it
-    fileout.write(src.substitute(params) + "\n")
-    # close files
-    filein.close()
-    fileout.close()
-    return
-
 def change_line_in_a_file(file_target, line_pattern, line_new):
     for line in fileinput.input(file_target):
         if line_pattern in line:
@@ -105,3 +79,11 @@ def change_line_in_a_file(file_target, line_pattern, line_new):
 
 def round_div(num, value):
     return int(round(1.0 * num/value))
+
+def delete_files(parent_directory, pattern):
+    removed_list = []
+    for f in os.listdir(parent_directory):
+        if re.search(pattern,f):
+            os.remove(os.path.join(parent_directory, f))
+            removed_list.append(f)
+    return removed_list

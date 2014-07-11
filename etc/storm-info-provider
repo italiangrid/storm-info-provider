@@ -1,0 +1,192 @@
+#!/usr/bin/python 
+
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2006-2010.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+import argparse
+import logging
+import os
+import exceptions
+
+from utils import *
+
+from glue13 import Glue13
+from glue2 import Glue2
+
+MANDATORY = ["SITE_NAME", "STORM_BACKEND_HOST", "STORM_DEFAULT_ROOT",\
+    "STORM_FRONTEND_PATH", "STORM_FRONTEND_PORT", "STORM_FRONTEND_PUBLIC_HOST",\
+    "STORM_BACKEND_REST_SERVICES_PORT", "VOS", "STORM_ENDPOINT_QUALITY_LEVEL",\
+    "STORM_ENDPOINT_CAPABILITY"]
+
+def configuration_sanity_check(configuration, mandatory):
+    for key in mandatory:
+        if not key in configuration:
+            sys.exit('Missing mandatory \"' + key + '\" variable!')
+    return
+
+def parse_args():
+    parser = argparse.ArgumentParser(description = 'Process storm-info-provider args')
+    parser.add_argument('-v', action = 'store', dest = 'logging_level', required = False, default=20, type=int)
+    subparsers = parser.add_subparsers()
+    # create parser for "init" command
+    parser_init = subparsers.add_parser('init')
+    parser_init.add_argument('-f', action = 'store', dest = 'filepath', required = True)
+    #parser_init.add_argument('-v', action = 'store', dest = 'logging_level', required = False, default=20, type=int)
+    parser_init.add_argument('-g', action = 'store', dest = 'glue_protocol', required = False, choices=['glue13', 'glue2', 'all'], default='all')
+    parser_init.set_defaults(action=init)
+    # create parser for "update" command
+    parser_update = subparsers.add_parser('update')
+    parser_update.add_argument('-f', action = 'store', dest = 'filepath', required = True)
+    #parser_update.add_argument('-v', action = 'store', dest = 'logging_level', required = False, default=20, type=int)
+    parser_update.add_argument('-g', action = 'store', dest = 'glue_protocol', required = False, choices=['glue13', 'glue2', 'all'], default='glue2')
+    parser_update.set_defaults(action=update)
+    # create parser for "status" command
+    parser_status = subparsers.add_parser('status')
+    parser_status.set_defaults(action=status)
+    # create parser for "init-env" command
+    parser_init_env = subparsers.add_parser('init-env')
+    parser_init_env.add_argument('--version', action = 'store', dest = 'version', required = True)
+    parser_init_env.add_argument('--endpoint', action = 'store', dest = 'endpoint', required = True)
+    parser_init_env.set_defaults(action=init_env)
+    return parser.parse_args()
+
+def get_empty_space_info():
+    out = {}
+    out["total-space"] = 0
+    out["available-space"] = 0
+    out["used-space"] = 0
+    out["free-space"] = 0
+    out["unavailable-space"] = 0
+    out["reserved-space"] = 0
+    out["busy-space"] = 0
+    out["nearline-space"] = 0
+    return out
+
+def compute_space_info(configuration):
+    managed_vos = configuration['VOS'].split(' ')
+    summary = get_empty_space_info()
+    vos = {}
+    vfs = get_vfs_list_from_BE(configuration['STORM_BACKEND_HOST'], configuration['STORM_BACKEND_REST_SERVICES_PORT'])
+    for vfs_name,vfs_data in vfs.iteritems():
+        response = get_vfs_space_info_from_BE(configuration['STORM_BACKEND_HOST'], configuration['STORM_BACKEND_REST_SERVICES_PORT'], vfs_data["token"])    
+        vfs[vfs_name]["total-space"] = response["total-space"]
+        vfs[vfs_name]["available-space"] = response["available-space"]
+        vfs[vfs_name]["used-space"] = response["used-space"]
+        vfs[vfs_name]["free-space"] = response["free-space"]
+        vfs[vfs_name]["unavailable-space"] = response["unavailable-space"]
+        vfs[vfs_name]["reserved-space"] = response["reserved-space"]
+        vfs[vfs_name]["busy-space"] = response["busy-space"]
+        if vfs_data["voname"] in managed_vos: # excludes voname = .*
+            if not (vfs_data["voname"] in vos): # adds VO to VOS list and inits values to 0
+                vos[vfs_data["voname"]] = get_empty_space_info()
+            vos[vfs_data["voname"]]["total-space"] += response["total-space"]
+            vos[vfs_data["voname"]]["available-space"] += response["available-space"]
+            vos[vfs_data["voname"]]["used-space"] += response["used-space"]
+            vos[vfs_data["voname"]]["free-space"] += response["free-space"]
+            vos[vfs_data["voname"]]["unavailable-space"] += response["unavailable-space"]
+            vos[vfs_data["voname"]]["reserved-space"] += response["reserved-space"]
+            vos[vfs_data["voname"]]["busy-space"] += response["busy-space"]
+            vos[vfs_data["voname"]]["nearline-space"] += vfs[vfs_name]["availableNearlineSpace"]
+        summary["total-space"] += response["total-space"]
+        summary["available-space"] += response["available-space"]
+        summary["used-space"] += response["used-space"]
+        summary["free-space"] += response["free-space"]
+        summary["unavailable-space"] += response["unavailable-space"]
+        summary["reserved-space"] += response["reserved-space"]
+        summary["busy-space"] += response["busy-space"]
+        summary["nearline-space"] += vfs[vfs_name]["availableNearlineSpace"]
+    return (vfs, vos, summary)
+
+def is_backend_running():
+    backend_pid_path = "/var/run/storm-backend-server.pid"
+    return os.path.isfile(backend_pid_path)
+
+def get_current_serving_state():
+    if not is_backend_running():
+        return (1, "closed")
+    return (4, "production")
+
+def init(arguments):
+    # load configuration from file    
+    configuration = load_configuration_from_file(arguments.filepath)
+    # check if all mandatory variables exists
+    configuration_sanity_check(configuration, MANDATORY)
+    # get VFSs, VOs and global space use information from backend
+    (vfs, vos, summary) = compute_space_info(configuration)
+
+    if arguments.glue_protocol in ['glue13', 'all']:
+        # create Glue v1.3 files
+        glue13 = Glue13()
+        glue13.init(configuration, {"sas": vfs, "vos": vos, "summary": summary})
+
+    if arguments.glue_protocol in ['glue2', 'all']:
+        # create Glue v2 files
+        glue2 = Glue2()
+        glue2.init(configuration, {"sas": vfs, "vos": vos, "summary": summary})
+
+    return
+
+def update(arguments):
+    # Force logging level to ERROR
+    logging.basicConfig(level=40)
+ 
+    # load configuration from file    
+    configuration = load_configuration_from_file(arguments.filepath)
+    # check if all mandatory variables exists
+    configuration_sanity_check(configuration, MANDATORY)
+    # get VFSs, VOs and global space use information from backend
+    (vfs, vos, summary) = compute_space_info(configuration)
+    # get serving state and value
+    (configuration["STORM_SERVING_STATE"], configuration["STORM_SERVING_STATE_VALUE"]) = get_current_serving_state()
+
+    if arguments.glue_protocol in ['glue13', 'all']:
+        # create Glue v1.3 files
+        glue13 = Glue13()
+        glue13.update(configuration, {"sas": vfs, "vos": vos, "summary": summary})
+
+    if arguments.glue_protocol in ['glue2', 'all']:
+        # create Glue v2 files
+        glue2 = Glue2()
+        glue2.update(configuration, {"sas": vfs, "vos": vos, "summary": summary})
+
+    return
+
+def status(arguments):
+
+    if is_backend_running():
+        print "The StoRM Backend server is running"
+    else:
+        print "The StoRM Backend server is not running"
+    return
+
+def init_env(arguments):
+
+    print "GLITE_INFO_SERVICE_ENDPOINT=" + arguments.endpoint
+    print "GLITE_INFO_SERVICE_VERSION=" + arguments.version
+    return
+
+if __name__ == '__main__':
+
+    # command line parsing
+    arguments = parse_args()
+    
+    # init logging
+    logging.basicConfig(level=arguments.logging_level)
+
+    # do ...
+    try:
+        arguments.action(arguments)
+    except Exception, e:
+        print str(e)
