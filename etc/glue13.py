@@ -62,8 +62,7 @@ class Glue13(Glue):
         # generates the updater node list
         node_list = self.get_update_nodes(configuration, stats)
         # print LDIF
-        GlueUtils.print_update_ldif(node_list)
-        return
+        return super(Glue2, self).print_update_ldif(node_list)
 
     def create_service_file(self, configuration):
         params = []

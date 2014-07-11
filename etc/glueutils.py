@@ -6,6 +6,8 @@ import time
 import tempfile
 from ldif import LDIFWriter
 
+import logging
+
 class GlueConstants:
 
     INFO_SERVICE_CONFIG = "/etc/glite/info/service"
