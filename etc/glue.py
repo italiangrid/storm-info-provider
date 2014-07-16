@@ -4,9 +4,8 @@ import pwd
 import grp
 import time
 import tempfile
-from ldif import LDIFWriter
-
 import logging
+from ldif import LDIFWriter
 
 class GlueConstants:
 
@@ -40,14 +39,14 @@ class Glue(object):
         os.chown(dest_file, uid, gid)
         return dest_file
 
-    def create_static_ldif_file(self, dest_file, node_list, info_overwrite_flag):
+    def create_static_ldif_file(self, dest_file, nodes, info_overwrite_flag):
         # init LDIF exporter obj
         exporter = GlueLDIFExporter()
         # add nodes
-        for node in node_list:
-            exporter.add_node(node["dn"], node["entries"])
+        for node in nodes:
+            exporter.add_node(node)
         # save to file
-        if not "true" in info_overwrite_flag:
+        if info_overwrite_flag:
             if os.path.isfile(dest_file):
                 os.rename(dest_file, dest_file + ".bkp_" + time.strftime('%Y%m%d_%H%M%S'))
             else:
@@ -75,14 +74,14 @@ class Glue(object):
         os.chmod(dest_file, 0755)
         return
 
-    def print_update_ldif(self, node_list):
+    def print_update_ldif(self, nodes):
         # Create temp file
         ftmp = tempfile.mkstemp()
         # init LDIF exporter obj
         exporter = GlueLDIFExporter()
         # add nodes
-        for node in node_list:
-            exporter.add_node(node["dn"], node["entries"])
+        for node in nodes:
+            exporter.add_node(node)
         # save to file
         exporter.save_to_file(ftmp[1])
         # return its content
@@ -93,23 +92,56 @@ class Glue(object):
         os.remove(ftmp[1])
         return
 
+class GlueLDIFNode:
+
+    def __init__(self, baseDN, default_entries):
+        self.default_entries = default_entries
+        self.baseDN = baseDN
+        self.dn = baseDN
+        return
+
+    def clear_all(self):
+        self.entries = {}
+        return self
+
+    def add(self, entries):
+        # add/update entries
+        for entry_name in entries:
+            self.entries[entry_name] = entries[entry_name]
+        return self
+
+    def init_as_default(self):
+        self.clear_all()
+        self.add(self.default_entries)
+        return self
+
+    def get_info(self):
+        return {"dn": self.dn, "entries": self.entries}
+
+    def __str__(self):
+        out = "dn = '" + self.dn + "'\n"
+        for entry_name, entry_values in self.entries.items():
+            for value in entry_values:
+                out += "# " + entry_name + " = '" + value + "'\n"
+        return out 
+
 class GlueLDIFExporter:
 
     def __init__(self):
-        self.content = []
+        self.nodes = []
         return
 
-    def add_node(self, dn, entries):
-        self.content.append({
-            "dn": dn,
-            "entries": entries
-        })
+    def add_node(self, node):
+        if not isinstance(node, GlueLDIFNode):
+            raise Exception("GlueLDIFExporter.add_node error: Invalid node type")
+        self.nodes.append(node.get_info())
+        logging.debug("Added %s node:\n%s", node.__class__.__name__, node)
         return self
 
     def save_to_file(self, fname):
         f = open(fname, "w")
         ldif_writer = LDIFWriter(f, cols=512)
-        for node in self.content:
+        for node in self.nodes:
             ldif_writer.unparse(node["dn"], node["entries"])
         f.close()
         return self
@@ -120,4 +152,5 @@ class GlueLDIFExporter:
         fin = open(target[1], 'r')
         print fin.read()
         fin.close()
+        os.remove(target[1])
         return

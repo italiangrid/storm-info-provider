@@ -20,21 +20,16 @@ import logging
 import os
 import exceptions
 
-from utils import *
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
+from configuration import Configuration
+from spaceinfo import SpaceInfo
+from utils import http_get
 from glue13 import Glue13
 from glue2 import Glue2
-
-MANDATORY = ["SITE_NAME", "STORM_BACKEND_HOST", "STORM_DEFAULT_ROOT",\
-    "STORM_FRONTEND_PATH", "STORM_FRONTEND_PORT", "STORM_FRONTEND_PUBLIC_HOST",\
-    "STORM_BACKEND_REST_SERVICES_PORT", "VOS", "STORM_ENDPOINT_QUALITY_LEVEL",\
-    "STORM_ENDPOINT_CAPABILITY"]
-
-def configuration_sanity_check(configuration, mandatory):
-    for key in mandatory:
-        if not key in configuration:
-            sys.exit('Missing mandatory \"' + key + '\" variable!')
-    return
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Process storm-info-provider args')
@@ -62,52 +57,33 @@ def parse_args():
     parser_init_env.set_defaults(action=init_env)
     return parser.parse_args()
 
-def get_empty_space_info():
-    out = {}
-    out["total-space"] = 0
-    out["available-space"] = 0
-    out["used-space"] = 0
-    out["free-space"] = 0
-    out["unavailable-space"] = 0
-    out["reserved-space"] = 0
-    out["busy-space"] = 0
-    out["nearline-space"] = 0
-    return out
+def get_vfs_space_info_from_BE(be_host, be_port, sa_token):
+    url = 'http://' + be_host + ':' + str(be_port) + '/info/status/' + sa_token
+    data = json.load(http_get(url))
+    logging.debug("GET %s = %s", url, data)
+    return data["sa-status"]
+
+def get_all_vfs_info_from_BE(be_host, be_port):
+    url = 'http://' + be_host + ':' + str(be_port) + '/configuration/1.3/VirtualFSList' 
+    data = json.load(http_get(url))
+    logging.debug("GET %s = %s", url, data)
+    return data
 
 def compute_space_info(configuration):
-    managed_vos = configuration['VOS'].split(' ')
-    summary = get_empty_space_info()
-    vos = {}
-    vfs = get_vfs_list_from_BE(configuration['STORM_BACKEND_HOST'], configuration['STORM_BACKEND_REST_SERVICES_PORT'])
+    # get info from configuration
+    supported_vos = configuration.get('VOS').split(' ')
+    be_host = configuration.get('STORM_BACKEND_HOST')
+    be_port = configuration.get('STORM_BACKEND_REST_SERVICES_PORT')
+    # init SpaceInfo
+    info = SpaceInfo(supported_vos)
+    # get all vfs info from BE
+    vfs = get_all_vfs_info_from_BE(be_host, be_port)
+    # get vfs's space info
     for vfs_name,vfs_data in vfs.iteritems():
-        response = get_vfs_space_info_from_BE(configuration['STORM_BACKEND_HOST'], configuration['STORM_BACKEND_REST_SERVICES_PORT'], vfs_data["token"])    
-        vfs[vfs_name]["total-space"] = response["total-space"]
-        vfs[vfs_name]["available-space"] = response["available-space"]
-        vfs[vfs_name]["used-space"] = response["used-space"]
-        vfs[vfs_name]["free-space"] = response["free-space"]
-        vfs[vfs_name]["unavailable-space"] = response["unavailable-space"]
-        vfs[vfs_name]["reserved-space"] = response["reserved-space"]
-        vfs[vfs_name]["busy-space"] = response["busy-space"]
-        if vfs_data["voname"] in managed_vos: # excludes voname = .*
-            if not (vfs_data["voname"] in vos): # adds VO to VOS list and inits values to 0
-                vos[vfs_data["voname"]] = get_empty_space_info()
-            vos[vfs_data["voname"]]["total-space"] += response["total-space"]
-            vos[vfs_data["voname"]]["available-space"] += response["available-space"]
-            vos[vfs_data["voname"]]["used-space"] += response["used-space"]
-            vos[vfs_data["voname"]]["free-space"] += response["free-space"]
-            vos[vfs_data["voname"]]["unavailable-space"] += response["unavailable-space"]
-            vos[vfs_data["voname"]]["reserved-space"] += response["reserved-space"]
-            vos[vfs_data["voname"]]["busy-space"] += response["busy-space"]
-            vos[vfs_data["voname"]]["nearline-space"] += vfs[vfs_name]["availableNearlineSpace"]
-        summary["total-space"] += response["total-space"]
-        summary["available-space"] += response["available-space"]
-        summary["used-space"] += response["used-space"]
-        summary["free-space"] += response["free-space"]
-        summary["unavailable-space"] += response["unavailable-space"]
-        summary["reserved-space"] += response["reserved-space"]
-        summary["busy-space"] += response["busy-space"]
-        summary["nearline-space"] += vfs[vfs_name]["availableNearlineSpace"]
-    return (vfs, vos, summary)
+        response = get_vfs_space_info_from_BE(be_host, be_port, vfs_data["token"])    
+        # add info retrieved to SpaceInfo object
+        info.add_vfs_info(vfs_name, dict(vfs[vfs_name].items() + response.items()))
+    return info
 
 def is_backend_running():
     backend_pid_path = "/var/run/storm-backend-server.pid"
@@ -119,22 +95,21 @@ def get_current_serving_state():
     return (4, "production")
 
 def init(arguments):
+
     # load configuration from file    
-    configuration = load_configuration_from_file(arguments.filepath)
-    # check if all mandatory variables exists
-    configuration_sanity_check(configuration, MANDATORY)
+    configuration = Configuration(arguments.filepath)
     # get VFSs, VOs and global space use information from backend
-    (vfs, vos, summary) = compute_space_info(configuration)
+    spaceinfo = compute_space_info(configuration)
 
     if arguments.glue_protocol in ['glue13', 'all']:
         # create Glue v1.3 files
         glue13 = Glue13()
-        glue13.init(configuration, {"sas": vfs, "vos": vos, "summary": summary})
+        glue13.init(configuration, spaceinfo)
 
     if arguments.glue_protocol in ['glue2', 'all']:
         # create Glue v2 files
         glue2 = Glue2()
-        glue2.init(configuration, {"sas": vfs, "vos": vos, "summary": summary})
+        glue2.init(configuration, spaceinfo)
 
     return
 
@@ -143,23 +118,23 @@ def update(arguments):
     logging.basicConfig(level=40)
  
     # load configuration from file    
-    configuration = load_configuration_from_file(arguments.filepath)
-    # check if all mandatory variables exists
-    configuration_sanity_check(configuration, MANDATORY)
+    configuration = Configuration(arguments.filepath)
     # get VFSs, VOs and global space use information from backend
-    (vfs, vos, summary) = compute_space_info(configuration)
-    # get serving state and value
-    (configuration["STORM_SERVING_STATE"], configuration["STORM_SERVING_STATE_VALUE"]) = get_current_serving_state()
+    spaceinfo = compute_space_info(configuration)
+    # get serving state and value and add them to current configuration
+    (state, value) = get_current_serving_state()
+    configuration.set("STORM_SERVING_STATE", state)
+    configuration.set("STORM_SERVING_STATE_VALUE", value)
 
     if arguments.glue_protocol in ['glue13', 'all']:
         # create Glue v1.3 files
         glue13 = Glue13()
-        glue13.update(configuration, {"sas": vfs, "vos": vos, "summary": summary})
+        glue13.update(configuration, spaceinfo)
 
     if arguments.glue_protocol in ['glue2', 'all']:
         # create Glue v2 files
         glue2 = Glue2()
-        glue2.update(configuration, {"sas": vfs, "vos": vos, "summary": summary})
+        glue2.update(configuration,spaceinfo)
 
     return
 
