@@ -101,7 +101,6 @@ class Glue13(Glue):
         node.init_as_default().add({
             'GlueSEUniqueID': [GlueSEUniqueID],
             'GlueSEName': [configuration.get("SITE_NAME") + ":srm_v2"],
-            'GlueSiteUniqueID': [GlueSiteUniqueID],
             'GlueSESizeTotal': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB) + round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
             'GlueSESizeFree': [str(round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))],
             'GlueSETotalOnlineSize': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
@@ -119,7 +118,6 @@ class Glue13(Glue):
             node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
             node.init_as_default().add({
                 'GlueSALocalID': [GlueSALocalID],
-                'GlueSAVOName': [sa_data["voname"]],
                 'GlueSATotalOnlineSize': [str(round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB))], # total space in GB
                 'GlueSAUsedOnlineSize': [str(round_div(sa_data["used-space"], self.FROM_BYTES_TO_GB))], # used space in GB
                 'GlueSAFreeOnlineSize': [str(round_div(sa_data["free-space"], self.FROM_BYTES_TO_GB))], # free space in GB
@@ -139,17 +137,18 @@ class Glue13(Glue):
                 node.add({ 'GlueSAName': ["Custom space for non-VO users"] })
             nodes.append(node)
 
-            # GlueVOInfoLocal
-            GlueVOInfoLocalID = ":".join((sa_data["voname"],sa_data["token"]))
-            node = GlueSAVOInfoLocal(GlueVOInfoLocalID, GlueSALocalID, GlueSEUniqueID)
-            node.init_as_default().add({
-                'GlueVOInfoLocalID': [GlueVOInfoLocalID],
-                'GlueVOInfoPath': [sa_data["stfnRoot"][0]],
-                'GlueVOInfoTag': [sa_data["token"]],
-                'GlueVOInfoAccessControlBaseRule': ["VO:" + sa_data["voname"]],
-                'GlueChunkKey': ["GlueSALocalID=" + GlueSALocalID, "GlueSEUniqueID=" + GlueSEUniqueID]
-                })
-            nodes.append(node)
+            if self.is_VO(sa_data["voname"]):
+                # GlueVOInfoLocal
+                GlueVOInfoLocalID = ":".join((sa_data["voname"],sa_data["token"]))
+                node = GlueSAVOInfoLocal(GlueVOInfoLocalID, GlueSALocalID, GlueSEUniqueID)
+                node.init_as_default().add({
+                    'GlueVOInfoLocalID': [GlueVOInfoLocalID],
+                    'GlueVOInfoPath': [sa_data["stfnRoot"][0]],
+                    'GlueVOInfoTag': [sa_data["token"]],
+                    'GlueVOInfoAccessControlBaseRule': ["VO:" + sa_data["voname"]],
+                    'GlueChunkKey': ["GlueSALocalID=" + GlueSALocalID, "GlueSEUniqueID=" + GlueSEUniqueID]
+                    })
+                nodes.append(node)
 
         # GlueSEControlProtocol
         GlueSEControlProtocolLocalID = 'srm_v2.2'

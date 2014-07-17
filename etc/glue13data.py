@@ -9,6 +9,28 @@ class Glue13LDIFNode(GlueLDIFNode):
     def __str__(self):
         return GlueLDIFNode.__str__(self)
 
+class GlueSE(Glue13LDIFNode):
+    
+    def __init__(self, GlueSEUniqueID):
+        Glue13LDIFNode.__init__(self, {
+            'objectClass': ['GlueSETop', 'GlueSE', 'GlueInformationService', 
+                'GlueKey', 'GlueSchemaVersion'],
+            'GlueSESizeTotal': [str(0)],
+            'GlueSESizeFree': [str(0)],
+            'GlueSETotalOnlineSize': [str(0)],
+            'GlueSEUsedOnlineSize': [str(0)],
+            'GlueSETotalNearlineSize': [str(0)],
+            'GlueSEUsedNearlineSize': [str(0)],
+            'GlueSEArchitecture': ['multidisk'],
+            'GlueSEStatus': ['Production'],
+            'GlueSEImplementationName': ['StoRM'],
+            'GlueSEImplementationVersion': ["`rpm -q --queryformat='%{VERSION}' storm-backend-server`"],
+            'GlueSchemaVersionMajor': ['1'],
+            'GlueSchemaVersionMinor': ['3']
+        })
+        self.dn = "GlueSEUniqueID=" + GlueSEUniqueID + "," + self.baseDN
+        return
+
 class GlueSALocal(Glue13LDIFNode):
 
     def __init__(self, GlueSALocalID, GlueSEUniqueID):
@@ -43,23 +65,6 @@ class GlueSAVOInfoLocal(Glue13LDIFNode):
         })
         self.dn = "GlueVOInfoLocalID=" + GlueVOInfoLocalID + ",GlueSALocalID=" + GlueSALocalID + ",GlueSEUniqueID=" + GlueSEUniqueID + "," + self.baseDN
         return
-
-class GlueSE(Glue13LDIFNode):
-    
-    def __init__(self, GlueSEUniqueID):
-        Glue13LDIFNode.__init__(self, {
-            'objectClass': ['GlueSETop', 'GlueSE', 'GlueInformationService', 
-                'GlueKey', 'GlueSchemaVersion'],
-            'GlueSEArchitecture': ['multidisk'],
-            'GlueSEStatus': ['Production'],
-            'GlueSEImplementationName': ['StoRM'],
-            'GlueSEImplementationVersion': ["`rpm -q --queryformat='%{VERSION}' storm-backend-server`"],
-            'GlueSchemaVersionMajor': ['1'],
-            'GlueSchemaVersionMinor': ['3']
-        })
-        self.dn = "GlueSEUniqueID=" + GlueSEUniqueID + "," + self.baseDN
-        return
-
 
 class GlueSEControlProtocol(Glue13LDIFNode):
     
