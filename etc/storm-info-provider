@@ -33,18 +33,17 @@ from glue2 import Glue2
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Process storm-info-provider args')
-    parser.add_argument('-v', action = 'store', dest = 'logging_level', required = False, default=20, type=int)
     subparsers = parser.add_subparsers()
     # create parser for "init" command
     parser_init = subparsers.add_parser('init')
     parser_init.add_argument('-f', action = 'store', dest = 'filepath', required = True)
-    #parser_init.add_argument('-v', action = 'store', dest = 'logging_level', required = False, default=20, type=int)
+    parser_init.add_argument('-v', action = 'store', dest = 'logging_level', required = False, default=20, type=int)
     parser_init.add_argument('-g', action = 'store', dest = 'glue_protocol', required = False, choices=['glue13', 'glue2', 'all'], default='all')
     parser_init.set_defaults(action=init)
     # create parser for "update" command
     parser_update = subparsers.add_parser('update')
     parser_update.add_argument('-f', action = 'store', dest = 'filepath', required = True)
-    #parser_update.add_argument('-v', action = 'store', dest = 'logging_level', required = False, default=20, type=int)
+    parser_update.add_argument('-v', action = 'store', dest = 'logging_level', required = False, default=20, type=int)
     parser_update.add_argument('-g', action = 'store', dest = 'glue_protocol', required = False, choices=['glue13', 'glue2', 'all'], default='glue2')
     parser_update.set_defaults(action=update)
     # create parser for "status" command
@@ -96,6 +95,8 @@ def get_current_serving_state():
 
 def init(arguments):
 
+    # init logging
+    logging.basicConfig(level=arguments.logging_level)
     # load configuration from file    
     configuration = Configuration(arguments.filepath)
     # get VFSs, VOs and global space use information from backend
@@ -114,13 +115,14 @@ def init(arguments):
     return
 
 def update(arguments):
-    # Force logging level to ERROR
-    logging.basicConfig(level=40)
- 
+    
+    # init logging
+    logging.basicConfig(level=arguments.logging_level) 
     # load configuration from file    
     configuration = Configuration(arguments.filepath)
     # get VFSs, VOs and global space use information from backend
     spaceinfo = compute_space_info(configuration)
+    
     # get serving state and value and add them to current configuration
     (state, value) = get_current_serving_state()
     configuration.set("STORM_SERVING_STATE", state)
@@ -156,9 +158,6 @@ if __name__ == '__main__':
 
     # command line parsing
     arguments = parse_args()
-    
-    # init logging
-    logging.basicConfig(level=arguments.logging_level)
 
     # do ...
     try:

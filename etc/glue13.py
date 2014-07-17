@@ -72,7 +72,7 @@ class Glue13(Glue):
         # generates the updater node list
         nodes = self.get_update_nodes(configuration, stats)
         # print LDIF
-        return super(Glue2, self).print_update_ldif(nodes)
+        return super(Glue13, self).print_update_ldif(nodes)
 
     def create_service_file(self, configuration):
         params = []
@@ -191,11 +191,11 @@ class Glue13(Glue):
         # GlueSE
         node = GlueSE(GlueSEUniqueID)
         node.add({
-            'GlueSESizeTotal': [str(round_div(stats["summary"]["total-space"],self.FROM_BYTES_TO_GB) + round_div(stats["summary"]["nearline-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSESizeFree': [str(round_div(stats["summary"]["free-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalOnlineSize': [str(round_div(stats["summary"]["total-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSEUsedOnlineSize': [str(round_div(stats["summary"]["used-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalNearlineSize': [str(round_div(stats["summary"]["nearline-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSESizeTotal': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB) + round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSESizeFree': [str(round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSETotalOnlineSize': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSEUsedOnlineSize': [str(round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSETotalNearlineSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
             'GlueSEUsedNearlineSize': ["0"]
         })
         nodes.append(node)
@@ -203,7 +203,7 @@ class Glue13(Glue):
         for sa_name,sa_data in stats.get_vfs().items():
             # GlueSA
             GlueSALocalID = ":".join((sa_name, sa_data["retentionPolicy"], sa_data["accessLatency"]))
-            node = GlueSALocal(GlueSALocalID)
+            node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
             node.add({
                 'GlueSATotalOnlineSize': [str(round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], # total space in GB
                 'GlueSAUsedOnlineSize': [str(round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], # used space in GB

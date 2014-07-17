@@ -58,7 +58,8 @@ class Glue2(Glue):
         # generates the updater node list
         node_list = self.get_update_nodes(configuration, stats)
         # print LDIF
-        return super(Glue2, self).print_update_ldif(node_list)
+        super(Glue2, self).print_update_ldif(node_list)
+        return
 
     def create_service_file(self, configuration):
         params = []
@@ -135,8 +136,7 @@ class Glue2(Glue):
                 'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
                 'GLUE2StorageAccessProtocolType': [protocol], 
                 'GLUE2StorageAccessProtocolVersion': [protocol_versions[protocol]],
-                'GLUE2StorageAccessProtocolStorageServiceForeignKey': [GLUE2ServiceID],
-                'GLUE2ManagerServiceForeignKey': [GLUE2ServiceID] # it seems necessary
+                'GLUE2StorageAccessProtocolStorageServiceForeignKey': [GLUE2ServiceID]
             })
             nodes.append(node)
 
@@ -390,9 +390,11 @@ class Glue2(Glue):
         for frontend_host in configuration.get_frontend_list():
             # Glue2StorageEndpoint SRM
             GLUE2EndpointID = GLUE2ServiceID + "/ep/" + frontend_host + ":" + configuration.get("STORM_FRONTEND_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
-            nodes.append(GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID).add({
-                'GLUE2EndpointServingState': [configuration.get("STORM_SERVING_STATE")]
-            }))
+            node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
+            node.add({
+                'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE"))]
+            })
+            nodes.append(node)
 
         if configuration.has_gridhttps():
             # Glue2StorageEndpoint - gridhttps list
@@ -402,9 +404,11 @@ class Glue2(Glue):
                 GLUE2EndpointInterfaceName = "https"
                 GLUE2EndpointInterfaceVersion = "1.1"
                 GLUE2EndpointID = GLUE2ServiceID + "/ep/" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTPS_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
-                nodes.append(GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID).add({
-                    'GLUE2EndpointServingState': [configuration.get("STORM_SERVING_STATE")]
-                }))
+                node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
+                node.add({
+                    'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE"))]
+                })
+                nodes.append(node)
 
                 if configuration.is_HTTP_endpoint_enabled():
 
@@ -412,56 +416,68 @@ class Glue2(Glue):
                     GLUE2EndpointInterfaceName = "http"
                     GLUE2EndpointInterfaceVersion = "1.1"
                     GLUE2EndpointID = GLUE2ServiceID + "/ep/" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTP_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
-                    nodes.append(GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID).add({
-                        'GLUE2EndpointServingState': [configuration.get("STORM_SERVING_STATE")]
-                    }))
+                    node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
+                    node.add({
+                        'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE"))]
+                    })
+                    nodes.append(node)
 
         # Glue2StorageServiceCapacity online
         if stats.get_summary()["total-space"] > 0:
             GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/disk"
-            nodes.append(GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID).add({ 
+            node = GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID)
+            node.add({ 
                 'GLUE2StorageServiceCapacityTotalSize': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))], 
                 'GLUE2StorageServiceCapacityFreeSize': [str(round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))], 
                 'GLUE2StorageServiceCapacityUsedSize': [str(round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))], 
                 'GLUE2StorageServiceCapacityReservedSize': [str(round_div(stats.get_summary()["reserved-space"],self.FROM_BYTES_TO_GB))]
-            }))
+            })
+            nodes.append(node)
 
         # Glue2StorageServiceCapacity nearline
         if stats.get_summary()["nearline-space"] > 0:
             GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/tape"
-            nodes.append(GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID).add({ 
+            node = GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID)
+            node.add({ 
                 'GLUE2StorageServiceCapacityTotalSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
                 'GLUE2StorageServiceCapacityFreeSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
                 'GLUE2StorageServiceCapacityUsedSize': [str(0)], 
                 'GLUE2StorageServiceCapacityReservedSize': [str(0)]
-            }))
+            })
+            nodes.append(node)
 
         # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each VFS
         for sa_name,sa_data in stats.get_vfs().items():
 
             # GLUE2Share
             GLUE2ShareID = GLUE2ServiceID + "/ss/" + sa_data["name"]
-            nodes.append(GLUE2StorageShare(GLUE2ShareID, GLUE2ServiceID).add({ 
-                'GLUE2StorageShareServingState': [configuration.get("STORM_SERVING_STATE")]
-            }))
-
+            node = GLUE2StorageShare(GLUE2ShareID, GLUE2ServiceID)
+            node.add({ 
+                'GLUE2StorageShareServingState': [str(configuration.get("STORM_SERVING_STATE"))]
+            })
+            nodes.append(node)
+            
             # Glue2StorageShareCapacity
             if sa_data["total-space"] > 0:
                 GLUE2StorageShareCapacityID = GLUE2ShareID + "/disk"
-                nodes.append(GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID).add({ 
+                node = GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID)
+                node.add({ 
                     'GLUE2StorageShareCapacityTotalSize': [str(round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], 
                     'GLUE2StorageShareCapacityFreeSize': [str(round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], 
                     'GLUE2StorageShareCapacityUsedSize': [str(round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], 
                     'GLUE2StorageShareCapacityReservedSize': [str(round_div(sa_data["reserved-space"],self.FROM_BYTES_TO_GB))]
-                }))
-            if sa_data["nearline-space"] > 0: 
+                })
+                nodes.append(node)
+            if sa_data["availableNearlineSpace"] > 0: 
                 GLUE2StorageShareCapacityID = GLUE2ShareID + "/tape"
-                nodes.append(GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID).add({ 
-                    'GLUE2StorageShareCapacityTotalSize': [str(round_div(sa_data["nearline-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(round_div(sa_data["nearline-space"],self.FROM_BYTES_TO_GB))], 
+                node = GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID)
+                node.add({ 
+                    'GLUE2StorageShareCapacityTotalSize': [str(round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityFreeSize': [str(round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
                     'GLUE2StorageShareCapacityUsedSize': [str(0)], 
                     'GLUE2StorageShareCapacityReservedSize': [str(0)]
-                }))
+                })
+                nodes.append(node)
 
         return nodes
 

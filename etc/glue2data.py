@@ -14,6 +14,9 @@ class Glue2LDIFNode(GlueLDIFNode):
         GlueLDIFNode.__init__(self, "GLUE2GroupID=resource,o=glue", default_entries)
         return
 
+    def __str__(self):
+        return GlueLDIFNode.__str__(self)
+
 class GLUE2StorageService(Glue2LDIFNode):
 
     def __init__(self, GLUE2ServiceID):

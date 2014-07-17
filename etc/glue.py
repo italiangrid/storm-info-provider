@@ -75,21 +75,12 @@ class Glue(object):
         return
 
     def print_update_ldif(self, nodes):
-        # Create temp file
-        ftmp = tempfile.mkstemp()
         # init LDIF exporter obj
         exporter = GlueLDIFExporter()
         # add nodes
         for node in nodes:
             exporter.add_node(node)
-        # save to file
-        exporter.save_to_file(ftmp[1])
-        # return its content
-        fin = open(ftmp[1], 'r')
-        print fin.read()
-        fin.close()
-        # delete temp file
-        os.remove(ftmp[1])
+        exporter.print_to_stdout()
         return
 
 class GlueLDIFNode:
@@ -98,6 +89,7 @@ class GlueLDIFNode:
         self.default_entries = default_entries
         self.baseDN = baseDN
         self.dn = baseDN
+        self.clear_all()
         return
 
     def clear_all(self):
@@ -122,7 +114,7 @@ class GlueLDIFNode:
         out = "dn = '" + self.dn + "'\n"
         for entry_name, entry_values in self.entries.items():
             for value in entry_values:
-                out += "# " + entry_name + " = '" + value + "'\n"
+                out += "# " + entry_name + " = '" + str(value) + "'\n"
         return out 
 
 class GlueLDIFExporter:
@@ -139,7 +131,7 @@ class GlueLDIFExporter:
         return self
 
     def save_to_file(self, fname):
-        f = open(fname, "w")
+        f = open(fname, 'w')
         ldif_writer = LDIFWriter(f, cols=512)
         for node in self.nodes:
             ldif_writer.unparse(node["dn"], node["entries"])
@@ -148,7 +140,7 @@ class GlueLDIFExporter:
 
     def print_to_stdout(self):
         target = tempfile.mkstemp()
-        self.save_to_file(target[1])
+        self.save_to_file(str(target[1]))
         fin = open(target[1], 'r')
         print fin.read()
         fin.close()

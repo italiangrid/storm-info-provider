@@ -6,6 +6,9 @@ class Glue13LDIFNode(GlueLDIFNode):
         GlueLDIFNode.__init__(self, "mds-vo-name=resource,o=grid", default_entries)
         return
 
+    def __str__(self):
+        return GlueLDIFNode.__str__(self)
+
 class GlueSALocal(Glue13LDIFNode):
 
     def __init__(self, GlueSALocalID, GlueSEUniqueID):
