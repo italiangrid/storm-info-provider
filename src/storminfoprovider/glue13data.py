@@ -1,4 +1,4 @@
-from glue import GlueLDIFNode
+from .glue import GlueLDIFNode
 
 class Glue13LDIFNode(GlueLDIFNode):
 

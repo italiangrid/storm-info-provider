@@ -1,4 +1,4 @@
-from glue import GlueLDIFNode
+from .glue import GlueLDIFNode
 
 class QualityLevel_t:
     quality_levels = ["development", "pre-production", "production", "testing"]

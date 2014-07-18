@@ -1,10 +1,10 @@
-from utils import clear_quotes, clear_newlines
+from .utils import clear_quotes, clear_newlines
 
 class Configuration:
 
     mandatories = ["SITE_NAME", "STORM_BACKEND_HOST", "STORM_DEFAULT_ROOT",
         "STORM_FRONTEND_PATH", "STORM_FRONTEND_PORT",
-        "STORM_FRONTEND_PUBLIC_HOST", "STORM_BACKEND_REST_SERVICES_PORT", 
+        "STORM_FRONTEND_PUBLIC_HOST", "STORM_BACKEND_REST_SERVICES_PORT",
         "VOS", "STORM_ENDPOINT_QUALITY_LEVEL", "STORM_ENDPOINT_CAPABILITY"]
 
     def __init__(self, param):
