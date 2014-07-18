@@ -1,4 +1,4 @@
-from .utils import clear_quotes, clear_newlines
+from utils import clear_quotes, clear_newlines
 
 class Configuration:
 

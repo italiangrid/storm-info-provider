@@ -2,10 +2,10 @@ import logging
 import os
 import re
 
-from .configuration import Configuration
-from .glue import *
-from .glue2data import *
-from .utils import round_div,delete_files
+from configuration import Configuration
+from glue import *
+from glue2data import *
+from utils import round_div, delete_files
 
 class Glue2(Glue):
 
