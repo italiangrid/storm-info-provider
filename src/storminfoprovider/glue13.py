@@ -235,8 +235,8 @@ class Glue13(Glue):
 
         gLite_IS_version = "2.2.0"
         gLite_IS_endpoint = configuration.get_public_srm_endpoint()
-        init_command = "/usr/libexec/storm-dynamic-info-provider/storm-info-provider init-env --version " + gLite_IS_version + " --endpoint " + gLite_IS_endpoint
-        status_command = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && /usr/libexec/storm-dynamic-info-provider/storm-info-provider status"
+        init_command = "/usr/libexec/storm-info-provider/storm-info-provider init-env --version " + gLite_IS_version + " --endpoint " + gLite_IS_endpoint
+        status_command = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && /usr/libexec/storm-info-provider/storm-info-provider status"
         get_owner = "echo " + "; echo ".join(vos)
         get_acbr = "echo VO:" + "; echo VO:".join(vos)
         content = {
