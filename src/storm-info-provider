@@ -25,11 +25,11 @@ try:
 except ImportError:
     import simplejson as json
 
-from configuration import Configuration
-from spaceinfo import SpaceInfo
-from utils import http_get
-from glue13 import Glue13
-from glue2 import Glue2
+from storminfoprovider.configuration import Configuration
+from storminfoprovider.spaceinfo import SpaceInfo
+from storminfoprovider.utils import http_get
+from storminfoprovider.glue13 import Glue13
+from storminfoprovider.glue2 import Glue2
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Process storm-info-provider args')

@@ -1,6 +1,1 @@
-*.pyc
-etc/*.pyc
 /.project
-/target
-/.settings
-/.classpath
