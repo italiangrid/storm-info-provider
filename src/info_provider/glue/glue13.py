@@ -2,10 +2,8 @@ import logging
 import os
 import re
 
-from configuration import Configuration
 from glue import *
-from glue13data import *
-from utils import round_div, delete_files
+from glue13_data import *
 
 class Glue13(Glue):
 
@@ -29,7 +27,7 @@ class Glue13(Glue):
                 'maxstreams': '1'
                 },
             'gsiftp': {
-                'version': '2.0.0',
+                'version': '1.0.0',
                 'maxstreams': '10'
                 }, 
             'root': {
@@ -57,6 +55,7 @@ class Glue13(Glue):
         self.create_service_config_file(configuration, stats)
         logging.info("Successfully created %s !", self.GLUE13_SERVICE_CONFIG_FILE)
         # GLUE13_STATIC_LDIF_FILE
+        self.delete_backup_files() # remove old backup files
         logging.debug("Creating %s ...", self.GLUE13_STATIC_LDIF_FILE)
         self.create_static_ldif_file(configuration, stats)
         logging.info("Successfully created %s !", self.GLUE13_STATIC_LDIF_FILE)
@@ -85,9 +84,7 @@ class Glue13(Glue):
         return super(Glue13, self).create_service_config_file(self.GLUE13_SERVICE_CONFIG_FILE, content)
 
     def create_plugin_file(self):
-        params = ["/etc/storm/backend-server/storm-yaim-variables.conf"]
-        info_service = "/usr/libexec/storm-dynamic-info-provider/glite-info-dynamic-storm"
-        return super(Glue13, self).create_plugin_file(self.GLUE13_INFO_PLUGIN_FILE, info_service, params)
+        return super(Glue13, self).create_plugin_file(self.GLUE13_INFO_PLUGIN_FILE)
 
     def create_static_ldif_file(self, configuration, stats):
         # list of (dn, entries)
@@ -97,15 +94,17 @@ class Glue13(Glue):
         GlueSEUniqueID = configuration.get("STORM_FRONTEND_PUBLIC_HOST")
 
         # GlueSE
+        GlueSEImplementationVersion = os.popen("rpm -q --queryformat='%{VERSION}' storm-backend-server").read()
         node = GlueSE(GlueSEUniqueID)
         node.init_as_default().add({
             'GlueSEUniqueID': [GlueSEUniqueID],
             'GlueSEName': [configuration.get("SITE_NAME") + ":srm_v2"],
-            'GlueSESizeTotal': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB) + round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSESizeFree': [str(round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalOnlineSize': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSEUsedOnlineSize': [str(round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalNearlineSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSESizeTotal': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB) + self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSESizeFree': [str(self.round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSETotalOnlineSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSEUsedOnlineSize': [str(self.round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSETotalNearlineSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSEImplementationVersion': [GlueSEImplementationVersion],
             'GlueInformationServiceURL': ["ldap://" + configuration.get("STORM_BACKEND_HOST") + ":2170/mds-vo-name=resource,o=grid"],
             'GlueForeignKey': [ "GlueSiteUniqueID=" + GlueSiteUniqueID]
         })
@@ -114,20 +113,20 @@ class Glue13(Glue):
         # for each storage area / virtual file system
         for sa_name,sa_data in stats.get_vfs().items():
             # GlueSA
-            GlueSALocalID = ":".join((sa_name, sa_data["retentionPolicy"], sa_data["accessLatency"]))
+            GlueSALocalID = ":".join((sa_name[:-3].lower(), sa_data["retentionPolicy"].lower(), sa_data["accessLatency"].lower()))
             node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
             node.init_as_default().add({
                 'GlueSALocalID': [GlueSALocalID],
-                'GlueSATotalOnlineSize': [str(round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB))], # total space in GB
-                'GlueSAUsedOnlineSize': [str(round_div(sa_data["used-space"], self.FROM_BYTES_TO_GB))], # used space in GB
-                'GlueSAFreeOnlineSize': [str(round_div(sa_data["free-space"], self.FROM_BYTES_TO_GB))], # free space in GB
-                'GlueSAReservedOnlineSize': [str(round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB))], # reserved = total in prev bash script for Glue1.3
-                'GlueSATotalNearlineSize': [str(round_div(sa_data["availableNearlineSpace"], self.FROM_BYTES_TO_GB))], # nearline size in GB
-                'GlueSARetentionPolicy': [str(sa_data["retentionPolicy"])],
-                'GlueSAStateAvailableSpace': [str(round_div(sa_data["available-space"], self.FROM_BYTES_TO_KB))], # available space in KB
-                'GlueSAStateUsedSpace': [str(round_div(sa_data["used-space"], self.FROM_BYTES_TO_KB))], # used space in KB
-                'GlueSACapability': ["InstalledOnlineCapacity=" + str(round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB)), 
-                    "InstalledNearlineCapacity=" + str(round_div(sa_data["availableNearlineSpace"], self.FROM_BYTES_TO_GB))],
+                'GlueSATotalOnlineSize': [str(self.round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB))], # total space in GB
+                'GlueSAUsedOnlineSize': [str(self.round_div(sa_data["used-space"], self.FROM_BYTES_TO_GB))], # used space in GB
+                'GlueSAFreeOnlineSize': [str(self.round_div(sa_data["free-space"], self.FROM_BYTES_TO_GB))], # free space in GB
+                'GlueSAReservedOnlineSize': [str(self.round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB))], # reserved = total in prev bash script for Glue1.3
+                'GlueSATotalNearlineSize': [str(self.round_div(sa_data["availableNearlineSpace"], self.FROM_BYTES_TO_GB))], # nearline size in GB
+                'GlueSARetentionPolicy': [str(sa_data["retentionPolicy"].lower())],
+                'GlueSAStateAvailableSpace': [str(self.round_div(sa_data["available-space"], self.FROM_BYTES_TO_KB))], # available space in KB
+                'GlueSAStateUsedSpace': [str(self.round_div(sa_data["used-space"], self.FROM_BYTES_TO_KB))], # used space in KB
+                'GlueSACapability': ["InstalledOnlineCapacity=" + str(self.round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB)), 
+                    "InstalledNearlineCapacity=" + str(self.round_div(sa_data["availableNearlineSpace"], self.FROM_BYTES_TO_GB))],
                 'GlueSAAccessControlBaseRule': ["VO:" + sa_data["voname"]],
                 'GlueChunkKey': ["GlueSEUniqueID=" + GlueSEUniqueID]
                 })
@@ -139,7 +138,10 @@ class Glue13(Glue):
 
             if self.is_VO(sa_data["voname"]):
                 # GlueVOInfoLocal
-                GlueVOInfoLocalID = ":".join((sa_data["voname"],sa_data["token"]))
+                if configuration.vfs_has_custom_token(sa_name): # reserved space
+                    GlueVOInfoLocalID = ":".join((sa_data["voname"],sa_data["token"]))                    
+                else: # unreserved space
+                    GlueVOInfoLocalID = sa_data["voname"]
                 node = GlueSAVOInfoLocal(GlueVOInfoLocalID, GlueSALocalID, GlueSEUniqueID)
                 node.init_as_default().add({
                     'GlueVOInfoLocalID': [GlueVOInfoLocalID],
@@ -175,8 +177,6 @@ class Glue13(Glue):
             })
             nodes.append(node)
 
-        # remove old backup files
-        self.delete_backup_files()
         # create LDIF file
         return super(Glue13, self).create_static_ldif_file(self.GLUE13_STATIC_LDIF_FILE, nodes, configuration.is_info_overwrite())
 
@@ -190,11 +190,11 @@ class Glue13(Glue):
         # GlueSE
         node = GlueSE(GlueSEUniqueID)
         node.add({
-            'GlueSESizeTotal': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB) + round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSESizeFree': [str(round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalOnlineSize': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSEUsedOnlineSize': [str(round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalNearlineSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSESizeTotal': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB) + self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSESizeFree': [str(self.round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSETotalOnlineSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSEUsedOnlineSize': [str(self.round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))],
+            'GlueSETotalNearlineSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
             'GlueSEUsedNearlineSize': ["0"]
         })
         nodes.append(node)
@@ -204,26 +204,30 @@ class Glue13(Glue):
             GlueSALocalID = ":".join((sa_name, sa_data["retentionPolicy"], sa_data["accessLatency"]))
             node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
             node.add({
-                'GlueSATotalOnlineSize': [str(round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], # total space in GB
-                'GlueSAUsedOnlineSize': [str(round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], # used space in GB
-                'GlueSAFreeOnlineSize': [str(round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], # free space in GB
-                'GlueSAReservedOnlineSize': [str(round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], # reserved = total in prev bash script for Glue1.3
-                'GlueSATotalNearlineSize': [str(round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], # nearline size in GB
+                'GlueSATotalOnlineSize': [str(self.round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], # total space in GB
+                'GlueSAUsedOnlineSize': [str(self.round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], # used space in GB
+                'GlueSAFreeOnlineSize': [str(self.round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], # free space in GB
+                'GlueSAReservedOnlineSize': [str(self.round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], # reserved = total in prev bash script for Glue1.3
+                'GlueSATotalNearlineSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], # nearline size in GB
                 'GlueSAUsedNearlineSize': ['0'],
                 'GlueSAFreeNearlineSize': ['0'],
                 'GlueSAReservedNearlineSize': ['0'],
-                'GlueSAStateAvailableSpace': [str(round_div(sa_data["available-space"],self.FROM_BYTES_TO_KB))], # available space in KB
-                'GlueSAStateUsedSpace': [str(round_div(sa_data["used-space"],self.FROM_BYTES_TO_KB))] # used space in KB
+                'GlueSAStateAvailableSpace': [str(self.round_div(sa_data["available-space"],self.FROM_BYTES_TO_KB))], # available space in KB
+                'GlueSAStateUsedSpace': [str(self.round_div(sa_data["used-space"],self.FROM_BYTES_TO_KB))] # used space in KB
             })
             nodes.append(node)
 
         return nodes
 
     def delete_backup_files(self):
-        directory = os.path.dirname(self.GLUE13_STATIC_LDIF_FILE)
-        removed_list = delete_files(directory, r'static-file-storm\.ldif\.bkp_.*')
+        parent_directory = os.path.dirname(self.GLUE13_STATIC_LDIF_FILE)
+        removed_list = []
+        for f in os.listdir(parent_directory):
+            if re.search(r'static-file-storm\.ldif\.bkp_.*',f):
+                os.remove(os.path.join(parent_directory, f))
+                removed_list.append(f)
         logging.debug("Removed backup files: [%s]", removed_list)
-        return        
+        return len(removed_list)
 
     def remove_old_cron_file_if_exists(self):
         cFile = "/etc/cron.d/glite-info-dynamic-storm"
@@ -235,8 +239,8 @@ class Glue13(Glue):
 
         gLite_IS_version = "2.2.0"
         gLite_IS_endpoint = configuration.get_public_srm_endpoint()
-        init_command = "/usr/libexec/storm-info-provider/storm-info-provider init-env --version " + gLite_IS_version + " --endpoint " + gLite_IS_endpoint
-        status_command = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && /usr/libexec/storm-info-provider/storm-info-provider status"
+        init_command = GlueConstants.STORM_INFO_PROVIDER + " init-env --version " + gLite_IS_version + " --endpoint " + gLite_IS_endpoint
+        status_command = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && " + GlueConstants.STORM_INFO_PROVIDER + " status"
         get_owner = "echo " + "; echo ".join(vos)
         get_acbr = "echo VO:" + "; echo VO:".join(vos)
         content = {

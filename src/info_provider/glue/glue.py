@@ -15,6 +15,9 @@ class GlueConstants:
     INFO_LDIF_PATH = "/var/lib/bdii/gip/ldif"
     INFO_PLUGIN_PATH = "/var/lib/bdii/gip/plugin"
 
+    STORM_INFO_PROVIDER = "/usr/libexec/storm-info-provider"
+    STORM_YAIM_CONFIG_FILE = "/etc/storm/backend-server/storm-yaim-variables.conf"
+
 class Glue(object):
 
     def create_service_file(self, dest_file, info_service, config_file_path, params):
@@ -60,12 +63,10 @@ class Glue(object):
         os.chmod(dest_file, 0644)
         return dest_file
 
-    def create_plugin_file(self, dest_file, info_service, params):
+    def create_plugin_file(self, dest_file):
         f = open(dest_file, "w")
         f.write("#!/bin/sh\n")
-        f.write("%s" % info_service)
-        for param in params:
-            f.write(" %s" % param)
+        f.write("%s update -f %s" % (GlueConstants.STORM_INFO_PROVIDER, GlueConstants.STORM_YAIM_CONFIG_FILE))
         f.close()
         # set owner
         uid = pwd.getpwnam("ldap").pw_uid
@@ -82,6 +83,9 @@ class Glue(object):
             exporter.add_node(node)
         exporter.print_to_stdout()
         return
+
+    def round_div(self, num, value):
+        return int(round(1.0 * num/value))
 
 class GlueLDIFNode:
 

@@ -24,7 +24,6 @@ class GlueSE(Glue13LDIFNode):
             'GlueSEArchitecture': ['multidisk'],
             'GlueSEStatus': ['Production'],
             'GlueSEImplementationName': ['StoRM'],
-            'GlueSEImplementationVersion': ["`rpm -q --queryformat='%{VERSION}' storm-backend-server`"],
             'GlueSchemaVersionMajor': ['1'],
             'GlueSchemaVersionMinor': ['3']
         })

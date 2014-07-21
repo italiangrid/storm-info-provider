@@ -2,10 +2,8 @@ import logging
 import os
 import re
 
-from configuration import Configuration
 from glue import *
-from glue2data import *
-from utils import round_div, delete_files
+from glue2_data import *
 
 class Glue2(Glue):
 
@@ -39,6 +37,7 @@ class Glue2(Glue):
         self.create_service_config_file(configuration, stats)
         logging.info("Successfully created %s !", self.GLUE2_SERVICE_CONFIG_FILE)
         # GLUE2_STATIC_LDIF_FILE
+        self.delete_backup_files() # remove old backup files
         logging.debug("Creating %s ...", self.GLUE2_STATIC_LDIF_FILE)
         created_file = self.create_static_ldif_file(configuration, stats)
         logging.info("Successfully created %s !", created_file)
@@ -72,9 +71,7 @@ class Glue2(Glue):
         return super(Glue2, self).create_service_config_file(self.GLUE2_SERVICE_CONFIG_FILE, content)
 
     def create_plugin_file(self):
-        params = ["/etc/storm/backend-server/storm-yaim-variables.conf"]
-        info_service = "/usr/libexec/storm-dynamic-info-provider/glite-info-glue2-dynamic-storm"
-        return super(Glue2, self).create_plugin_file(self.GLUE2_INFO_PLUGIN_FILE, info_service, params)
+        return super(Glue2, self).create_plugin_file(self.GLUE2_INFO_PLUGIN_FILE)
 
     def create_static_ldif_file(self, configuration, stats):
 
@@ -102,10 +99,10 @@ class Glue2(Glue):
                 'GLUE2StorageServiceCapacityID': [GLUE2StorageServiceCapacityID],
                 'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
                 'GLUE2StorageServiceCapacityType': ["online"],
-                'GLUE2StorageServiceCapacityTotalSize': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityFreeSize': [str(round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityUsedSize': [str(round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityReservedSize': [str(round_div(stats.get_summary()["reserved-space"],self.FROM_BYTES_TO_GB))],
+                'GLUE2StorageServiceCapacityTotalSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityFreeSize': [str(self.round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityUsedSize': [str(self.round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityReservedSize': [str(self.round_div(stats.get_summary()["reserved-space"],self.FROM_BYTES_TO_GB))],
                 'GLUE2StorageServiceCapacityStorageServiceForeignKey': [GLUE2ServiceID]
             })
             nodes.append(node)
@@ -118,8 +115,8 @@ class Glue2(Glue):
                 'GLUE2StorageServiceCapacityID': [GLUE2StorageServiceCapacityID],
                 'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
                 'GLUE2StorageServiceCapacityType': ["nearline"],
-                'GLUE2StorageServiceCapacityTotalSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityFreeSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityTotalSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityFreeSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
                 'GLUE2StorageServiceCapacityUsedSize': [str(0)], 
                 'GLUE2StorageServiceCapacityReservedSize': [str(0)],
                 'GLUE2StorageServiceCapacityStorageServiceForeignKey': [GLUE2ServiceID]
@@ -160,7 +157,7 @@ class Glue2(Glue):
                 'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
                 'GLUE2DataStoreType': ["disk"], 
                 'GLUE2DataStoreLatency': ["online"], 
-                'GLUE2DataStoreTotalSize': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
+                'GLUE2DataStoreTotalSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
                 'GLUE2ResourceManagerForeignKey': [GLUE2ManagerID],
                 'GLUE2DataStoreStorageManagerForeignKey': [GLUE2ManagerID] # it seems necessary
             })
@@ -175,7 +172,7 @@ class Glue2(Glue):
                 'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
                 'GLUE2DataStoreType': ["tape"], 
                 'GLUE2DataStoreLatency': ["nearline"], 
-                'GLUE2DataStoreTotalSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2DataStoreTotalSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
                 'GLUE2ResourceManagerForeignKey': [GLUE2ManagerID],
                 'GLUE2DataStoreStorageManagerForeignKey': [GLUE2ManagerID] # it seems necessary
             })
@@ -228,10 +225,10 @@ class Glue2(Glue):
                     'GLUE2StorageShareCapacityID': [GLUE2StorageShareCapacityID],
                     'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
                     'GLUE2StorageShareCapacityType': ["online"],
-                    'GLUE2StorageShareCapacityTotalSize': [str(round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityUsedSize': [str(round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityReservedSize': [str(round_div(sa_data["reserved-space"],self.FROM_BYTES_TO_GB))],
+                    'GLUE2StorageShareCapacityTotalSize': [str(self.round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityFreeSize': [str(self.round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityUsedSize': [str(self.round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityReservedSize': [str(self.round_div(sa_data["reserved-space"],self.FROM_BYTES_TO_GB))],
                     'GLUE2StorageShareCapacityStorageShareForeignKey': [GLUE2ShareID]
                 })
                 nodes.append(node)
@@ -244,8 +241,8 @@ class Glue2(Glue):
                     'GLUE2StorageShareCapacityID': [GLUE2StorageShareCapacityID],
                     'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
                     'GLUE2StorageShareCapacityType': ["nearline"],
-                    'GLUE2StorageShareCapacityTotalSize': [str(round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityTotalSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityFreeSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
                     'GLUE2StorageShareCapacityUsedSize': [str(0)], 
                     'GLUE2StorageShareCapacityReservedSize': [str(0)],
                     'GLUE2StorageShareCapacityStorageShareForeignKey': [GLUE2ShareID]
@@ -370,8 +367,6 @@ class Glue2(Glue):
                     })
                     nodes.append(node)
 
-        # remove old backup files
-        self.delete_backup_files()
         # create LDIF file
         return super(Glue2, self).create_static_ldif_file(self.GLUE2_STATIC_LDIF_FILE, nodes, configuration.is_info_overwrite())
 
@@ -392,7 +387,7 @@ class Glue2(Glue):
             GLUE2EndpointID = GLUE2ServiceID + "/ep/" + frontend_host + ":" + configuration.get("STORM_FRONTEND_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
             node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
             node.add({
-                'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE"))]
+                'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE_VALUE"))]
             })
             nodes.append(node)
 
@@ -406,7 +401,7 @@ class Glue2(Glue):
                 GLUE2EndpointID = GLUE2ServiceID + "/ep/" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTPS_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
                 node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
                 node.add({
-                    'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE"))]
+                    'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE_VALUE"))]
                 })
                 nodes.append(node)
 
@@ -418,7 +413,7 @@ class Glue2(Glue):
                     GLUE2EndpointID = GLUE2ServiceID + "/ep/" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTP_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
                     node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
                     node.add({
-                        'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE"))]
+                        'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE_VALUE"))]
                     })
                     nodes.append(node)
 
@@ -427,10 +422,10 @@ class Glue2(Glue):
             GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/disk"
             node = GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID)
             node.add({ 
-                'GLUE2StorageServiceCapacityTotalSize': [str(round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityFreeSize': [str(round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityUsedSize': [str(round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityReservedSize': [str(round_div(stats.get_summary()["reserved-space"],self.FROM_BYTES_TO_GB))]
+                'GLUE2StorageServiceCapacityTotalSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityFreeSize': [str(self.round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityUsedSize': [str(self.round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityReservedSize': [str(self.round_div(stats.get_summary()["reserved-space"],self.FROM_BYTES_TO_GB))]
             })
             nodes.append(node)
 
@@ -439,8 +434,8 @@ class Glue2(Glue):
             GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/tape"
             node = GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID)
             node.add({ 
-                'GLUE2StorageServiceCapacityTotalSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityFreeSize': [str(round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
+                'GLUE2StorageServiceCapacityTotalSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
+                'GLUE2StorageServiceCapacityFreeSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
                 'GLUE2StorageServiceCapacityUsedSize': [str(0)], 
                 'GLUE2StorageServiceCapacityReservedSize': [str(0)]
             })
@@ -453,7 +448,7 @@ class Glue2(Glue):
             GLUE2ShareID = GLUE2ServiceID + "/ss/" + sa_data["name"]
             node = GLUE2StorageShare(GLUE2ShareID, GLUE2ServiceID)
             node.add({ 
-                'GLUE2StorageShareServingState': [str(configuration.get("STORM_SERVING_STATE"))]
+                'GLUE2StorageShareServingState': [str(configuration.get("STORM_SERVING_STATE_VALUE"))]
             })
             nodes.append(node)
             
@@ -462,18 +457,18 @@ class Glue2(Glue):
                 GLUE2StorageShareCapacityID = GLUE2ShareID + "/disk"
                 node = GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID)
                 node.add({ 
-                    'GLUE2StorageShareCapacityTotalSize': [str(round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityUsedSize': [str(round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityReservedSize': [str(round_div(sa_data["reserved-space"],self.FROM_BYTES_TO_GB))]
+                    'GLUE2StorageShareCapacityTotalSize': [str(self.round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityFreeSize': [str(self.round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityUsedSize': [str(self.round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityReservedSize': [str(self.round_div(sa_data["reserved-space"],self.FROM_BYTES_TO_GB))]
                 })
                 nodes.append(node)
             if sa_data["availableNearlineSpace"] > 0: 
                 GLUE2StorageShareCapacityID = GLUE2ShareID + "/tape"
                 node = GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID)
                 node.add({ 
-                    'GLUE2StorageShareCapacityTotalSize': [str(round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityTotalSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
+                    'GLUE2StorageShareCapacityFreeSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
                     'GLUE2StorageShareCapacityUsedSize': [str(0)], 
                     'GLUE2StorageShareCapacityReservedSize': [str(0)]
                 })
@@ -482,10 +477,14 @@ class Glue2(Glue):
         return nodes
 
     def delete_backup_files(self):
-        directory = os.path.dirname(self.GLUE2_STATIC_LDIF_FILE)
-        removed_list = delete_files(directory, r'static-file-glue2-storm\.ldif\.bkp_.*')
+        parent_directory = os.path.dirname(self.GLUE2_STATIC_LDIF_FILE)
+        removed_list = []
+        for f in os.listdir(parent_directory):
+            if re.search(r'static-file-glue2-storm\.ldif\.bkp_.*',f):
+                os.remove(os.path.join(parent_directory, f))
+                removed_list.append(f)
         logging.debug("Removed backup files: [%s]", removed_list)
-        return
+        return len(removed_list)
 
     def get_enabled_protocols(self, configuration):
         enabled = {}
@@ -503,10 +502,10 @@ class Glue2(Glue):
         
         gLite_IS_version = "2.2.0"
         gLite_IS_endpoint = configuration.get_public_srm_endpoint()
-        endpoint_capability = str(configuration.get('STORM_ENDPOINT_CAPABILITY'))
-        quality_level = QualityLevel_t(int(configuration.get('STORM_ENDPOINT_QUALITY_LEVEL')))
-        init_command = "/usr/libexec/storm-info-provider/storm-info-provider init-env --version " + gLite_IS_version + " --endpoint " + gLite_IS_endpoint
-        status_command = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && /usr/libexec/storm-info-provider/storm-info-provider status"
+        endpoint_capability = configuration.get('STORM_ENDPOINT_CAPABILITY')
+        quality_level = configuration.get('STORM_ENDPOINT_QUALITY_LEVEL')
+        init_command = GlueConstants.STORM_INFO_PROVIDER + " init-env --version " + gLite_IS_version + " --endpoint " + gLite_IS_endpoint
+        status_command = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && " + GlueConstants.STORM_INFO_PROVIDER + " status"
         get_owner = "echo " + "; echo ".join(vos)
         get_acbr = "echo VO:" + "; echo VO:".join(vos)
 
@@ -518,7 +517,7 @@ class Glue2(Glue):
             "WSDL_URL": "http://sdm.lbl.gov/srm-wg/srm.v2.2.wsdl",
             "semantics_URL": "http://sdm.lbl.gov/srm-wg/doc/SRM.v2.2.html",
             "get_starttime": "perl -e '@st=stat(\"/var/run/storm-backend-server.pid\");print \"@st[10]\\n\";'",
-            "get_capabilities": "echo \"" + endpoint_capability + "\"",
+            "get_capabilities": "echo \"" + str(endpoint_capability) + "\"",
             "get_implementor": "echo \"emi\"",
             "get_implementationname": "echo \"StoRM\"",
             "get_implementationversion": "rpm -qa | grep storm-backend-server | cut -d- -f4",

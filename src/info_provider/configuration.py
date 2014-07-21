@@ -1,4 +1,4 @@
-from utils import clear_quotes, clear_newlines
+import string
 
 class Configuration:
 
@@ -15,13 +15,19 @@ class Configuration:
         self.configuration_sanity_check()
         return
 
+    def clear_quotes(self, s):
+        return s.replace('\"','').replace("\'",'')
+
+    def clear_newlines(self, s):
+        return s.replace("\n",'')
+
     def load_configuration_from_file(self, filepath):
         out = {}
         try:
             f = open(filepath, 'r')
             for line in f:
                 (key, val) = line.split('=')
-                out[key] = clear_quotes(clear_newlines(val.strip()))
+                out[key] = self.clear_quotes(self.clear_newlines(val.strip()))
         finally:
             f.close()
         return out
@@ -57,6 +63,11 @@ class Configuration:
             enabled.append("https")
         return enabled
 
+    def get_backend_rest_endpoint(self):
+        be_host = self.configuration["STORM_BACKEND_HOST"]
+        be_port = self.configuration["STORM_BACKEND_REST_SERVICES_PORT"]
+        return 'http://' + be_host + ':' + str(be_port)
+
     def get_frontend_list(self):
         return self.configuration["STORM_FRONTEND_HOST_LIST"].split(',')
 
@@ -74,5 +85,10 @@ class Configuration:
 
     def is_info_overwrite(self):
         return self.configuration["STORM_INFO_OVERWRITE"].lower() == "true"
+
+    def vfs_has_custom_token(self, vfs_name):
+        return "STORM_" + vfs_name[:-3] + "_TOKEN" in self.configuration
+
+
 
 

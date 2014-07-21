@@ -20,16 +20,13 @@ import logging
 import os
 import exceptions
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
 
-from storminfoprovider.configuration import Configuration
-from storminfoprovider.spaceinfo import SpaceInfo
-from storminfoprovider.utils import http_get
-from storminfoprovider.glue13 import Glue13
-from storminfoprovider.glue2 import Glue2
+
+from info_provider.configuration import Configuration
+from info_provider.space_info import SpaceInfo
+from info_provider.http_utils import HTTP
+from info_provider.glue.glue13 import Glue13
+from info_provider.glue.glue2 import Glue2
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Process storm-info-provider args')
@@ -56,30 +53,28 @@ def parse_args():
     parser_init_env.set_defaults(action=init_env)
     return parser.parse_args()
 
-def get_vfs_space_info_from_BE(be_host, be_port, sa_token):
-    url = 'http://' + be_host + ':' + str(be_port) + '/info/status/' + sa_token
-    data = json.load(http_get(url))
+def get_vfs_space_info_from_BE(be_endpoint, sa_token):
+    url = be_endpoint + '/info/status/' + sa_token
+    data = HTTP().getJSON(url)
     logging.debug("GET %s = %s", url, data)
     return data["sa-status"]
 
-def get_all_vfs_info_from_BE(be_host, be_port):
-    url = 'http://' + be_host + ':' + str(be_port) + '/configuration/1.3/VirtualFSList' 
-    data = json.load(http_get(url))
+def get_all_vfs_info_from_BE(be_endpoint):
+    url = be_endpoint + '/configuration/1.3/VirtualFSList' 
+    data = HTTP().getJSON(url)
     logging.debug("GET %s = %s", url, data)
     return data
 
 def compute_space_info(configuration):
     # get info from configuration
     supported_vos = configuration.get('VOS').split(' ')
-    be_host = configuration.get('STORM_BACKEND_HOST')
-    be_port = configuration.get('STORM_BACKEND_REST_SERVICES_PORT')
     # init SpaceInfo
     info = SpaceInfo(supported_vos)
     # get all vfs info from BE
-    vfs = get_all_vfs_info_from_BE(be_host, be_port)
+    vfs = get_all_vfs_info_from_BE(configuration.get_backend_rest_endpoint())
     # get vfs's space info
     for vfs_name,vfs_data in vfs.iteritems():
-        response = get_vfs_space_info_from_BE(be_host, be_port, vfs_data["token"])    
+        response = get_vfs_space_info_from_BE(configuration.get_backend_rest_endpoint(), vfs_data["token"])    
         # add info retrieved to SpaceInfo object
         info.add_vfs_info(vfs_name, dict(vfs[vfs_name].items() + response.items()))
     return info
@@ -103,6 +98,7 @@ def init(arguments):
     spaceinfo = compute_space_info(configuration)
 
     if arguments.glue_protocol in ['glue13', 'all']:
+
         # create Glue v1.3 files
         glue13 = Glue13()
         glue13.init(configuration, spaceinfo)
