@@ -1,531 +1,513 @@
 import logging
 import os
 import re
+import time
 
-from glue import *
-from glue2_data import *
+from info_provider.glue.constants import *
+from info_provider.ldap_utils import LDIFExporter
+from glue2_schema import *
+from utils import *
 
-class Glue2(Glue):
+class QualityLevel_t:
+    _quality_levels = ["development", "pre-production", "production", "testing"]
+    def __init__(self, int_value):
+        self._int_value = int(int_value)
+        return
+    def __str__(self):
+        return self._quality_levels[self._int_value]
 
-    FROM_BYTES_TO_GB = 1000000000
-    FROM_BYTES_TO_KB = 1000
+class Glue2(object):
+    
+    def __init__(self, configuration, spaceinfo):
+        self._configuration = configuration
+        self._stats = spaceinfo
+        return
 
-    GLUE2_INFO_SERVICE = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-glue2-simple"
-    GLUE2_SERVICE_FILE = GlueConstants.INFO_PROVIDER_PATH + "/service-glue2-srm-storm-v2"
-    GLUE2_SERVICE_CONFIG_FILE = GlueConstants.INFO_SERVICE_CONFIG + "/glite-info-service-glue2-srm-storm-v2.conf"
-    GLUE2_STATIC_LDIF_FILE = GlueConstants.INFO_LDIF_PATH + "/static-file-glue2-storm.ldif"
-    GLUE2_INFO_PLUGIN_FILE = GlueConstants.INFO_PLUGIN_PATH + "/glite-info-glue2-dynamic-storm"
+    def _get_access_protocol_version(self, name):
+        return GLUE2_ACCESS_PROTOCOLS_VERSIONS[name]
 
-    def __init__(self):
-        self.access_protocols_versions = { 
-            'file': '1.0.0', 
-            'rfio': '1.0.0', 
-            'gsiftp': '2.0.0', 
-            'root': '1.0.0', 
-            'http': '1.1.0', 
-            'https': '1.1.0' 
+    def _get_service_id(self):
+        return self._configuration.get("STORM_BACKEND_HOST") + "/storage"
+
+    def _get_site_id(self):
+        return self._configuration.get("SITE_NAME")
+
+    def _get_manager_id(self):
+        return self._get_service_id() + "/manager"
+
+    def _get_srm_endpoint_id(self):
+        return self._get_service_id() + "/endpoint/SRM"
+
+    def _get_http_endpoint_id(self):
+        return self._get_service_id() + "/endpoint/HTTP"
+
+    def _get_https_endpoint_id(self):
+        return self._get_service_id() + "/endpoint/HTTPS"
+
+    def _get_endpoint_policy_id(self, endpoint_id):
+        return endpoint_id + "_Policy"
+
+    def _get_service_capacity_id(self, capacity_type):
+        return self._get_service_id() + "/capacity/" + capacity_type
+
+    def _get_access_protocol_id(self, name, version):
+        return self._get_service_id() + "/accessprotocol/" + name + "/" + version
+
+    def _get_data_store_id(self, ds_type):
+        return self._get_service_id()  + "/datastore/" + ds_type
+
+    def _get_share_id(self, vfs_name):
+        return self._get_service_id() + "/share/" + vfs_name[:-3].lower()
+
+    def _get_sharing_id(self, vfs_name, vfs_retention, vfs_latency):
+        return ":".join((vfs_name[:-3].lower(), vfs_retention.lower(), 
+            vfs_latency.lower()))
+
+    def _get_share_policy_id(self, vfs_name):
+        return self._get_share_id(vfs_name) + "/mappingpolicy"
+
+    def _get_share_capacity_id(self, vfs_name, capacity_type):
+        return self._get_share_id(vfs_name) + "/capacity/" + capacity_type
+
+    def _is_anonymous(self, voname):
+        return "*" in voname
+
+    def _get_quality_level(self):
+        int_value = int(self._configuration.get('STORM_ENDPOINT_QUALITY_LEVEL'))
+        return str(QualityLevel_t(int_value))
+
+    def _get_implementation_version(self):
+        cmd = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
+        return os.popen(cmd).read()
+
+    def _has_online_capacity(self):
+        return int(self._stats.get_summary()["total-space"]) > 0
+
+    def _has_nearline_capacity(self):
+        return int(self._stats.get_summary()["nearline-space"]) > 0
+
+    def _share_has_online_capacity(self, vfs_name):
+        return int(self._stats.get_vfs()[vfs_name]["total-space"]) > 0
+
+    def _share_has_nearline_capacity(self, vfs_name):
+        return int(self._stats.get_vfs()[vfs_name]["nearline-space"]) > 0
+
+    def configure(self):
+        # remove old static ldif backup files
+        self._delete_backup_files()
+        # create Glue2 service configuration file
+        logging.debug("Creating %s ...", GLUE2_INFO_SERVICE_CONFIG_FILE)
+        self._create_service_config_file()
+        logging.info("Successfully created %s !", 
+            GLUE2_INFO_SERVICE_CONFIG_FILE)
+        # create Glue2 srm endpoint configuration file
+        logging.debug("Creating %s ...", GLUE2_INFO_SERVICE_SRM_CONFIG_FILE)
+        self._create_srm_endpoint_config_file()
+        logging.info("Successfully created %s !", 
+            GLUE2_INFO_SERVICE_SRM_CONFIG_FILE)
+        # create Glue2 service provider file
+        logging.debug("Creating %s ...", GLUE2_INFO_PROVIDER_FILE)
+        self._create_service_provider_file()
+        logging.info("Successfully created %s !", GLUE2_INFO_PROVIDER_FILE)
+        # create Glue2 service plugin file
+        logging.debug("Creating %s ...", GLUE2_INFO_PLUGIN_FILE)
+        self._create_plugin_file()
+        logging.info("Successfully created %s !", GLUE2_INFO_PLUGIN_FILE)
+        # create Glue2 static ldif file
+        logging.debug("Creating %s ...", GLUE2_INFO_STATIC_LDIF_FILE)
+        self._create_static_ldif_file()
+        logging.info("Successfully created %s !", GLUE2_INFO_STATIC_LDIF_FILE)
+        return
+
+    def _create_service_config_file(self):
+        params = { 
+            'SITEID': self._get_site_id(),
+            'SERVICEID': self._get_service_id(),
+            'QUALITY_LEVEL': self._get_quality_level()
         }
+        create_file_from_template(
+            GLUE2_INFO_SERVICE_CONFIG_FILE,
+            GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE,
+            params)
+        set_owner("ldap", GLUE2_INFO_SERVICE_CONFIG_FILE)
         return
 
-    def init(self, configuration, stats):
-        # GLUE2_SERVICE_FILE
-        logging.debug("Creating %s ...", self.GLUE2_SERVICE_FILE)
-        self.create_service_file(configuration)
-        logging.info("Successfully created %s !", self.GLUE2_SERVICE_FILE)
-        # GLUE2_SERVICE_CONFIG_FILE
-        logging.debug("Creating %s ...", self.GLUE2_SERVICE_CONFIG_FILE)
-        self.create_service_config_file(configuration, stats)
-        logging.info("Successfully created %s !", self.GLUE2_SERVICE_CONFIG_FILE)
-        # GLUE2_STATIC_LDIF_FILE
-        self.delete_backup_files() # remove old backup files
-        logging.debug("Creating %s ...", self.GLUE2_STATIC_LDIF_FILE)
-        created_file = self.create_static_ldif_file(configuration, stats)
-        logging.info("Successfully created %s !", created_file)
-        # GLUE2_PLUGIN_FILE
-        logging.debug("Creating %s ...", self.GLUE2_INFO_PLUGIN_FILE)
-        self.create_plugin_file()
-        logging.info("Successfully created %s !", self.GLUE2_INFO_PLUGIN_FILE)
-        # remove old cron file
-        self.remove_old_cron_file_if_exists()
+    def _create_srm_endpoint_config_file(self):
+        vos = self._configuration.get_supported_VOs()
+        params = {
+            'SITEID': self._get_site_id(),
+            'ENDPOINT': self._configuration.get_public_srm_endpoint(),
+            'QUALITY_LEVEL': self._get_quality_level(),
+            'SERVICEID': self._get_service_id(),
+            'ACBR': "VO:" + "\\nVO:".join(vos),
+            'OWNER': "\\n".join(vos)
+        }
+        create_file_from_template(
+            GLUE2_INFO_SERVICE_SRM_CONFIG_FILE, 
+            GLUE2_INFO_SERVICE_SRM_CONFIG_FILE_TEMPLATE, 
+            params)
+        # set owner
+        set_owner("ldap", GLUE2_INFO_SERVICE_SRM_CONFIG_FILE)
         return
 
-    def update(self, configuration, stats):
-        # change service configuration file
-        content = self.get_service_configuration(configuration, stats.get_managed_vos())
-        content['get_servingstate'] = "echo " + str(configuration.get("STORM_SERVING_STATE"))
-        super(Glue2, self).create_service_config_file(self.GLUE2_SERVICE_CONFIG_FILE, content)
-        # generates the updater node list
-        node_list = self.get_update_nodes(configuration, stats)
-        # print LDIF
-        super(Glue2, self).print_update_ldif(node_list)
+    def _create_service_provider_file(self):
+        # create (overwrite) provider file
+        f = open(GLUE2_INFO_PROVIDER_FILE, "w")
+        f.write("#!/bin/sh\n")
+        f.write("glite-info-glue2-simple ")
+        f.write("%s,%s " % (GLUE2_INFO_SERVICE_SRM_CONFIG_FILE, 
+            GLUE2_INFO_SERVICE_CONFIG_FILE))
+        f.write("%s " % (self._get_site_id()))
+        f.write("%s " % (self._get_service_id()))
+        f.write("%s\n" % (self._get_srm_endpoint_id()))
+        f.close()
+        # set ldap as owner and chmod +x
+        set_owner("ldap",GLUE2_INFO_PROVIDER_FILE)
+        os.chmod(GLUE2_INFO_PROVIDER_FILE, 0755)
         return
 
-    def create_service_file(self, configuration):
-        params = []
-        params.append(configuration.get('SITE_NAME'))
-        params.append(configuration.get_public_srm_endpoint())
-        return super(Glue2, self).create_service_file(self.GLUE2_SERVICE_FILE, self.GLUE2_INFO_SERVICE, self.GLUE2_SERVICE_CONFIG_FILE, params)
+    def _create_plugin_file(self):
+        f = open(GLUE2_INFO_PLUGIN_FILE, "w")
+        f.write("#!/bin/sh\n")
+        f.write("%s get-update-ldif -f %s -g glue2" % (STORM_INFO_PROVIDER, 
+            CONFIG_FILE))
+        f.close()
+        # set ldap as owner and chmod +x
+        set_owner("ldap",GLUE2_INFO_PLUGIN_FILE)
+        os.chmod(GLUE2_INFO_PLUGIN_FILE, 0755)
+        return
 
-    def create_service_config_file(self, configuration, stats):
-        content = self.get_service_configuration(configuration, stats.get_managed_vos())
-        return super(Glue2, self).create_service_config_file(self.GLUE2_SERVICE_CONFIG_FILE, content)
+    def _create_static_ldif_file(self):
+        exporter = LDIFExporter()
+        exporter.add_nodes(self.get_static_ldif_nodes())
+        exporter.save_to_file(GLUE2_INFO_STATIC_LDIF_FILE)
+        # set ldap as owner and chmod +x
+        set_owner("ldap", GLUE2_INFO_STATIC_LDIF_FILE)
+        return
 
-    def create_plugin_file(self):
-        return super(Glue2, self).create_plugin_file(self.GLUE2_INFO_PLUGIN_FILE)
-
-    def create_static_ldif_file(self, configuration, stats):
+    def get_static_ldif_nodes(self):
 
         nodes = []
         # Commons
-        GLUE2ServiceID = "glue:" + configuration.get("STORM_FRONTEND_PUBLIC_HOST") + "/data"
-        GLUE2EntityCreationTime = time.strftime('%Y-%m-%dT%T')
-        GLUE2ServiceQualityLevel = str(QualityLevel_t(int(configuration.get('STORM_ENDPOINT_QUALITY_LEVEL'))))
-
-        # Glue2StorageService
-        node = GLUE2StorageService(GLUE2ServiceID)
-        node.init_as_default().add({
-            'GLUE2ServiceID': [GLUE2ServiceID],
-            'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-            'GLUE2ServiceQualityLevel': [GLUE2ServiceQualityLevel],
-            'GLUE2ServiceAdminDomainForeignKey': [configuration.get("SITE_NAME")]
-        })
-        nodes.append(node)
-
+        service_id = self._get_service_id()
+        storm_version = self._get_implementation_version()
+        issuer_ca = str(os.popen("openssl x509 -issuer -noout -in \
+            /etc/grid-security/hostcert.pem").read())[8:-1]
+        
         # Glue2StorageServiceCapacity online
-        if stats.get_summary()["total-space"] > 0:
-            GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/disk"
-            node = GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID)
-            node.init_as_default().add({
-                'GLUE2StorageServiceCapacityID': [GLUE2StorageServiceCapacityID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2StorageServiceCapacityType': ["online"],
-                'GLUE2StorageServiceCapacityTotalSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityFreeSize': [str(self.round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityUsedSize': [str(self.round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityReservedSize': [str(self.round_div(stats.get_summary()["reserved-space"],self.FROM_BYTES_TO_GB))],
-                'GLUE2StorageServiceCapacityStorageServiceForeignKey': [GLUE2ServiceID]
+        if self._has_online_capacity():
+            node = GLUE2StorageServiceCapacity(
+                self._get_service_capacity_id("online"), service_id)
+            node.init().add({
+                'GLUE2StorageServiceCapacityType': "online",
+                'GLUE2StorageServiceCapacityTotalSize': 
+                    self._stats.get_summary()["total-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityFreeSize': 
+                    self._stats.get_summary()["free-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityUsedSize': 
+                    self._stats.get_summary()["used-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityReservedSize': 
+                    self._stats.get_summary()["reserved-space"].as_GB(),
             })
             nodes.append(node)
 
         # Glue2StorageServiceCapacity nearline
-        if stats.get_summary()["nearline-space"] > 0:
-            GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/tape"
-            node = GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID)
-            node.init_as_default().add({
-                'GLUE2StorageServiceCapacityID': [GLUE2StorageServiceCapacityID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2StorageServiceCapacityType': ["nearline"],
-                'GLUE2StorageServiceCapacityTotalSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityFreeSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityUsedSize': [str(0)], 
-                'GLUE2StorageServiceCapacityReservedSize': [str(0)],
-                'GLUE2StorageServiceCapacityStorageServiceForeignKey': [GLUE2ServiceID]
+        if self._has_nearline_capacity():
+            node = GLUE2StorageServiceCapacity(
+                self._get_service_capacity_id("nearline"), service_id)
+            node.init().add({
+                'GLUE2StorageServiceCapacityType': "nearline",
+                'GLUE2StorageServiceCapacityTotalSize': 
+                    self._stats.get_summary()["nearline-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityFreeSize': 
+                    self._stats.get_summary()["nearline-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityUsedSize': 0, 
+                'GLUE2StorageServiceCapacityReservedSize': 0,
             })
             nodes.append(node)
 
         # GLUE2StorageAccessProtocol for each protocol
-        protocol_versions = self.get_enabled_protocols(configuration)
-        for protocol in protocol_versions:
-            GLUE2StorageAccessProtocolID = GLUE2ServiceID + "/ap/" + protocol + "/" + protocol_versions[protocol]
-            node = GLUE2StorageAccessProtocol(GLUE2StorageAccessProtocolID, GLUE2ServiceID).init_as_default()
-            node.add({
-                'GLUE2StorageAccessProtocolID': [GLUE2StorageAccessProtocolID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2StorageAccessProtocolType': [protocol], 
-                'GLUE2StorageAccessProtocolVersion': [protocol_versions[protocol]],
-                'GLUE2StorageAccessProtocolStorageServiceForeignKey': [GLUE2ServiceID]
+        for protocol in self._configuration.get_enabled_access_protocols():
+            ap_id = self._get_access_protocol_id(protocol, 
+                self._get_access_protocol_version(protocol))
+            node = GLUE2StorageAccessProtocol(ap_id, service_id)
+            node.init().add({
+                'GLUE2StorageAccessProtocolType': protocol, 
+                'GLUE2StorageAccessProtocolVersion': 
+                    self._get_access_protocol_version(protocol)
             })
             nodes.append(node)
 
         # Glue2StorageManager
-        GLUE2ManagerID = GLUE2ServiceID + "/m/StoRM"
-        node = GLUE2StorageManager(GLUE2ManagerID, GLUE2ServiceID)
-        node.init_as_default().add({
-            'GLUE2ManagerID': [GLUE2ManagerID],
-            'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-            'GLUE2StorageManagerStorageServiceForeignKey': [GLUE2ServiceID]
+        manager_id = self._get_manager_id()
+        node = GLUE2StorageManager(manager_id, service_id)
+        node.init().add({
+            'GLUE2ManagerProductVersion': storm_version
         })
         nodes.append(node)
 
-        # Glue2DataStore
-        if stats.get_summary()["total-space"] > 0:
-            # Glue2DataStore disk online
-            GLUE2ResourceID = GLUE2ServiceID + "/ds/StoRM/disk"
-            node = GLUE2DataStore(GLUE2ResourceID, GLUE2ManagerID, GLUE2ServiceID)
-            node.init_as_default().add({
-                'GLUE2ResourceID': [GLUE2ResourceID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2DataStoreType': ["disk"], 
-                'GLUE2DataStoreLatency': ["online"], 
-                'GLUE2DataStoreTotalSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
-                'GLUE2ResourceManagerForeignKey': [GLUE2ManagerID],
-                'GLUE2DataStoreStorageManagerForeignKey': [GLUE2ManagerID] # it seems necessary
+        # Glue2DataStore disk online
+        if self._has_online_capacity():
+            node = GLUE2DataStore(self._get_data_store_id("disk"), manager_id, 
+                service_id)
+            node.init().add({
+                'GLUE2DataStoreType': "disk", 
+                'GLUE2DataStoreLatency': "online", 
+                'GLUE2DataStoreTotalSize': 
+                    self._stats.get_summary()["total-space"].as_GB()
             })
             nodes.append(node)
 
-        if stats.get_summary()["nearline-space"] > 0:
-            # Glue2DataStore tape nearline
-            GLUE2ResourceID = GLUE2ServiceID + "/ds/StoRM/tape"
-            node = GLUE2DataStore(GLUE2ResourceID, GLUE2ManagerID, GLUE2ServiceID)
-            node.init_as_default().add({
-                'GLUE2ResourceID': [GLUE2ResourceID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2DataStoreType': ["tape"], 
-                'GLUE2DataStoreLatency': ["nearline"], 
-                'GLUE2DataStoreTotalSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2ResourceManagerForeignKey': [GLUE2ManagerID],
-                'GLUE2DataStoreStorageManagerForeignKey': [GLUE2ManagerID] # it seems necessary
+        # Glue2DataStore tape nearline
+        if self._has_nearline_capacity():
+            node = GLUE2DataStore(self._get_data_store_id("tape"), manager_id, 
+                service_id)
+            node.init().add({
+                'GLUE2DataStoreType': "tape", 
+                'GLUE2DataStoreLatency': "nearline", 
+                'GLUE2DataStoreTotalSize': 
+                    self._stats.get_summary()["nearline-space"].as_GB()
             })
             nodes.append(node)
 
-        # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each VFS
-        for sa_name,sa_data in stats.get_vfs().items():
+        # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each 
+        # VFS
+        for sa_name,sa_data in self._stats.get_vfs().items():
 
             # GLUE2Share
-            GLUE2ShareID = GLUE2ServiceID + "/ss/" + sa_data["name"]
-            node = GLUE2StorageShare(GLUE2ShareID, GLUE2ServiceID)
-            node.init_as_default().add({
-                'GLUE2ShareID': [GLUE2ShareID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2StorageShareAccessLatency': [sa_data["accessLatency"].lower()],
-                'GLUE2StorageShareRetentionPolicy': [sa_data["retentionPolicy"].lower()],
-                'GLUE2StorageShareServingState': ["production"],
-                'GLUE2StorageShareStorageServiceForeignKey': [GLUE2ServiceID],
-                'GLUE2ShareServiceForeignKey': [GLUE2ServiceID] # it seems necessary
-            })
-            if "*" in sa_data["voname"]:
-                node.add({'GLUE2StorageShareSharingID': ["dedicated"]})
+            share_id = self._get_share_id(sa_data["name"])
+            if self._is_anonymous(sa_data["voname"]):
+                sharing_id = "dedicated"
             else:
-                s_id = ":".join((sa_data["voname"],sa_data["retentionPolicy"],sa_data["accessLatency"]))
-                node.add({'GLUE2StorageShareSharingID': [s_id]})
+                sharing_id = self._get_sharing_id(sa_data["name"],
+                    sa_data["retentionPolicy"],sa_data["accessLatency"])
+            node = GLUE2StorageShare(share_id, service_id)
+            node.init().add({
+                'GLUE2StorageShareAccessLatency': 
+                    sa_data["accessLatency"].lower(),
+                'GLUE2StorageShareRetentionPolicy': 
+                    sa_data["retentionPolicy"].lower(),
+                'GLUE2StorageShareServingState': "production",
+                'GLUE2StorageShareSharingID': sharing_id
+            })
             nodes.append(node)
 
             # GLUE2MappingPolicy
-            GLUE2PolicyID = GLUE2ShareID + "/mp/basic"
-            node = GLUE2MappingPolicy(GLUE2PolicyID, GLUE2ShareID, GLUE2ServiceID)
-            node.init_as_default().add({
-                'GLUE2PolicyID': [GLUE2PolicyID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2PolicyRule': sa_data["approachableRules"],
-                'GLUE2MappingPolicyShareForeignKey': [GLUE2ShareID]
+            policy_id = self._get_share_policy_id(sa_data["name"])
+            node = GLUE2MappingPolicy(policy_id, share_id, service_id)
+            node.init().add({
+                'GLUE2PolicyRule': sa_data["approachableRules"]
             })
-            if "*" in sa_data["voname"]:
-                node.add({'GLUE2PolicyUserDomainForeignKey': ["anonymous"]})
-            else:
-                node.add({'GLUE2PolicyUserDomainForeignKey': [sa_data["voname"]]})
+            if not self._is_anonymous(sa_data["voname"]):
+                node.add({ 
+                    'GLUE2PolicyUserDomainForeignKey': sa_data["voname"] 
+                })
             nodes.append(node)
             
             # Glue2StorageShareCapacities
 
-            if sa_data["total-space"] > 0: 
+            if self._share_has_online_capacity(sa_name): 
                 # Glue2StorageShareCapacity online
-                GLUE2StorageShareCapacityID = GLUE2ShareID + "/disk"
-                node = GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID)
-                node.init_as_default().add({
-                    'GLUE2StorageShareCapacityID': [GLUE2StorageShareCapacityID],
-                    'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                    'GLUE2StorageShareCapacityType': ["online"],
-                    'GLUE2StorageShareCapacityTotalSize': [str(self.round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(self.round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityUsedSize': [str(self.round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityReservedSize': [str(self.round_div(sa_data["reserved-space"],self.FROM_BYTES_TO_GB))],
-                    'GLUE2StorageShareCapacityStorageShareForeignKey': [GLUE2ShareID]
+
+                capacity_id = self._get_share_capacity_id(sa_data["name"], 
+                    "online")
+                node = GLUE2StorageShareCapacity(capacity_id, share_id, 
+                    service_id)
+                node.init().add({
+                    'GLUE2StorageShareCapacityType': "online",
+                    'GLUE2StorageShareCapacityTotalSize': 
+                        sa_data["total-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityFreeSize': 
+                        sa_data["free-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityUsedSize': 
+                        sa_data["used-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityReservedSize': 
+                        sa_data["reserved-space"].as_GB()
                 })
                 nodes.append(node)
 
-            if sa_data["availableNearlineSpace"] > 0: 
+            if self._share_has_nearline_capacity(sa_name): 
                 # Glue2StorageShareCapacity nearline
-                GLUE2StorageShareCapacityID = GLUE2ShareID + "/tape"
-                node = GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID)
-                node.init_as_default().add({
-                    'GLUE2StorageShareCapacityID': [GLUE2StorageShareCapacityID],
-                    'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                    'GLUE2StorageShareCapacityType': ["nearline"],
-                    'GLUE2StorageShareCapacityTotalSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityUsedSize': [str(0)], 
-                    'GLUE2StorageShareCapacityReservedSize': [str(0)],
-                    'GLUE2StorageShareCapacityStorageShareForeignKey': [GLUE2ShareID]
+                capacity_id = self._get_share_capacity_id(sa_data["name"], 
+                    "nearline")
+                node = GLUE2StorageShareCapacity(capacity_id, share_id, 
+                    service_id)
+                node.init().add({
+                    'GLUE2StorageShareCapacityType': "nearline",
+                    'GLUE2StorageShareCapacityTotalSize': 
+                        sa_data["nearline-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityFreeSize': 
+                        sa_data["nearline-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityUsedSize': 0, 
+                    'GLUE2StorageShareCapacityReservedSize': 0
                 })
                 nodes.append(node)
 
-        # Endpoints
-        
-        # GLUE2AccessPolicyRule
-        GLUE2AccessPolicyRule = []
-        for vo in stats.get_managed_vos():
-            GLUE2AccessPolicyRule.append("vo:" + vo)
-        
-        # GLUE2EntityOtherInfo
-        GLUE2EntityOtherInfo = []
-        for protocol in self.get_enabled_protocols(configuration):
-            GLUE2EntityOtherInfo.append("SupportedProtocol=" + protocol)        
+        access_policy_rules = []
+        for vo in self._configuration.get_supported_VOs():
+            access_policy_rules.append("vo:" + vo)
 
-        # SRM endpoints
-        GLUE2EndpointInterfaceName = "SRM"
-        GLUE2EndpointInterfaceVersion = "2.2.0"
+        if self._configuration.has_gridhttps():
 
-        # Glue2StorageEndpoint - frontend list
-        for frontend_host in configuration.get_frontend_list():
-            # Glue2StorageEndpoint SRM
-            GLUE2EndpointID = GLUE2ServiceID + "/ep/" + frontend_host + ":" + configuration.get("STORM_FRONTEND_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion            
-            node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
-            node.init_as_default().add({
-                'GLUE2EndpointID': [GLUE2EndpointID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2EndpointURL': [configuration.get_public_srm_endpoint()],
-                'GLUE2EndpointInterfaceName': [GLUE2EndpointInterfaceName],
-                'GLUE2EndpointInterfaceVersion': [GLUE2EndpointInterfaceVersion],
-                'GLUE2EndpointTechnology': ["webservice"],
-                'GLUE2EndpointQualityLevel': [GLUE2ServiceQualityLevel],
-                'GLUE2EndpointServingState': ["production"],
-                'GLUE2EndpointCapability': ["data.management.storage"],
-                'GLUE2EntityOtherInfo': GLUE2EntityOtherInfo,
-                'GLUE2EndpointServiceForeignKey': [GLUE2ServiceID]
+            # Add HTTP Endpoint
+            endpoint_id = self._get_http_endpoint_id()
+            node = GLUE2HttpStorageEndpoint(endpoint_id, service_id)
+            node.init().add({
+                'GLUE2EndpointURL': 
+                    self._configuration.get_public_http_endpoint(),
+                'GLUE2EndpointImplementationVersion': storm_version,
+                'GLUE2EndpointQualityLevel': self._get_quality_level(),
+                'GLUE2EndpointServingState': 
+                    self._configuration.get("STORM_SERVING_STATE"),
+                'GLUE2EndpointIssuerCA': issuer_ca
             })
             nodes.append(node)
 
-            # Glue2AccessPolicy for the endpoint
-            GLUE2PolicyID = GLUE2EndpointID + "/ap/basic"
-            node = GLUE2AccessPolicy(GLUE2PolicyID, GLUE2EndpointID, GLUE2ServiceID)
-            node.init_as_default().add({
-                'GLUE2PolicyID': [GLUE2PolicyID],
-                'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                'GLUE2AccessPolicyRule': GLUE2AccessPolicyRule,
-                'GLUE2AccessPolicyEndpointForeignKey': [GLUE2EndpointID]
+            # Add Endpoint Policy
+            policy_id = self._get_endpoint_policy_id(endpoint_id)
+            node = GLUE2AccessPolicy(policy_id, endpoint_id, service_id)
+            node.init().add({ 
+                'GLUE2PolicyRule': access_policy_rules,
+                'GLUE2PolicyUserDomainForeignKey': 
+                    self._configuration.get_supported_VOs()
+                })
+            nodes.append(node)
+
+            # Add HTTPs Endpoint
+            endpoint_id = self._get_https_endpoint_id()
+            node = GLUE2HttpsStorageEndpoint(endpoint_id, service_id)
+            node.init().add({
+                'GLUE2EndpointURL': 
+                    self._configuration.get_public_https_endpoint(),
+                'GLUE2EndpointImplementationVersion': storm_version,
+                'GLUE2EndpointQualityLevel': self._get_quality_level(),
+                'GLUE2EndpointServingState': 
+                    self._configuration.get("STORM_SERVING_STATE"),
+                'GLUE2EndpointIssuerCA': issuer_ca
             })
             nodes.append(node)
 
-        if configuration.has_gridhttps():
-
-            # Glue2StorageEndpoint - gridhttps list
-            for gridhttps_host in configuration.get_gridhttps_list():
-
-                # Glue2StorageEndpoint secure webdav
-                GLUE2EndpointInterfaceName = "https"
-                GLUE2EndpointInterfaceVersion = "1.1"
-                GLUE2EndpointID = GLUE2ServiceID + "/ep/" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTPS_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
-
-                node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
-                node.init_as_default().add({
-                    'GLUE2EndpointID': [GLUE2EndpointID],
-                    'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                    'GLUE2EndpointURL': ["https://" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTPS_PORT") + "/webdav/"],
-                    'GLUE2EndpointInterfaceName': [GLUE2EndpointInterfaceName],
-                    'GLUE2EndpointInterfaceVersion': [GLUE2EndpointInterfaceVersion],
-                    'GLUE2EndpointTechnology': ["webservice"],
-                    'GLUE2EndpointQualityLevel': [GLUE2ServiceQualityLevel],
-                    'GLUE2EndpointServingState': ["production"],
-                    'GLUE2EndpointCapability': ["data.management.storage", "data.management.transfer"],
-                    'GLUE2EntityOtherInfo': ["SupportedProtocol=WebDAV"],
-                    'GLUE2EndpointServiceForeignKey': [GLUE2ServiceID]
+            # Add Endpoint Policy
+            policy_id = self._get_endpoint_policy_id(endpoint_id)
+            node = GLUE2AccessPolicy(policy_id, endpoint_id, service_id)
+            node.init().add({ 
+                'GLUE2PolicyRule': access_policy_rules,
+                'GLUE2PolicyUserDomainForeignKey': 
+                    self._configuration.get_supported_VOs()
                 })
-                nodes.append(node)
+            nodes.append(node)
 
-                # Glue2AccessPolicy for the endpoint
-                GLUE2PolicyID = GLUE2EndpointID + "/ap/basic"
-                node = GLUE2AccessPolicy(GLUE2PolicyID, GLUE2EndpointID, GLUE2ServiceID)
-                node.init_as_default().add({
-                    'GLUE2PolicyID': [GLUE2PolicyID],
-                    'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                    'GLUE2AccessPolicyRule': GLUE2AccessPolicyRule,
-                    'GLUE2AccessPolicyEndpointForeignKey': [GLUE2EndpointID]
-                })
-                nodes.append(node)
+        return nodes
 
-                if configuration.is_HTTP_endpoint_enabled():
+    def get_update_ldif_nodes(self):
 
-                    # Glue2StorageEndpoint anonymous webdav
-                    GLUE2EndpointInterfaceName = "http"
-                    GLUE2EndpointInterfaceVersion = "1.1"
-                    GLUE2EndpointID = GLUE2ServiceID + "/ep/" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTP_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
-
-                    node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
-                    node.init_as_default().add({
-                        'GLUE2EndpointID': [GLUE2EndpointID],
-                        'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                        'GLUE2EndpointURL': ["http://" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTP_PORT") + "/webdav/"],
-                        'GLUE2EndpointInterfaceName': [GLUE2EndpointInterfaceName],
-                        'GLUE2EndpointInterfaceVersion': [GLUE2EndpointInterfaceVersion],
-                        'GLUE2EndpointTechnology': ["webservice"],
-                        'GLUE2EndpointQualityLevel': [GLUE2ServiceQualityLevel],
-                        'GLUE2EndpointServingState': ["production"],
-                        'GLUE2EndpointCapability': ["data.management.storage", "data.management.transfer"],
-                        'GLUE2EntityOtherInfo': ["SupportedProtocol=WebDAV"],
-                        'GLUE2EndpointServiceForeignKey': [GLUE2ServiceID]
-                    })
-                    nodes.append(node)
-
-                    # Glue2AccessPolicy for the endpoint
-                    GLUE2PolicyID = GLUE2EndpointID + "/ap/basic"
-                    node = GLUE2AccessPolicy(GLUE2PolicyID, GLUE2EndpointID, GLUE2ServiceID)
-                    node.init_as_default().add({
-                        'GLUE2PolicyID': [GLUE2PolicyID],
-                        'GLUE2EntityCreationTime': [GLUE2EntityCreationTime],
-                        'GLUE2AccessPolicyRule': ["'ALL'"],
-                        'GLUE2AccessPolicyEndpointForeignKey': [GLUE2EndpointID]
-                    })
-                    nodes.append(node)
-
-        # create LDIF file
-        return super(Glue2, self).create_static_ldif_file(self.GLUE2_STATIC_LDIF_FILE, nodes, configuration.is_info_overwrite())
-
-    def get_update_nodes(self, configuration, stats):
-
+        # Output
         nodes = []
 
         # Commons
-        GLUE2ServiceID = "glue:" + configuration.get("STORM_FRONTEND_PUBLIC_HOST") + "/data"
-        
-        # Update serving state on Glue2StorageEndpoint(s)
+        service_ID = self._get_service_id()
+        serving_state_value = self._configuration.get("STORM_SERVING_STATE")
 
-        # SRM endpoints from frontend list
-        GLUE2EndpointInterfaceName = "SRM"
-        GLUE2EndpointInterfaceVersion = "2.2.0"
-        for frontend_host in configuration.get_frontend_list():
-            # Glue2StorageEndpoint SRM
-            GLUE2EndpointID = GLUE2ServiceID + "/ep/" + frontend_host + ":" + configuration.get("STORM_FRONTEND_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
-            node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
-            node.add({
-                'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE_VALUE"))]
-            })
+        # Glue2StorageEndpoint SRM
+        node = GLUE2StorageEndpoint(self._get_srm_endpoint_id(), service_ID)
+        node.add({ 'GLUE2EndpointServingState': serving_state_value })
+        nodes.append(node)
+
+        if self._configuration.has_gridhttps():
+
+            # Glue2StorageEndpoint http webdav
+            node = GLUE2StorageEndpoint(self._get_http_endpoint_id(), 
+                service_ID)
+            node.add({ 'GLUE2EndpointServingState': serving_state_value })
             nodes.append(node)
 
-        if configuration.has_gridhttps():
-            # Glue2StorageEndpoint - gridhttps list
-            for gridhttps_host in configuration.get_gridhttps_list():
-                
-                # WebDAV HTTPs endpoint
-                GLUE2EndpointInterfaceName = "https"
-                GLUE2EndpointInterfaceVersion = "1.1"
-                GLUE2EndpointID = GLUE2ServiceID + "/ep/" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTPS_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
-                node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
-                node.add({
-                    'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE_VALUE"))]
-                })
-                nodes.append(node)
-
-                if configuration.is_HTTP_endpoint_enabled():
-
-                    # WebDAV HTTP endpoint
-                    GLUE2EndpointInterfaceName = "http"
-                    GLUE2EndpointInterfaceVersion = "1.1"
-                    GLUE2EndpointID = GLUE2ServiceID + "/ep/" + gridhttps_host + ":" + configuration.get("STORM_GRIDHTTPS_HTTP_PORT") + "/" + GLUE2EndpointInterfaceName + "/" + GLUE2EndpointInterfaceVersion
-                    node = GLUE2StorageEndpoint(GLUE2EndpointID, GLUE2ServiceID)
-                    node.add({
-                        'GLUE2EndpointServingState': [str(configuration.get("STORM_SERVING_STATE_VALUE"))]
-                    })
-                    nodes.append(node)
+            # Glue2StorageEndpoint https webdav
+            node = GLUE2StorageEndpoint(self._get_https_endpoint_id(), 
+                service_ID)
+            node.add({ 'GLUE2EndpointServingState': serving_state_value })
+            nodes.append(node)
 
         # Glue2StorageServiceCapacity online
-        if stats.get_summary()["total-space"] > 0:
-            GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/disk"
-            node = GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID)
+        if self._has_online_capacity():
+            node = GLUE2StorageServiceCapacity(
+                self._get_service_capacity_id("online"), service_ID)
             node.add({ 
-                'GLUE2StorageServiceCapacityTotalSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityFreeSize': [str(self.round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityUsedSize': [str(self.round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityReservedSize': [str(self.round_div(stats.get_summary()["reserved-space"],self.FROM_BYTES_TO_GB))]
+                'GLUE2StorageServiceCapacityTotalSize': 
+                    self._stats.get_summary()["total-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityFreeSize': 
+                    self._stats.get_summary()["free-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityUsedSize': 
+                    self._stats.get_summary()["used-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityReservedSize': 
+                    self._stats.get_summary()["reserved-space"].as_GB()
             })
             nodes.append(node)
 
         # Glue2StorageServiceCapacity nearline
-        if stats.get_summary()["nearline-space"] > 0:
-            GLUE2StorageServiceCapacityID = GLUE2ServiceID + "/ssc/tape"
-            node = GLUE2StorageServiceCapacity(GLUE2StorageServiceCapacityID, GLUE2ServiceID)
+        if self._has_nearline_capacity():
+            node = GLUE2StorageServiceCapacity(
+                self._get_service_capacity_id("nearline"), service_ID)
             node.add({ 
-                'GLUE2StorageServiceCapacityTotalSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))], 
-                'GLUE2StorageServiceCapacityFreeSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
-                'GLUE2StorageServiceCapacityUsedSize': [str(0)], 
-                'GLUE2StorageServiceCapacityReservedSize': [str(0)]
+                'GLUE2StorageServiceCapacityTotalSize': 
+                    self._stats.get_summary()["nearline-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityFreeSize': 
+                    self._stats.get_summary()["nearline-space"].as_GB(),
+                'GLUE2StorageServiceCapacityUsedSize': 0, 
+                'GLUE2StorageServiceCapacityReservedSize': 0
             })
             nodes.append(node)
 
-        # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each VFS
-        for sa_name,sa_data in stats.get_vfs().items():
+        # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each 
+        # VFS
+        for sa_name,sa_data in self._stats.get_vfs().items():
 
             # GLUE2Share
-            GLUE2ShareID = GLUE2ServiceID + "/ss/" + sa_data["name"]
-            node = GLUE2StorageShare(GLUE2ShareID, GLUE2ServiceID)
-            node.add({ 
-                'GLUE2StorageShareServingState': [str(configuration.get("STORM_SERVING_STATE_VALUE"))]
-            })
+            share_id = self._get_share_id(sa_data["name"])
+            node = GLUE2StorageShare(share_id, service_ID)
+            node.add({ 'GLUE2StorageShareServingState': serving_state_value })
             nodes.append(node)
             
             # Glue2StorageShareCapacity
-            if sa_data["total-space"] > 0:
-                GLUE2StorageShareCapacityID = GLUE2ShareID + "/disk"
-                node = GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID)
+            if self._share_has_online_capacity(sa_name):
+                capacity_id = self._get_share_capacity_id(sa_data["name"], 
+                    "online")
+                node = GLUE2StorageShareCapacity(capacity_id, share_id, 
+                    service_ID)
                 node.add({ 
-                    'GLUE2StorageShareCapacityTotalSize': [str(self.round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(self.round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityUsedSize': [str(self.round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityReservedSize': [str(self.round_div(sa_data["reserved-space"],self.FROM_BYTES_TO_GB))]
+                    'GLUE2StorageShareCapacityTotalSize': 
+                        sa_data["total-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityFreeSize': 
+                        sa_data["free-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityUsedSize': 
+                        sa_data["used-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityReservedSize': 
+                        sa_data["reserved-space"].as_GB()
                 })
                 nodes.append(node)
-            if sa_data["availableNearlineSpace"] > 0: 
-                GLUE2StorageShareCapacityID = GLUE2ShareID + "/tape"
-                node = GLUE2StorageShareCapacity(GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID)
+            if self._share_has_nearline_capacity(sa_name):
+                capacity_id = self._get_share_capacity_id(sa_data["name"], 
+                    "nearline")
+                node = GLUE2StorageShareCapacity(capacity_id, share_id, 
+                    service_ID)
                 node.add({ 
-                    'GLUE2StorageShareCapacityTotalSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityFreeSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], 
-                    'GLUE2StorageShareCapacityUsedSize': [str(0)], 
-                    'GLUE2StorageShareCapacityReservedSize': [str(0)]
+                    'GLUE2StorageShareCapacityTotalSize': 
+                        sa_data["nearline-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityFreeSize': 
+                        sa_data["nearline-space"].as_GB(), 
+                    'GLUE2StorageShareCapacityUsedSize': 0, 
+                    'GLUE2StorageShareCapacityReservedSize': 0
                 })
                 nodes.append(node)
 
         return nodes
 
-    def delete_backup_files(self):
-        parent_directory = os.path.dirname(self.GLUE2_STATIC_LDIF_FILE)
+    def _delete_backup_files(self):
+        parent_directory = os.path.dirname(GLUE2_INFO_STATIC_LDIF_FILE)
         removed_list = []
         for f in os.listdir(parent_directory):
-            if re.search(r'static-file-glue2-storm\.ldif\.bkp_.*',f):
+            if re.search(r'storm-glue2-static\.ldif\.bkp_.*',f):
                 os.remove(os.path.join(parent_directory, f))
                 removed_list.append(f)
         logging.debug("Removed backup files: [%s]", removed_list)
-        return len(removed_list)
+        return len(removed_list)        
 
-    def get_enabled_protocols(self, configuration):
-        enabled = {}
-        for protocol in configuration.get_enabled_protocols():
-            enabled[protocol] = self.access_protocols_versions[protocol]
-        return enabled
-
-    def remove_old_cron_file_if_exists(self):
-        cFile = "/etc/cron.d/glite-info-glue2-dynamic-storm"
-        if os.path.isfile(cFile):
-            os.remove(cFile)
-        return
-
-    def get_service_configuration(self, configuration, vos):
-        
-        gLite_IS_version = "2.2.0"
-        gLite_IS_endpoint = configuration.get_public_srm_endpoint()
-        endpoint_capability = configuration.get('STORM_ENDPOINT_CAPABILITY')
-        quality_level = configuration.get('STORM_ENDPOINT_QUALITY_LEVEL')
-        init_command = GlueConstants.STORM_INFO_PROVIDER + " init-env --version " + gLite_IS_version + " --endpoint " + gLite_IS_endpoint
-        status_command = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && " + GlueConstants.STORM_INFO_PROVIDER + " status"
-        get_owner = "echo " + "; echo ".join(vos)
-        get_acbr = "echo VO:" + "; echo VO:".join(vos)
-
-        return {
-            "init": init_command,
-            "service_type": "SRM",
-            "get_version": "echo \"" + gLite_IS_version + "\"",
-            "get_endpoint": "echo \"" + gLite_IS_endpoint + "\"",
-            "WSDL_URL": "http://sdm.lbl.gov/srm-wg/srm.v2.2.wsdl",
-            "semantics_URL": "http://sdm.lbl.gov/srm-wg/doc/SRM.v2.2.html",
-            "get_starttime": "perl -e '@st=stat(\"/var/run/storm-backend-server.pid\");print \"@st[10]\\n\";'",
-            "get_capabilities": "echo \"" + str(endpoint_capability) + "\"",
-            "get_implementor": "echo \"emi\"",
-            "get_implementationname": "echo \"StoRM\"",
-            "get_implementationversion": "rpm -qa | grep storm-backend-server | cut -d- -f4",
-            "get_qualitylevel": "echo \"" + str(quality_level) + "\"",
-            "get_servingstate": "echo 4",
-            "get_data": "echo",
-            "get_services": "echo",
-            "get_status": status_command,
-            "get_owner": get_owner,
-            "get_acbr": get_acbr
-        }

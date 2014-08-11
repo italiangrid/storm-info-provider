@@ -2,268 +2,250 @@ import logging
 import os
 import re
 
-from glue import *
-from glue13_data import *
+from info_provider.glue.constants import *
+from info_provider.ldap_utils import LDIFExporter
+from glue13_schema import *
+from utils import *
 
-class Glue13(Glue):
 
-    FROM_BYTES_TO_GB = 1000000000
-    FROM_BYTES_TO_KB = 1000
 
-    GLUE13_INFO_SERVICE = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service"
-    GLUE13_SERVICE_FILE = GlueConstants.INFO_PROVIDER_PATH + "/service-srm-storm-v2"
-    GLUE13_SERVICE_CONFIG_FILE = GlueConstants.INFO_SERVICE_CONFIG + "/glite-info-service-srm-storm-v2.conf"
-    GLUE13_STATIC_LDIF_FILE = GlueConstants.INFO_LDIF_PATH + "/static-file-storm.ldif"
-    GLUE13_INFO_PLUGIN_FILE = GlueConstants.INFO_PLUGIN_PATH + "/glite-info-dynamic-storm"
+class Glue13(object):
 
-    def __init__(self):
-        self.access_protocols_streams = { 
-            'file': {
-                'version': '1.0.0',
-                'maxstreams': '1'
-                },
-            'rfio': {
-                'version': '1.0.0',
-                'maxstreams': '1'
-                },
-            'gsiftp': {
-                'version': '1.0.0',
-                'maxstreams': '10'
-                }, 
-            'root': {
-                'version': '1.0.0',
-                'maxstreams': '1'
-                }, 
-            'http': {
-                'version': '1.1.0',
-                'maxstreams': '1'
-                }, 
-            'https': {
-                'version': '1.1.0',
-                'maxstreams': '1'
-                }
+    def __init__(self, configuration, spaceinfo):
+        self._configuration = configuration
+        self._stats = spaceinfo
+        return
+
+    def _get_se_id(self):
+        return self._configuration.get("STORM_FRONTEND_PUBLIC_HOST")
+
+    def _get_site_id(self):
+        return self._configuration.get("SITE_NAME")
+
+    def _get_implementation_version(self):
+        return str(os.popen("rpm -q --queryformat='%{VERSION}' \
+            storm-backend-server").read())
+
+    def _get_sa_local_id(self, sa_name, retention_policy, access_latency):
+        return ":".join((sa_name[:-3].lower(), retention_policy.lower(), 
+            access_latency.lower()))
+    
+    def _get_se_control_protocol_id(self):
+        return 'srm_v2.2'
+
+    def _get_sa_vo_info_id(self, sa_name, sa_voname, sa_token):
+        if self._configuration.vfs_has_custom_token(sa_name): 
+            # reserved space
+            return ":".join((sa_voname, sa_token))                    
+        # unreserved space
+        return sa_voname
+
+    def configure(self):
+        # remove old static ldif backup files
+        self._delete_backup_files()
+        # create Glue13 service configuration file
+        logging.debug("Creating %s ...", GLUE13_INFO_SERVICE_CONFIG_FILE)
+        self._create_service_config_file()
+        logging.info("Successfully created %s !", 
+            GLUE13_INFO_SERVICE_CONFIG_FILE)
+        # create Glue13 service provider file
+        logging.debug("Creating %s ...", GLUE13_INFO_PROVIDER_FILE)
+        self._create_service_provider_file()
+        logging.info("Successfully created %s !", GLUE13_INFO_PROVIDER_FILE)
+        # create Glue13 service plugin file
+        logging.debug("Creating %s ...", GLUE13_INFO_PLUGIN_FILE)
+        self._create_plugin_file()
+        logging.info("Successfully created %s !", GLUE13_INFO_PLUGIN_FILE)
+        # create Glue13 static ldif file
+        logging.debug("Creating %s ...", GLUE13_INFO_STATIC_LDIF_FILE)
+        self._create_static_ldif_file()
+        logging.info("Successfully created %s !", GLUE13_INFO_STATIC_LDIF_FILE)
+        return
+
+    def _create_service_provider_file(self):
+        # create (overwrite) provider file
+        f = open(GLUE13_INFO_PROVIDER_FILE, "w")
+        f.write("#!/bin/sh\n")
+        f.write("glite-info-service %s " % (GLUE13_INFO_SERVICE_CONFIG_FILE))
+        f.write("%s %s" % (self._get_site_id(), 
+            self._configuration.get_public_srm_endpoint()))
+        f.close()
+        # set ldap as owner and chmod +x
+        set_owner("ldap",GLUE13_INFO_PROVIDER_FILE)
+        os.chmod(GLUE13_INFO_PROVIDER_FILE, 0755)
+        return
+
+    def _create_service_config_file(self):
+        vos = self._configuration.get_supported_VOs()
+        params = { 
+            'ENDPOINT': self._configuration.get_public_srm_endpoint(),
+            'ACBR': "VO:" + "\\nVO:".join(vos),
+            'OWNER': "\\n".join(vos)
         }
+        create_file_from_template(
+            GLUE13_INFO_SERVICE_CONFIG_FILE,
+            GLUE13_INFO_SERVICE_CONFIG_FILE_TEMPLATE,
+            params)
+        # set owner
+        set_owner("ldap",GLUE13_INFO_SERVICE_CONFIG_FILE)
         return
 
-    def init(self, configuration, stats):
-        # GLUE13_SERVICE_FILE
-        logging.debug("Creating %s ...", self.GLUE13_SERVICE_FILE)
-        self.create_service_file(configuration)
-        logging.info("Successfully created %s !", self.GLUE13_SERVICE_FILE)
-        # GLUE13_SERVICE_CONFIG_FILE
-        logging.debug("Creating %s ...", self.GLUE13_SERVICE_CONFIG_FILE)
-        self.create_service_config_file(configuration, stats)
-        logging.info("Successfully created %s !", self.GLUE13_SERVICE_CONFIG_FILE)
-        # GLUE13_STATIC_LDIF_FILE
-        self.delete_backup_files() # remove old backup files
-        logging.debug("Creating %s ...", self.GLUE13_STATIC_LDIF_FILE)
-        self.create_static_ldif_file(configuration, stats)
-        logging.info("Successfully created %s !", self.GLUE13_STATIC_LDIF_FILE)
-        # GLUE13_PLUGIN_FILE
-        logging.debug("Creating %s ...", self.GLUE13_INFO_PLUGIN_FILE)
-        self.create_plugin_file()
-        logging.info("Successfully created %s !", self.GLUE13_INFO_PLUGIN_FILE)
-        # remove old cron file
-        self.remove_old_cron_file_if_exists()
+    def _create_static_ldif_file(self):
+        exporter = LDIFExporter()
+        exporter.add_nodes(self.get_static_ldif_nodes())
+        exporter.save_to_file(GLUE13_INFO_STATIC_LDIF_FILE)
+        # set ldap as owner and chmod +x
+        set_owner("ldap", GLUE13_INFO_STATIC_LDIF_FILE)
         return
 
-    def update(self, configuration, stats):
-        # generates the updater node list
-        nodes = self.get_update_nodes(configuration, stats)
-        # print LDIF
-        return super(Glue13, self).print_update_ldif(nodes)
+    def _create_plugin_file(self):
+        f = open(GLUE13_INFO_PLUGIN_FILE, "w")
+        f.write("#!/bin/sh\n")
+        f.write("%s get-update-ldif -f %s -g glue13" % (STORM_INFO_PROVIDER, 
+            CONFIG_FILE))
+        f.close()
+        # set ldap as owner and chmod +x
+        set_owner("ldap",GLUE13_INFO_PLUGIN_FILE)
+        os.chmod(GLUE13_INFO_PLUGIN_FILE, 0755)
+        return
 
-    def create_service_file(self, configuration):
-        params = []
-        params.append(configuration.get('SITE_NAME'))
-        params.append(configuration.get_public_srm_endpoint())   
-        return super(Glue13, self).create_service_file(self.GLUE13_SERVICE_FILE, self.GLUE13_INFO_SERVICE, self.GLUE13_SERVICE_CONFIG_FILE, params)
-
-    def create_service_config_file(self, configuration, stats):
-        content = self.get_service_configuration(configuration, stats.get_managed_vos())
-        return super(Glue13, self).create_service_config_file(self.GLUE13_SERVICE_CONFIG_FILE, content)
-
-    def create_plugin_file(self):
-        return super(Glue13, self).create_plugin_file(self.GLUE13_INFO_PLUGIN_FILE)
-
-    def create_static_ldif_file(self, configuration, stats):
+    def get_static_ldif_nodes(self):
         # list of (dn, entries)
         nodes = []
-        # common variables
-        GlueSiteUniqueID = configuration.get("SITE_NAME")
-        GlueSEUniqueID = configuration.get("STORM_FRONTEND_PUBLIC_HOST")
+        
+        # Commons
+        GlueSEUniqueID = self._get_se_id()
 
         # GlueSE
-        GlueSEImplementationVersion = os.popen("rpm -q --queryformat='%{VERSION}' storm-backend-server").read()
         node = GlueSE(GlueSEUniqueID)
-        node.init_as_default().add({
-            'GlueSEUniqueID': [GlueSEUniqueID],
-            'GlueSEName': [configuration.get("SITE_NAME") + ":srm_v2"],
-            'GlueSESizeTotal': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB) + self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSESizeFree': [str(self.round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalOnlineSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSEUsedOnlineSize': [str(self.round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalNearlineSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSEImplementationVersion': [GlueSEImplementationVersion],
-            'GlueInformationServiceURL': ["ldap://" + configuration.get("STORM_BACKEND_HOST") + ":2170/mds-vo-name=resource,o=grid"],
-            'GlueForeignKey': [ "GlueSiteUniqueID=" + GlueSiteUniqueID]
+        node.init().add({
+            'GlueSEName': self._configuration.get("SITE_NAME") + ":srm_v2",
+            'GlueSESizeTotal': 
+                self._stats.get_summary()["total-space"].as_GB() + 
+                self._stats.get_summary()["nearline-space"].as_GB(),
+            'GlueSESizeFree': self._stats.get_summary()["free-space"].as_GB(),
+            'GlueSETotalOnlineSize': 
+                self._stats.get_summary()["total-space"].as_GB(),
+            'GlueSEUsedOnlineSize': 
+                self._stats.get_summary()["used-space"].as_GB(),
+            'GlueSETotalNearlineSize': 
+                self._stats.get_summary()["nearline-space"].as_GB(),
+            'GlueSEImplementationVersion': self._get_implementation_version(),
+            'GlueInformationServiceURL': "ldap://" + 
+                self._configuration.get("STORM_BACKEND_HOST") + ":2170/" + 
+                GLUE13_BASEDN,
+            'GlueForeignKey':  "GlueSiteUniqueID=" + self._get_site_id()
         })
         nodes.append(node)
 
         # for each storage area / virtual file system
-        for sa_name,sa_data in stats.get_vfs().items():
+        for sa_name,sa_data in self._stats.get_vfs().items():
             # GlueSA
-            GlueSALocalID = ":".join((sa_name[:-3].lower(), sa_data["retentionPolicy"].lower(), sa_data["accessLatency"].lower()))
+            GlueSALocalID = self._get_sa_local_id(sa_name, 
+                sa_data["retentionPolicy"], sa_data["accessLatency"])
             node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
-            node.init_as_default().add({
-                'GlueSALocalID': [GlueSALocalID],
-                'GlueSATotalOnlineSize': [str(self.round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB))], # total space in GB
-                'GlueSAUsedOnlineSize': [str(self.round_div(sa_data["used-space"], self.FROM_BYTES_TO_GB))], # used space in GB
-                'GlueSAFreeOnlineSize': [str(self.round_div(sa_data["free-space"], self.FROM_BYTES_TO_GB))], # free space in GB
-                'GlueSAReservedOnlineSize': [str(self.round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB))], # reserved = total in prev bash script for Glue1.3
-                'GlueSATotalNearlineSize': [str(self.round_div(sa_data["availableNearlineSpace"], self.FROM_BYTES_TO_GB))], # nearline size in GB
-                'GlueSARetentionPolicy': [str(sa_data["retentionPolicy"].lower())],
-                'GlueSAStateAvailableSpace': [str(self.round_div(sa_data["available-space"], self.FROM_BYTES_TO_KB))], # available space in KB
-                'GlueSAStateUsedSpace': [str(self.round_div(sa_data["used-space"], self.FROM_BYTES_TO_KB))], # used space in KB
-                'GlueSACapability': ["InstalledOnlineCapacity=" + str(self.round_div(sa_data["total-space"], self.FROM_BYTES_TO_GB)), 
-                    "InstalledNearlineCapacity=" + str(self.round_div(sa_data["availableNearlineSpace"], self.FROM_BYTES_TO_GB))],
-                'GlueSAAccessControlBaseRule': ["VO:" + sa_data["voname"]],
-                'GlueChunkKey': ["GlueSEUniqueID=" + GlueSEUniqueID]
+            node.init().add({
+                'GlueSATotalOnlineSize': 
+                    sa_data["total-space"].as_GB(), # total space in GB
+                'GlueSAUsedOnlineSize': 
+                    sa_data["used-space"].as_GB(), # used space in GB
+                'GlueSAFreeOnlineSize': 
+                    sa_data["free-space"].as_GB(), # free space in GB
+                'GlueSAReservedOnlineSize': 
+                    sa_data["total-space"].as_GB(), # reserved = total in prev bash script for Glue1.3
+                'GlueSATotalNearlineSize': sa_data["nearline-space"].as_GB(), # nearline size in GB
+                'GlueSAFreeNearlineSize': sa_data["nearline-space"].as_GB(), 
+                'GlueSARetentionPolicy': sa_data["retentionPolicy"].lower(),
+                'GlueSAStateAvailableSpace': sa_data["available-space"].as_KB(), # available space in KB
+                'GlueSAStateUsedSpace': sa_data["used-space"].as_KB(), # used space in KB
+                'GlueSACapability': ["InstalledOnlineCapacity=" + str(sa_data["total-space"].as_GB()), 
+                    "InstalledNearlineCapacity=" + str(sa_data["nearline-space"].as_GB())],
+                'GlueSAAccessControlBaseRule': "VO:" + sa_data["voname"]
                 })
             if self.is_VO(sa_data["voname"]):
-                node.add({ 'GlueSAName': ["Reserved space for " + sa_data["voname"] + " VO"] })
+                node.add({ 'GlueSAName': "Reserved space for " + sa_data["voname"] + " VO" })
             else:
-                node.add({ 'GlueSAName': ["Custom space for non-VO users"] })
+                node.add({ 'GlueSAName': "Custom space for non-VO users" })
             nodes.append(node)
 
             if self.is_VO(sa_data["voname"]):
                 # GlueVOInfoLocal
-                if configuration.vfs_has_custom_token(sa_name): # reserved space
-                    GlueVOInfoLocalID = ":".join((sa_data["voname"],sa_data["token"]))                    
-                else: # unreserved space
-                    GlueVOInfoLocalID = sa_data["voname"]
-                node = GlueSAVOInfoLocal(GlueVOInfoLocalID, GlueSALocalID, GlueSEUniqueID)
-                node.init_as_default().add({
-                    'GlueVOInfoLocalID': [GlueVOInfoLocalID],
-                    'GlueVOInfoPath': [sa_data["stfnRoot"][0]],
-                    'GlueVOInfoTag': [sa_data["token"]],
-                    'GlueVOInfoAccessControlBaseRule': ["VO:" + sa_data["voname"]],
-                    'GlueChunkKey': ["GlueSALocalID=" + GlueSALocalID, "GlueSEUniqueID=" + GlueSEUniqueID]
+                GlueSAVOInfoLocalID = self._get_sa_vo_info_id(sa_name, sa_data["voname"], sa_data["token"])
+                node = GlueSAVOInfoLocal(GlueSAVOInfoLocalID, GlueSALocalID, GlueSEUniqueID)
+                node.init().add({
+                    'GlueVOInfoPath': sa_data["stfnRoot"][0],
+                    'GlueVOInfoAccessControlBaseRule': "VO:" + sa_data["voname"]
                     })
+                if self._configuration.vfs_has_custom_token(sa_name):
+                    node.add({ 'GlueVOInfoTag': sa_data["token"] })
                 nodes.append(node)
 
         # GlueSEControlProtocol
-        GlueSEControlProtocolLocalID = 'srm_v2.2'
-        node = GlueSEControlProtocol(GlueSEControlProtocolLocalID, GlueSEUniqueID)
-        node.init_as_default().add({
-            'GlueSEControlProtocolLocalID': [GlueSEControlProtocolLocalID],
-            'GlueSEControlProtocolType': ['SRM'],
-            'GlueSEControlProtocolVersion': ['2.2.0'],
-            'GlueSEControlProtocolEndpoint': [configuration.get_public_srm_endpoint()],
-            'GlueChunkKey': [ "GlueSEUniqueID=" + GlueSEUniqueID]
+        GlueSEControlProtocolID = self._get_se_control_protocol_id()
+        node = GlueSEControlProtocol(GlueSEControlProtocolID, GlueSEUniqueID)
+        node.init().add({
+            'GlueSEControlProtocolEndpoint': self._configuration.get_public_srm_endpoint()
         })
         nodes.append(node)
 
-        # GlueSEAccessProtocol for each protocol
-        enabled_prot = self.get_enabled_protocols(configuration)
-        for protocol, data in enabled_prot.items():
+        # GlueSEAccessProtocol for each enabled protocol
+        for protocol in self._configuration.get_enabled_access_protocols():
             node = GlueSEAccessProtocol(protocol, GlueSEUniqueID)
-            node.init_as_default().add({
-                'GlueSEAccessProtocolLocalID': [protocol],
-                'GlueSEAccessProtocolType': [protocol],
-                'GlueSEAccessProtocolVersion': [data['version']],
-                'GlueSEAccessProtocolMaxStreams': [data['maxstreams']],
-                'GlueChunkKey': ["GlueSEUniqueID=" + GlueSEUniqueID] 
-            })
-            nodes.append(node)
-
-        # create LDIF file
-        return super(Glue13, self).create_static_ldif_file(self.GLUE13_STATIC_LDIF_FILE, nodes, configuration.is_info_overwrite())
-
-    def get_update_nodes(self, configuration, stats):
-        # node list
-        nodes = []
-        # commons
-        GlueSiteUniqueID = configuration.get("SITE_NAME")
-        GlueSEUniqueID = configuration.get("STORM_FRONTEND_PUBLIC_HOST")
-
-        # GlueSE
-        node = GlueSE(GlueSEUniqueID)
-        node.add({
-            'GlueSESizeTotal': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB) + self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSESizeFree': [str(self.round_div(stats.get_summary()["free-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalOnlineSize': [str(self.round_div(stats.get_summary()["total-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSEUsedOnlineSize': [str(self.round_div(stats.get_summary()["used-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSETotalNearlineSize': [str(self.round_div(stats.get_summary()["nearline-space"],self.FROM_BYTES_TO_GB))],
-            'GlueSEUsedNearlineSize': ["0"]
-        })
-        nodes.append(node)
-
-        for sa_name,sa_data in stats.get_vfs().items():
-            # GlueSA
-            GlueSALocalID = ":".join((sa_name, sa_data["retentionPolicy"], sa_data["accessLatency"]))
-            node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
-            node.add({
-                'GlueSATotalOnlineSize': [str(self.round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], # total space in GB
-                'GlueSAUsedOnlineSize': [str(self.round_div(sa_data["used-space"],self.FROM_BYTES_TO_GB))], # used space in GB
-                'GlueSAFreeOnlineSize': [str(self.round_div(sa_data["free-space"],self.FROM_BYTES_TO_GB))], # free space in GB
-                'GlueSAReservedOnlineSize': [str(self.round_div(sa_data["total-space"],self.FROM_BYTES_TO_GB))], # reserved = total in prev bash script for Glue1.3
-                'GlueSATotalNearlineSize': [str(self.round_div(sa_data["availableNearlineSpace"],self.FROM_BYTES_TO_GB))], # nearline size in GB
-                'GlueSAUsedNearlineSize': ['0'],
-                'GlueSAFreeNearlineSize': ['0'],
-                'GlueSAReservedNearlineSize': ['0'],
-                'GlueSAStateAvailableSpace': [str(self.round_div(sa_data["available-space"],self.FROM_BYTES_TO_KB))], # available space in KB
-                'GlueSAStateUsedSpace': [str(self.round_div(sa_data["used-space"],self.FROM_BYTES_TO_KB))] # used space in KB
+            node.init().add({
+                'GlueSEAccessProtocolVersion': GLUE13_ACCESS_PROTOCOLS[protocol]['version'],
+                'GlueSEAccessProtocolMaxStreams': GLUE13_ACCESS_PROTOCOLS[protocol]['maxstreams']
             })
             nodes.append(node)
 
         return nodes
 
-    def delete_backup_files(self):
-        parent_directory = os.path.dirname(self.GLUE13_STATIC_LDIF_FILE)
+    def get_update_ldif_nodes(self):
+        # node list
+        nodes = []
+        # commons
+        GlueSEUniqueID = self._get_se_id()
+
+        # GlueSE
+        node = GlueSE(GlueSEUniqueID)
+        node.add({
+            'GlueSESizeTotal': self._stats.get_summary()["total-space"].as_GB() + self._stats.get_summary()["nearline-space"].as_GB(),
+            'GlueSESizeFree': self._stats.get_summary()["free-space"].as_GB(),
+            'GlueSETotalOnlineSize': self._stats.get_summary()["total-space"].as_GB(),
+            'GlueSEUsedOnlineSize': self._stats.get_summary()["used-space"].as_GB(),
+            'GlueSETotalNearlineSize': self._stats.get_summary()["nearline-space"].as_GB(),
+            'GlueSEUsedNearlineSize': "0"
+        })
+        nodes.append(node)
+
+        for sa_name,sa_data in self._stats.get_vfs().items():
+            # GlueSA
+            GlueSALocalID = self._get_sa_local_id(sa_name, sa_data["retentionPolicy"], sa_data["accessLatency"])
+            node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
+            node.add({
+                'GlueSATotalOnlineSize': sa_data["total-space"].as_GB(), # total space in GB
+                'GlueSAUsedOnlineSize': sa_data["used-space"].as_GB(), # used space in GB
+                'GlueSAFreeOnlineSize': sa_data["free-space"].as_GB(), # free space in GB
+                'GlueSAReservedOnlineSize': sa_data["total-space"].as_GB(), # reserved = total in prev bash script for Glue1.3
+                'GlueSATotalNearlineSize': sa_data["nearline-space"].as_GB(), # nearline size in GB
+                'GlueSAFreeNearlineSize': sa_data["nearline-space"].as_GB(),
+                'GlueSAUsedNearlineSize': '0',
+                'GlueSAReservedNearlineSize': '0',
+                'GlueSAStateAvailableSpace': sa_data["available-space"].as_KB(), # available space in KB
+                'GlueSAStateUsedSpace': sa_data["used-space"].as_KB() # used space in KB
+            })
+            nodes.append(node)
+
+        return nodes
+
+    def _delete_backup_files(self):
+        parent_directory = os.path.dirname(GLUE13_INFO_STATIC_LDIF_FILE)
         removed_list = []
         for f in os.listdir(parent_directory):
-            if re.search(r'static-file-storm\.ldif\.bkp_.*',f):
+            if re.search(r'storm-glue13-static\.ldif\.bkp_.*',f):
                 os.remove(os.path.join(parent_directory, f))
                 removed_list.append(f)
         logging.debug("Removed backup files: [%s]", removed_list)
         return len(removed_list)
-
-    def remove_old_cron_file_if_exists(self):
-        cFile = "/etc/cron.d/glite-info-dynamic-storm"
-        if os.path.isfile(cFile):
-            os.remove(cFile)
-        return
-
-    def get_service_configuration(self, configuration, vos):
-
-        gLite_IS_version = "2.2.0"
-        gLite_IS_endpoint = configuration.get_public_srm_endpoint()
-        init_command = GlueConstants.STORM_INFO_PROVIDER + " init-env --version " + gLite_IS_version + " --endpoint " + gLite_IS_endpoint
-        status_command = GlueConstants.INFO_SERVICE_SCRIPT + "/glite-info-service-test SRM_V2 && " + GlueConstants.STORM_INFO_PROVIDER + " status"
-        get_owner = "echo " + "; echo ".join(vos)
-        get_acbr = "echo VO:" + "; echo VO:".join(vos)
-        content = {
-            "init": init_command,
-            "service_type": "SRM",
-            "get_version": "echo \"" + gLite_IS_version + "\"",
-            "get_endpoint": "echo \"" + gLite_IS_endpoint + "\"",
-            "WSDL_URL": "http://sdm.lbl.gov/srm-wg/srm.v2.2.wsdl",
-            "semantics_URL": "http://sdm.lbl.gov/srm-wg/doc/SRM.v2.2.html",
-            "get_starttime": "perl -e '@st=stat(\"/var/run/storm-backend-server.pid\");print \"@st[10]\\n\";'",
-            "get_data": "echo",
-            "get_services": "echo",
-            "get_status": status_command,
-            "get_owner": get_owner,
-            "get_acbr": get_acbr
-        }
-        return content
-
-    def get_enabled_protocols(self, configuration):
-        enabled = {}
-        for protocol in configuration.get_enabled_protocols():
-            enabled[protocol] = self.access_protocols_streams[protocol]
-        return enabled
 
     def is_VO(self, VO):
         return not '*' in VO
