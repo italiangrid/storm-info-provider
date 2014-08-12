@@ -1,0 +1,14 @@
+service_type=SRM
+get_site_id=echo $SITEID
+get_endpoint=echo $ENDPOINT
+get_semantics=echo http://sdm.lbl.gov/srm-wg/doc/SRM.v2.2.html
+get_capability=echo "data.management.storage"
+get_technology=echo "webservice"
+get_version=echo "2.2.0"
+get_WSDL=echo "http://sdm.lbl.gov/srm-wg/srm.v2.2.wsdl"
+get_quality_level=echo "$QUALITY_LEVEL"
+get_status=glite-info-service-test SRM_V2 && glite-info-service-status storm-backend-server
+get_serving_state=/usr/libexec/storm-info-provider get-serving-state
+get_starttime=perl -e '@st=stat("/var/run/storm-backend-server.pid");print "@st[10]\n";'
+get_acbr=echo -e "$ACBR"
+get_owner=echo -e "$OWNER"

@@ -1,0 +1,5 @@
+get_site_id=echo "$SITEID"
+get_service_id=echo "$SERVICEID"
+get_capability=echo "data.management.storage"
+get_type=echo "storm"
+get_quality_level=echo "$QUALITY_LEVEL"
