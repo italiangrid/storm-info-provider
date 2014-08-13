@@ -17,21 +17,17 @@
 import sys
 import argparse
 import logging
+import logging.config
 import os
 import exceptions
 import time
+import pwd
 
 from info_provider.configuration import Configuration
 from info_provider.ldap_utils import LDIFExporter
 from info_provider.glue.glue13 import Glue13
 from info_provider.glue.glue2 import Glue2
 from info_provider.space_info import SpaceInfo
-
-# Logging constants
-LOG_FORMAT = "%(asctime)-15s - %(levelname)-5s: %(message)s"
-LOG_FILE = "/var/log/storm/storm-info-provider.log"
-# Logging level: 10 = debug, 20 = info, 30 = warning, 40 = error
-LOG_LEVEL = 20
 
 CONFIG_FILE = "/etc/storm/backend-server/storm-yaim-variables.conf"
 
@@ -42,8 +38,6 @@ def parse_args():
     parser_init = subparsers.add_parser('configure')
     parser_init.add_argument('-f', action = 'store', dest = 'filepath', 
         required = False, default=CONFIG_FILE)
-    parser_init.add_argument('-v', action = 'store', dest = 'logging_level', 
-        required = False, default=LOG_LEVEL, type=int)
     parser_init.add_argument('-g', action = 'store', dest = 'glue_protocol', 
         required = False, choices=['glue13', 'glue2', 'all'], default='all')
     parser_init.set_defaults(action=configure)
@@ -51,8 +45,6 @@ def parse_args():
     parser_update = subparsers.add_parser('get-update-ldif')
     parser_update.add_argument('-f', action = 'store', dest = 'filepath', 
         required = False, default=CONFIG_FILE)
-    parser_update.add_argument('-v', action = 'store', dest = 'logging_level', 
-        required = False, default=LOG_LEVEL, type=int)
     parser_update.add_argument('-g', action = 'store', dest = 'glue_protocol', 
         required = False, choices=['glue13', 'glue2'], default='glue2')
     parser_update.set_defaults(action=get_update_ldif)
@@ -60,15 +52,11 @@ def parse_args():
     parser_update = subparsers.add_parser('get-static-ldif')
     parser_update.add_argument('-f', action = 'store', dest = 'filepath', 
         required = False, default=CONFIG_FILE)
-    parser_update.add_argument('-v', action = 'store', dest = 'logging_level', 
-        required = False, default=LOG_LEVEL, type=int)
     parser_update.add_argument('-g', action = 'store', dest = 'glue_protocol', 
         required = False, choices=['glue13', 'glue2'], default='glue2')
     parser_update.set_defaults(action=get_static_ldif)
     # create parser for "get-serving-state" command
     parser_servingstate = subparsers.add_parser('get-serving-state')
-    parser_servingstate.add_argument('-v', action = 'store', 
-        dest = 'logging_level', required = False, default=LOG_LEVEL, type=int)
     parser_servingstate.set_defaults(action=get_serving_state)
     return parser.parse_args()
 
@@ -165,12 +153,14 @@ def get_serving_state(arguments):
 
 if __name__ == '__main__':
 
+    #if not (pwd.getpwnam('ldap')[5] == os.getuid()):
+    #   print "StoRM Info Provider can be launched only by ldap user"
+
     # command line parsing
     arguments = parse_args()
 
     # init logging
-    logging.basicConfig(format=LOG_FORMAT, filename=LOG_FILE, 
-        level=arguments.logging_level)
+    logging.config.fileConfig("/etc/storm/info-provider/logging.conf")
 
     start = time.clock()
     # do ...
