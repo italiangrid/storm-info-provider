@@ -1,4 +1,4 @@
-/var/log/storm/storm-info-provider.log {
+/var/log/info-provider/storm-info-provider.log {
     missingok
     notifempty
     rotate 5
