@@ -1,0 +1,9 @@
+/var/log/storm/storm-info-provider.log {
+    missingok
+    notifempty
+    rotate 5
+    size=50M
+    compress
+    dateext
+    create 644 ldap ldap
+}
