@@ -2,14 +2,14 @@
 # general
 INFO_PROVIDER_CONFIG_DIR = "/etc/storm/info-provider"
 INFO_PROVIDER_TEMPLATES_DIR = "/etc/storm/info-provider/templates"
+STORM_INFO_PROVIDER = "/usr/libexec/storm-info-provider"
+CONFIG_FILE = "/etc/storm/backend-server/storm-yaim-variables.conf"
+LOG_FILE = "/var/log/storm/storm-info-provider.log"
 
+# bdii
 INFO_PROVIDER_PATH = "/var/lib/bdii/gip/provider"
 INFO_LDIF_PATH = "/var/lib/bdii/gip/ldif"
 INFO_PLUGIN_PATH = "/var/lib/bdii/gip/plugin"
-
-CONFIG_FILE = "/etc/storm/backend-server/storm-yaim-variables.conf"
-
-STORM_INFO_PROVIDER = "/usr/libexec/storm-info-provider"
 
 # Glue13
 GLUE13_BASEDN = "mds-vo-name=resource,o=grid"

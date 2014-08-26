@@ -87,7 +87,7 @@ class Glue13(object):
             GLUE13_INFO_SERVICE_CONFIG_FILE_TEMPLATE,
             params)
         # set owner
-        set_owner("ldap",GLUE13_INFO_SERVICE_CONFIG_FILE)
+        # set_owner("ldap",GLUE13_INFO_SERVICE_CONFIG_FILE)
         return
 
     def _create_static_ldif_file(self):
@@ -101,8 +101,8 @@ class Glue13(object):
     def _create_plugin_file(self):
         f = open(GLUE13_INFO_PLUGIN_FILE, "w")
         f.write("#!/bin/sh\n")
-        f.write("%s get-update-ldif -f %s -g glue13" % (STORM_INFO_PROVIDER, 
-            CONFIG_FILE))
+        f.write("%s -o %s get-update-ldif -f %s -g glue13" % (
+            STORM_INFO_PROVIDER, LOG_FILE, CONFIG_FILE))
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap",GLUE13_INFO_PLUGIN_FILE)

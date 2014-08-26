@@ -1,4 +1,4 @@
-#!/usr/bin/python 
+#!/usr/bin/env python 
 
 # Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2006-2010.
 #
@@ -30,9 +30,14 @@ from info_provider.glue.glue2 import Glue2
 from info_provider.space_info import SpaceInfo
 
 CONFIG_FILE = "/etc/storm/backend-server/storm-yaim-variables.conf"
+LOG_FORMAT = "%(asctime)s %(name)-12s: %(levelname)s %(message)s"
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'storm-info-provider args')
+    parser.add_argument('-v', action = 'store', dest = 'log_level', 
+        required = False, default=20, type=int)
+    parser.add_argument('-o', action = 'store', dest = 'log_filename',
+        required = False)
     subparsers = parser.add_subparsers()
     # create parser for "init" command
     parser_init = subparsers.add_parser('configure')
@@ -49,12 +54,12 @@ def parse_args():
         required = False, choices=['glue13', 'glue2'], default='glue2')
     parser_update.set_defaults(action=get_update_ldif)
     # create parser for "get-static-ldif" command
-    parser_update = subparsers.add_parser('get-static-ldif')
-    parser_update.add_argument('-f', action = 'store', dest = 'filepath', 
+    parser_static = subparsers.add_parser('get-static-ldif')
+    parser_static.add_argument('-f', action = 'store', dest = 'filepath', 
         required = False, default=CONFIG_FILE)
-    parser_update.add_argument('-g', action = 'store', dest = 'glue_protocol', 
+    parser_static.add_argument('-g', action = 'store', dest = 'glue_protocol', 
         required = False, choices=['glue13', 'glue2'], default='glue2')
-    parser_update.set_defaults(action=get_static_ldif)
+    parser_static.set_defaults(action=get_static_ldif)
     # create parser for "get-serving-state" command
     parser_servingstate = subparsers.add_parser('get-serving-state')
     parser_servingstate.set_defaults(action=get_serving_state)
@@ -150,17 +155,22 @@ def get_serving_state(arguments):
     print "%d" % value_int
     return
 
+def initialize_logger(arguments):
+    if arguments.log_filename:
+        logging.basicConfig(filename=arguments.log_filename, filemode='a',
+            format=LOG_FORMAT, level=arguments.log_level)
+    else:
+        logging.basicConfig(stream=sys.stderr, format=LOG_FORMAT,
+            level=arguments.log_level)
+
 
 if __name__ == '__main__':
-
-    #if not (pwd.getpwnam('ldap')[5] == os.getuid()):
-    #   print "StoRM Info Provider can be launched only by ldap user"
 
     # command line parsing
     arguments = parse_args()
 
-    # init logging
-    logging.config.fileConfig("/etc/storm/info-provider/logging.conf")
+    # initialize logging
+    initialize_logger(arguments)
 
     start = time.clock()
     # do ...
