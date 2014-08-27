@@ -4,7 +4,7 @@ INFO_PROVIDER_CONFIG_DIR = "/etc/storm/info-provider"
 INFO_PROVIDER_TEMPLATES_DIR = "/etc/storm/info-provider/templates"
 STORM_INFO_PROVIDER = "/usr/libexec/storm-info-provider"
 CONFIG_FILE = "/etc/storm/backend-server/storm-yaim-variables.conf"
-LOG_FILE = "/var/log/info-provider/storm-info-provider.log"
+LOG_FILE = "/tmp/storm-info-provider.log"
 
 # bdii
 INFO_PROVIDER_PATH = "/var/lib/bdii/gip/provider"
