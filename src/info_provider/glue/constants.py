@@ -2,21 +2,20 @@
 # general
 INFO_PROVIDER_CONFIG_DIR = "/etc/storm/info-provider"
 INFO_PROVIDER_TEMPLATES_DIR = "/etc/storm/info-provider/templates"
-STORM_INFO_PROVIDER = "/usr/libexec/storm-info-provider"
-CONFIG_FILE = "/etc/storm/backend-server/storm-yaim-variables.conf"
-LOG_FILE = "/tmp/storm-info-provider.log"
+INFO_PROVIDER_SCRIPT = "/usr/libexec/storm-info-provider"
+INPUT_YAIM_CONFIGURATION = "/etc/storm/backend-server/storm-yaim-variables.conf"
 
 # bdii
-INFO_PROVIDER_PATH = "/var/lib/bdii/gip/provider"
-INFO_LDIF_PATH = "/var/lib/bdii/gip/ldif"
-INFO_PLUGIN_PATH = "/var/lib/bdii/gip/plugin"
+BDII_PROVIDER_PATH = "/var/lib/bdii/gip/provider"
+BDII_LDIF_PATH = "/var/lib/bdii/gip/ldif"
+BDII_PLUGIN_PATH = "/var/lib/bdii/gip/plugin"
 
 # Glue13
 GLUE13_BASEDN = "mds-vo-name=resource,o=grid"
 
-GLUE13_INFO_PROVIDER_FILE = INFO_PROVIDER_PATH + "/storm-glue13-provider"
-GLUE13_INFO_STATIC_LDIF_FILE = INFO_LDIF_PATH + "/storm-glue13-static.ldif"
-GLUE13_INFO_PLUGIN_FILE = INFO_PLUGIN_PATH + "/storm-glue13-plugin"
+GLUE13_INFO_PROVIDER_FILE = BDII_PROVIDER_PATH + "/storm-glue13-provider"
+GLUE13_INFO_STATIC_LDIF_FILE = BDII_LDIF_PATH + "/storm-glue13-static.ldif"
+GLUE13_INFO_PLUGIN_FILE = BDII_PLUGIN_PATH + "/storm-glue13-plugin"
 
 GLUE13_INFO_SERVICE_CONFIG_FILE_TEMPLATE = INFO_PROVIDER_TEMPLATES_DIR + \
     "/glite-info-glue13-service-storm.conf.template"
@@ -53,9 +52,9 @@ GLUE13_ACCESS_PROTOCOLS = {
 # Glue2
 GLUE2_BASEDN = "GLUE2GroupID=resource,o=glue"
 
-GLUE2_INFO_PROVIDER_FILE = INFO_PROVIDER_PATH + "/storm-glue2-provider"
-GLUE2_INFO_STATIC_LDIF_FILE = INFO_LDIF_PATH + "/storm-glue2-static.ldif"
-GLUE2_INFO_PLUGIN_FILE = INFO_PLUGIN_PATH + "/storm-glue2-plugin"
+GLUE2_INFO_PROVIDER_FILE = BDII_PROVIDER_PATH + "/storm-glue2-provider"
+GLUE2_INFO_STATIC_LDIF_FILE = BDII_LDIF_PATH + "/storm-glue2-static.ldif"
+GLUE2_INFO_PLUGIN_FILE = BDII_PLUGIN_PATH + "/storm-glue2-plugin"
 
 GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE = INFO_PROVIDER_TEMPLATES_DIR + \
     "/glite-info-glue2-service-storm.conf.template"

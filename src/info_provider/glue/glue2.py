@@ -129,7 +129,6 @@ class Glue2(object):
             GLUE2_INFO_SERVICE_CONFIG_FILE,
             GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE,
             params)
-        #set_owner("ldap", GLUE2_INFO_SERVICE_CONFIG_FILE)
         return
 
     def _create_srm_endpoint_config_file(self):
@@ -146,8 +145,6 @@ class Glue2(object):
             GLUE2_INFO_SERVICE_SRM_CONFIG_FILE, 
             GLUE2_INFO_SERVICE_SRM_CONFIG_FILE_TEMPLATE, 
             params)
-        # set owner
-        #set_owner("ldap", GLUE2_INFO_SERVICE_SRM_CONFIG_FILE)
         return
 
     def _create_service_provider_file(self):
@@ -169,8 +166,8 @@ class Glue2(object):
     def _create_plugin_file(self):
         f = open(GLUE2_INFO_PLUGIN_FILE, "w")
         f.write("#!/bin/sh\n")
-        f.write("%s -o %s get-update-ldif -f %s -g glue2" % (
-            STORM_INFO_PROVIDER, LOG_FILE, CONFIG_FILE))
+        f.write("%s get-update-ldif -f %s -g glue2" % (
+            INFO_PROVIDER_SCRIPT, INPUT_YAIM_CONFIGURATION))
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap",GLUE2_INFO_PLUGIN_FILE)
