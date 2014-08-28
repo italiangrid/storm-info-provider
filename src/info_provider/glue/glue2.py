@@ -194,6 +194,15 @@ class Glue2(object):
         issuer_ca = str(os.popen("openssl x509 -issuer -noout -in \
             /etc/grid-security/hostcert.pem").read())[8:-1]
         
+        # Glue2StorageService
+        # NOTE: It must be removed when 'storm' type will be added
+        node = GLUE2StorageService(service_id)
+        node.init().add({
+            'GLUE2ServiceQualityLevel': self._get_quality_level(),
+            'GLUE2ServiceAdminDomainForeignKey': self._get_site_id()
+            })
+        nodes.append(node)
+
         # Glue2StorageServiceCapacity online
         if self._has_online_capacity():
             node = GLUE2StorageServiceCapacity(
