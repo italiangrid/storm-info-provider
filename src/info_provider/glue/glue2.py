@@ -339,9 +339,9 @@ class Glue2(object):
 
         if self._configuration.has_gridhttps():
 
-            # Add HTTP Endpoint
+            # Add HTTP WebDAV Endpoint
             endpoint_id = self._get_http_endpoint_id()
-            node = GLUE2HttpStorageEndpoint(endpoint_id, service_id)
+            node = GLUE2WebDAVStorageEndpoint(endpoint_id, service_id)
             node.init().add({
                 'GLUE2EndpointURL': 
                     self._configuration.get_public_http_endpoint(),
@@ -365,7 +365,7 @@ class Glue2(object):
 
             # Add HTTPs Endpoint
             endpoint_id = self._get_https_endpoint_id()
-            node = GLUE2HttpsStorageEndpoint(endpoint_id, service_id)
+            node = GLUE2WebDAVStorageEndpoint(endpoint_id, service_id)
             node.init().add({
                 'GLUE2EndpointURL': 
                     self._configuration.get_public_https_endpoint(),

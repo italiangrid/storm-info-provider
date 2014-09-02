@@ -188,6 +188,31 @@ class GLUE2HttpsStorageEndpoint(LDIFNode):
             })
         return
 
+class GLUE2WebDAVStorageEndpoint(LDIFNode):
+
+    def __init__(self, GLUE2EndpointID, GLUE2ServiceID):
+        LDIFNode.__init__(self, 
+            "GLUE2EndpointID=" + GLUE2EndpointID + ",GLUE2ServiceID=" + 
+                GLUE2ServiceID + "," + GLUE2_BASEDN,
+            {
+                'GLUE2EntityCreationTime': time.strftime('%Y-%m-%dT%T'),
+                'objectClass': ['GLUE2Endpoint', 'GLUE2StorageEndpoint'],
+                'GLUE2EndpointID': GLUE2EndpointID,
+                'GLUE2EndpointImplementationName': 'StoRM',
+                'GLUE2EndpointHealthState': 'ok',
+                'GLUE2EndpointInterfaceName': 'webdav',
+                'GLUE2EndpointInterfaceVersion': '1.1',
+                'GLUE2EndpointSemantics': 'http://www.ietf.org/rfc/rfc4918.txt',
+                'GLUE2EndpointTechnology': 'webservice',
+                'GLUE2EndpointCapability': [
+                    'data.management.storage',
+                    'data.management.transfer'
+                    ],
+                'GLUE2EndpointServiceForeignKey': GLUE2ServiceID,
+                'GLUE2StorageEndpointStorageServiceForeignKey': GLUE2ServiceID
+            })
+        return
+
 class GLUE2AccessPolicy(LDIFNode):
 
     def __init__(self, GLUE2PolicyID, GLUE2EndpointID, GLUE2ServiceID):
