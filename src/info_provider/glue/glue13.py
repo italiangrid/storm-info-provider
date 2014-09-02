@@ -26,7 +26,6 @@ class Glue13(object):
             storm-backend-server").read())
 
     def _get_sa_local_id(self, sa_name, retention_policy, access_latency):
-        logging.debug("sa_local_id")
         return ":".join([str(sa_name[:-3]).lower(), 
             str(retention_policy).lower(), str(access_latency).lower()])
     
@@ -174,12 +173,10 @@ class Glue13(object):
                     d["token"])
                 node = GlueSAVOInfoLocal(GlueSAVOInfoLocalID, GlueSALocalID, 
                     GlueSEUniqueID)
-                logging.debug("bah")
                 node.init().add({
                     'GlueVOInfoPath': d["stfnRoot"][0],
                     'GlueVOInfoAccessControlBaseRule': "VO:" + str(d["voname"])
                     })
-                logging.debug("bah")
                 if self._configuration.vfs_has_custom_token(n):
                     node.add({ 
                         'GlueVOInfoTag': d["token"] 

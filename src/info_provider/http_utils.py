@@ -27,8 +27,7 @@ class HTTP:
                 if attempt == self.max_attempts:
                     raise Exception('Network error: Unable to contact ' + 
                         url + ' after ' + str(attempt) + ' attempts')
-                logging.warning('Unable to contact %s - %s seconds to the next \
-                    attempt ...', seconds)
+                logging.warning('Unable to contact %s - %s seconds to the next attempt ...', url, seconds)
                 time.sleep(seconds)
                 seconds *= 2
         raise Exception('Network error: Unable to contact ' + url)
