@@ -3,7 +3,7 @@
 INFO_PROVIDER_CONFIG_DIR = "/etc/storm/info-provider"
 INFO_PROVIDER_TEMPLATES_DIR = "/etc/storm/info-provider/templates"
 INFO_PROVIDER_SCRIPT = "/usr/libexec/storm-info-provider"
-INPUT_YAIM_CONFIGURATION = "/etc/storm/backend-server/storm-yaim-variables.conf"
+INPUT_YAIM_CONFIGURATION = "/etc/storm/info-provider/storm-yaim-variables.conf"
 
 # bdii
 BDII_PROVIDER_PATH = "/var/lib/bdii/gip/provider"
@@ -35,7 +35,7 @@ GLUE13_ACCESS_PROTOCOLS = {
         'version': '1.0.0',
         'maxstreams': '10'
         }, 
-    'root': {
+    'xroot': {
         'version': '1.0.0',
         'maxstreams': '1'
         }, 
@@ -68,7 +68,7 @@ GLUE2_INFO_SERVICE_SRM_CONFIG_FILE = INFO_PROVIDER_CONFIG_DIR + \
 GLUE2_ACCESS_PROTOCOLS_VERSIONS = {
     'file': '1.0.0',
     'rfio': '1.0.0', 
-    'root': '1.0.0',
+    'xroot': '1.0.0',
     'http': '1.1.0',
     'https': '1.1.0',
     'gsiftp': '2.0.0'

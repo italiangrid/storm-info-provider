@@ -8,7 +8,9 @@ get_version=echo "2.2.0"
 get_WSDL=echo "http://sdm.lbl.gov/srm-wg/srm.v2.2.wsdl"
 get_quality_level=echo "$QUALITY_LEVEL"
 get_status=glite-info-service-test SRM_V2 && glite-info-service-status storm-backend-server
-get_serving_state=/usr/libexec/storm-info-provider get-serving-state
+get_serving_state=ps ax | grep -v grep | grep storm-backend-server > /dev/null 2>&1 && echo 4 || echo 1
 get_starttime=perl -e '@st=stat("/var/run/storm-backend-server.pid");print "@st[10]\n";'
 get_acbr=echo -e "$ACBR"
 get_owner=echo -e "$OWNER"
+get_implementationname=echo StoRM
+get_implementationversion=rpm -q --queryformat='%{VERSION}' storm-backend-server

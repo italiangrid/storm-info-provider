@@ -28,3 +28,9 @@ def set_owner(user, filepath):
     logging.debug("chown %s:%s %s", user, user, filepath)
     return os.chown(filepath, pwd.getpwnam(user).pw_uid, 
         grp.getgrnam(user).gr_gid)
+
+def as_GB(numbytes):
+    return int(round(1.0 * numbytes/1000000000))
+
+def as_KB(numbytes):
+    return int(round(1.0 * numbytes/1000))

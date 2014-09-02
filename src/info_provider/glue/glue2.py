@@ -7,6 +7,7 @@ from info_provider.glue.constants import *
 from info_provider.ldap_utils import LDIFExporter
 from glue2_schema import *
 from utils import *
+from info_provider.space_info import *
 
 class QualityLevel_t:
     _quality_levels = ["development", "pre-production", "production", "testing"]
@@ -18,9 +19,8 @@ class QualityLevel_t:
 
 class Glue2(object):
     
-    def __init__(self, configuration, spaceinfo):
+    def __init__(self, configuration):
         self._configuration = configuration
-        self._stats = spaceinfo
         return
 
     def _get_access_protocol_version(self, name):
@@ -80,19 +80,7 @@ class Glue2(object):
         cmd = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
         return os.popen(cmd).read()
 
-    def _has_online_capacity(self):
-        return int(self._stats.get_summary()["total-space"]) > 0
-
-    def _has_nearline_capacity(self):
-        return int(self._stats.get_summary()["nearline-space"]) > 0
-
-    def _share_has_online_capacity(self, vfs_name):
-        return int(self._stats.get_vfs()[vfs_name]["total-space"]) > 0
-
-    def _share_has_nearline_capacity(self, vfs_name):
-        return int(self._stats.get_vfs()[vfs_name]["nearline-space"]) > 0
-
-    def configure(self):
+    def configure(self, spaceinfo):
         # remove old static ldif backup files
         self._delete_backup_files()
         # create Glue2 service configuration file
@@ -115,7 +103,7 @@ class Glue2(object):
         logging.info("Successfully created %s !", GLUE2_INFO_PLUGIN_FILE)
         # create Glue2 static ldif file
         logging.debug("Creating %s ...", GLUE2_INFO_STATIC_LDIF_FILE)
-        self._create_static_ldif_file()
+        self._create_static_ldif_file(spaceinfo)
         logging.info("Successfully created %s !", GLUE2_INFO_STATIC_LDIF_FILE)
         return
 
@@ -174,15 +162,15 @@ class Glue2(object):
         os.chmod(GLUE2_INFO_PLUGIN_FILE, 0755)
         return
 
-    def _create_static_ldif_file(self):
+    def _create_static_ldif_file(self, spaceinfo):
         exporter = LDIFExporter()
-        exporter.add_nodes(self.get_static_ldif_nodes())
+        exporter.add_nodes(self.get_static_ldif_nodes(spaceinfo))
         exporter.save_to_file(GLUE2_INFO_STATIC_LDIF_FILE)
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE2_INFO_STATIC_LDIF_FILE)
         return
 
-    def get_static_ldif_nodes(self):
+    def get_static_ldif_nodes(self, spaceinfo):
 
         nodes = []
         # Commons
@@ -201,47 +189,46 @@ class Glue2(object):
         nodes.append(node)
 
         # Glue2StorageServiceCapacity online
-        if self._has_online_capacity():
-            node = GLUE2StorageServiceCapacity(
-                self._get_service_capacity_id("online"), service_id)
+        if has_online_capacity(spaceinfo.summary):
+            sc_id = self._get_service_capacity_id("online")
+            node = GLUE2StorageServiceCapacity(sc_id, service_id)
             node.init().add({
                 'GLUE2StorageServiceCapacityType': "online",
                 'GLUE2StorageServiceCapacityTotalSize': 
-                    self._stats.get_summary()["total-space"].as_GB(), 
+                    as_GB(spaceinfo.summary["total-space"]), 
                 'GLUE2StorageServiceCapacityFreeSize': 
-                    self._stats.get_summary()["free-space"].as_GB(), 
-                'GLUE2StorageServiceCapacityUsedSize': 
-                    self._stats.get_summary()["used-space"].as_GB(), 
-                'GLUE2StorageServiceCapacityReservedSize': 
-                    self._stats.get_summary()["reserved-space"].as_GB(),
+                    as_GB(spaceinfo.summary["free-space"]), 
+                'GLUE2StorageServiceCapacityUsedSize':
+                    as_GB(spaceinfo.summary["used-space"]),
+                'GLUE2StorageServiceCapacityReservedSize':
+                    as_GB(spaceinfo.summary["reserved-space"]) 
             })
             nodes.append(node)
 
         # Glue2StorageServiceCapacity nearline
-        if self._has_nearline_capacity():
-            node = GLUE2StorageServiceCapacity(
-                self._get_service_capacity_id("nearline"), service_id)
+        if has_nearline_capacity(spaceinfo.summary):
+            sc_id = self._get_service_capacity_id("nearline")
+            node = GLUE2StorageServiceCapacity(sc_id, service_id)
             node.init().add({
                 'GLUE2StorageServiceCapacityType': "nearline",
-                'GLUE2StorageServiceCapacityTotalSize': 
-                    self._stats.get_summary()["nearline-space"].as_GB(), 
-                'GLUE2StorageServiceCapacityFreeSize': 
-                    self._stats.get_summary()["nearline-space"].as_GB(), 
+                'GLUE2StorageServiceCapacityTotalSize':
+                    as_GB(spaceinfo.summary["nearline-space"]), 
+                'GLUE2StorageServiceCapacityFreeSize':
+                    as_GB(spaceinfo.summary["nearline-space"]),
                 'GLUE2StorageServiceCapacityUsedSize': 0, 
-                'GLUE2StorageServiceCapacityReservedSize': 0,
+                'GLUE2StorageServiceCapacityReservedSize': 0
             })
             nodes.append(node)
 
         # GLUE2StorageAccessProtocol for each protocol
         for protocol in self._configuration.get_enabled_access_protocols():
-            ap_id = self._get_access_protocol_id(protocol, 
-                self._get_access_protocol_version(protocol))
+            p_ver = self._get_access_protocol_version(protocol)
+            ap_id = self._get_access_protocol_id(protocol, p_ver)
             node = GLUE2StorageAccessProtocol(ap_id, service_id)
             node.init().add({
                 'GLUE2StorageAccessProtocolType': protocol, 
-                'GLUE2StorageAccessProtocolVersion': 
-                    self._get_access_protocol_version(protocol)
-            })
+                'GLUE2StorageAccessProtocolVersion': p_ver
+                })
             nodes.append(node)
 
         # Glue2StorageManager
@@ -253,97 +240,94 @@ class Glue2(object):
         nodes.append(node)
 
         # Glue2DataStore disk online
-        if self._has_online_capacity():
+        if has_online_capacity(spaceinfo.summary):
             node = GLUE2DataStore(self._get_data_store_id("disk"), manager_id, 
                 service_id)
             node.init().add({
                 'GLUE2DataStoreType': "disk", 
                 'GLUE2DataStoreLatency': "online", 
                 'GLUE2DataStoreTotalSize': 
-                    self._stats.get_summary()["total-space"].as_GB()
+                    as_GB(spaceinfo.summary["total-space"])
             })
             nodes.append(node)
 
         # Glue2DataStore tape nearline
-        if self._has_nearline_capacity():
+        if has_nearline_capacity(spaceinfo.summary):
             node = GLUE2DataStore(self._get_data_store_id("tape"), manager_id, 
                 service_id)
             node.init().add({
                 'GLUE2DataStoreType': "tape", 
                 'GLUE2DataStoreLatency': "nearline", 
                 'GLUE2DataStoreTotalSize': 
-                    self._stats.get_summary()["nearline-space"].as_GB()
+                    as_GB(spaceinfo.summary["nearline-space"])
             })
             nodes.append(node)
 
         # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each 
         # VFS
-        for sa_name,sa_data in self._stats.get_vfs().items():
+        for name,data in spaceinfo.vfs.items():
 
             # GLUE2Share
-            share_id = self._get_share_id(sa_data["name"])
-            if self._is_anonymous(sa_data["voname"]):
+            share_id = self._get_share_id(name)
+            if self._is_anonymous(data["voname"]):
                 sharing_id = "dedicated"
             else:
-                sharing_id = self._get_sharing_id(sa_data["name"],
-                    sa_data["retentionPolicy"],sa_data["accessLatency"])
+                sharing_id = self._get_sharing_id(name,
+                    data["retentionPolicy"], data["accessLatency"])
             node = GLUE2StorageShare(share_id, service_id)
             node.init().add({
                 'GLUE2StorageShareAccessLatency': 
-                    sa_data["accessLatency"].lower(),
+                    data["accessLatency"].lower(),
                 'GLUE2StorageShareRetentionPolicy': 
-                    sa_data["retentionPolicy"].lower(),
+                    data["retentionPolicy"].lower(),
                 'GLUE2StorageShareServingState': "production",
                 'GLUE2StorageShareSharingID': sharing_id
             })
             nodes.append(node)
 
             # GLUE2MappingPolicy
-            policy_id = self._get_share_policy_id(sa_data["name"])
+            policy_id = self._get_share_policy_id(name)
             node = GLUE2MappingPolicy(policy_id, share_id, service_id)
             node.init().add({
-                'GLUE2PolicyRule': sa_data["approachableRules"]
+                'GLUE2PolicyRule': data["approachableRules"]
             })
-            if not self._is_anonymous(sa_data["voname"]):
+            if not self._is_anonymous(data.get("voname")):
                 node.add({ 
-                    'GLUE2PolicyUserDomainForeignKey': sa_data["voname"] 
+                    'GLUE2PolicyUserDomainForeignKey': data["voname"]
                 })
             nodes.append(node)
             
             # Glue2StorageShareCapacities
 
-            if self._share_has_online_capacity(sa_name): 
+            if has_online_capacity(data["space"]): 
                 # Glue2StorageShareCapacity online
-
-                capacity_id = self._get_share_capacity_id(sa_data["name"], 
-                    "online")
+                capacity_id = self._get_share_capacity_id(name, "online")
                 node = GLUE2StorageShareCapacity(capacity_id, share_id, 
                     service_id)
                 node.init().add({
                     'GLUE2StorageShareCapacityType': "online",
                     'GLUE2StorageShareCapacityTotalSize': 
-                        sa_data["total-space"].as_GB(), 
-                    'GLUE2StorageShareCapacityFreeSize': 
-                        sa_data["free-space"].as_GB(), 
-                    'GLUE2StorageShareCapacityUsedSize': 
-                        sa_data["used-space"].as_GB(), 
-                    'GLUE2StorageShareCapacityReservedSize': 
-                        sa_data["reserved-space"].as_GB()
-                })
+                        as_GB(data["space"]["total-space"]), 
+                    'GLUE2StorageShareCapacityFreeSize':
+                        as_GB(data["space"]["free-space"]),
+                    'GLUE2StorageShareCapacityUsedSize':
+                        as_GB(data["space"]["used-space"]), 
+                    'GLUE2StorageShareCapacityReservedSize':
+                        as_GB(data["space"]["reserved-space"])
+                    })
                 nodes.append(node)
 
-            if self._share_has_nearline_capacity(sa_name): 
+            if has_nearline_capacity(data["space"]): 
                 # Glue2StorageShareCapacity nearline
-                capacity_id = self._get_share_capacity_id(sa_data["name"], 
-                    "nearline")
+                capacity_id = self._get_share_capacity_id(name, "nearline")
                 node = GLUE2StorageShareCapacity(capacity_id, share_id, 
                     service_id)
                 node.init().add({
                     'GLUE2StorageShareCapacityType': "nearline",
                     'GLUE2StorageShareCapacityTotalSize': 
-                        sa_data["nearline-space"].as_GB(), 
+                        as_GB(data["space"]["nearline-space"]), 
                     'GLUE2StorageShareCapacityFreeSize': 
-                        sa_data["nearline-space"].as_GB(), 
+                        as_GB(data["space"]["nearline-space"]), 
                     'GLUE2StorageShareCapacityUsedSize': 0, 
                     'GLUE2StorageShareCapacityReservedSize': 0
                 })
@@ -405,59 +389,69 @@ class Glue2(object):
 
         return nodes
 
-    def get_update_ldif_nodes(self):
+    def get_update_ldif_endpoints(self, serving_state_value):
 
         # Output
         nodes = []
 
         # Commons
         service_ID = self._get_service_id()
-        serving_state_value = self._configuration.get("STORM_SERVING_STATE")
 
-        # Glue2StorageEndpoint SRM
+        # Glue2StorageEndpoint SRM serving_state_value
         node = GLUE2StorageEndpoint(self._get_srm_endpoint_id(), service_ID)
         node.add({ 'GLUE2EndpointServingState': serving_state_value })
         nodes.append(node)
 
         if self._configuration.has_gridhttps():
 
-            # Glue2StorageEndpoint http webdav
+            # Glue2StorageEndpoint http webdav serving_state_value
             node = GLUE2StorageEndpoint(self._get_http_endpoint_id(), 
                 service_ID)
             node.add({ 'GLUE2EndpointServingState': serving_state_value })
             nodes.append(node)
 
-            # Glue2StorageEndpoint https webdav
+            # Glue2StorageEndpoint https webdav serving_state_value
             node = GLUE2StorageEndpoint(self._get_https_endpoint_id(), 
                 service_ID)
             node.add({ 'GLUE2EndpointServingState': serving_state_value })
             nodes.append(node)
 
+        return nodes
+
+
+    def get_update_ldif_spaceinfo(self, spaceinfo, serving_state_value):
+
+        # Output
+        nodes = []
+
+        # Commons
+        service_ID = self._get_service_id()
+
         # Glue2StorageServiceCapacity online
-        if self._has_online_capacity():
-            node = GLUE2StorageServiceCapacity(
-                self._get_service_capacity_id("online"), service_ID)
+        if has_online_capacity(spaceinfo.summary):
+            sc_id = self._get_service_capacity_id("online")
+            node = GLUE2StorageServiceCapacity(sc_id, service_ID)
             node.add({ 
                 'GLUE2StorageServiceCapacityTotalSize': 
-                    self._stats.get_summary()["total-space"].as_GB(), 
-                'GLUE2StorageServiceCapacityFreeSize': 
-                    self._stats.get_summary()["free-space"].as_GB(), 
-                'GLUE2StorageServiceCapacityUsedSize': 
-                    self._stats.get_summary()["used-space"].as_GB(), 
-                'GLUE2StorageServiceCapacityReservedSize': 
-                    self._stats.get_summary()["reserved-space"].as_GB()
+                    as_GB(spaceinfo.summary["total-space"]),
+                'GLUE2StorageServiceCapacityFreeSize':
+                    as_GB(spaceinfo.summary["free-space"]),
+                'GLUE2StorageServiceCapacityUsedSize':
+                    as_GB(spaceinfo.summary["used-space"]),
+                'GLUE2StorageServiceCapacityReservedSize':
+                    as_GB(spaceinfo.summary["reserved-space"])
             })
             nodes.append(node)
 
         # Glue2StorageServiceCapacity nearline
-        if self._has_nearline_capacity():
-            node = GLUE2StorageServiceCapacity(
-                self._get_service_capacity_id("nearline"), service_ID)
+        if has_nearline_capacity(spaceinfo.summary):
+            sc_id = self._get_service_capacity_id("nearline")
+            node = GLUE2StorageServiceCapacity(sc_id, service_ID)
             node.add({ 
                 'GLUE2StorageServiceCapacityTotalSize': 
-                    self._stats.get_summary()["nearline-space"].as_GB(), 
+                    as_GB(spaceinfo.summary["nearline-space"]), 
                 'GLUE2StorageServiceCapacityFreeSize': 
-                    self._stats.get_summary()["nearline-space"].as_GB(),
+                    as_GB(spaceinfo.summary["nearline-space"]),
                 'GLUE2StorageServiceCapacityUsedSize': 0, 
                 'GLUE2StorageServiceCapacityReservedSize': 0
             })
@@ -465,41 +459,39 @@ class Glue2(object):
 
         # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each 
         # VFS
-        for sa_name,sa_data in self._stats.get_vfs().items():
+        for name,data in spaceinfo.vfs.items():
 
             # GLUE2Share
-            share_id = self._get_share_id(sa_data["name"])
+            share_id = self._get_share_id(name)
             node = GLUE2StorageShare(share_id, service_ID)
             node.add({ 'GLUE2StorageShareServingState': serving_state_value })
             nodes.append(node)
-            
+
             # Glue2StorageShareCapacity
-            if self._share_has_online_capacity(sa_name):
-                capacity_id = self._get_share_capacity_id(sa_data["name"], 
-                    "online")
+            if has_online_capacity(data["space"]):
+                capacity_id = self._get_share_capacity_id(name, "online")
                 node = GLUE2StorageShareCapacity(capacity_id, share_id, 
                     service_ID)
                 node.add({ 
                     'GLUE2StorageShareCapacityTotalSize': 
-                        sa_data["total-space"].as_GB(), 
+                        as_GB(data["space"]["total-space"]), 
                     'GLUE2StorageShareCapacityFreeSize': 
-                        sa_data["free-space"].as_GB(), 
+                        as_GB(data["space"]["free-space"]), 
                     'GLUE2StorageShareCapacityUsedSize': 
-                        sa_data["used-space"].as_GB(), 
+                        as_GB(data["space"]["used-space"]), 
                     'GLUE2StorageShareCapacityReservedSize': 
-                        sa_data["reserved-space"].as_GB()
+                        as_GB(data["space"]["reserved-space"])
                 })
                 nodes.append(node)
-            if self._share_has_nearline_capacity(sa_name):
-                capacity_id = self._get_share_capacity_id(sa_data["name"], 
-                    "nearline")
+            if has_nearline_capacity(data["space"]):
+                capacity_id = self._get_share_capacity_id(name, "nearline")
                 node = GLUE2StorageShareCapacity(capacity_id, share_id, 
                     service_ID)
                 node.add({ 
                     'GLUE2StorageShareCapacityTotalSize': 
-                        sa_data["nearline-space"].as_GB(), 
+                        as_GB(data["space"]["nearline-space"]), 
                     'GLUE2StorageShareCapacityFreeSize': 
-                        sa_data["nearline-space"].as_GB(), 
+                        as_GB(data["space"]["nearline-space"]), 
                     'GLUE2StorageShareCapacityUsedSize': 0, 
                     'GLUE2StorageShareCapacityReservedSize': 0
                 })
