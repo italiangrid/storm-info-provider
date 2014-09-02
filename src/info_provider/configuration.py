@@ -62,7 +62,7 @@ class Configuration:
         if self.get("STORM_INFO_GRIDFTP_SUPPORT").lower() == "true":
             enabled.append("gsiftp")
         if self.get("STORM_INFO_ROOT_SUPPORT").lower() == "true":
-            enabled.append("xroot")
+            enabled.append("xrootd")
         if self.get("STORM_INFO_HTTP_SUPPORT").lower() == "true":
             enabled.append("http")
         if self.get("STORM_INFO_HTTPS_SUPPORT").lower() == "true":
