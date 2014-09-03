@@ -62,11 +62,13 @@ class Configuration:
         if self.get("STORM_INFO_GRIDFTP_SUPPORT").lower() == "true":
             enabled.append("gsiftp")
         if self.get("STORM_INFO_ROOT_SUPPORT").lower() == "true":
-            enabled.append("xrootd")
+            enabled.append("xroot")
         if self.get("STORM_INFO_HTTP_SUPPORT").lower() == "true":
             enabled.append("http")
         if self.get("STORM_INFO_HTTPS_SUPPORT").lower() == "true":
             enabled.append("https")
+        if self.has_gridhttps():
+            enabled.append("webdav")
         return enabled
 
     def get_backend_rest_endpoint(self):

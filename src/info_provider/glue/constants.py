@@ -35,7 +35,7 @@ GLUE13_ACCESS_PROTOCOLS = {
         'version': '1.0.0',
         'maxstreams': '10'
         }, 
-    'xrootd': {
+    'xroot': {
         'version': '1.0.0',
         'maxstreams': '1'
         }, 
@@ -45,6 +45,10 @@ GLUE13_ACCESS_PROTOCOLS = {
         }, 
     'https': {
         'version': '1.1.0',
+        'maxstreams': '1'
+        },
+    'webdav': {
+        'version': '1.1',
         'maxstreams': '1'
         }
     }
@@ -68,8 +72,9 @@ GLUE2_INFO_SERVICE_SRM_CONFIG_FILE = INFO_PROVIDER_CONFIG_DIR + \
 GLUE2_ACCESS_PROTOCOLS_VERSIONS = {
     'file': '1.0.0',
     'rfio': '1.0.0', 
-    'xrootd': '1.0.0',
+    'xroot': '1.0.0',
     'http': '1.1.0',
     'https': '1.1.0',
-    'gsiftp': '2.0.0'
+    'gsiftp': '2.0.0',
+    'webdav': '1.1'
 }
