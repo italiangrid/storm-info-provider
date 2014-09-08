@@ -276,8 +276,7 @@ class Glue2(object):
                 'GLUE2StorageShareRetentionPolicy': 
                     data["retentionPolicy"].lower(),
                 'GLUE2StorageShareServingState': "production",
-                'GLUE2StorageSharePath': data["stfnRoot"][0],
-                'GLUE2StorageShareSharingID': sharing_id
+                'GLUE2StorageSharePath': data["stfnRoot"][0]
             })
             if self._is_anonymous(data["voname"]):
                 node.add({
