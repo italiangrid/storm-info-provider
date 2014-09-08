@@ -269,11 +269,6 @@ class Glue2(object):
 
             # GLUE2Share
             share_id = self._get_share_id(name)
-            if self._is_anonymous(data["voname"]):
-                sharing_id = "dedicated"
-            else:
-                sharing_id = self._get_sharing_id(name,
-                    data["retentionPolicy"], data["accessLatency"])
             node = GLUE2StorageShare(share_id, service_id)
             node.init().add({
                 'GLUE2StorageShareAccessLatency': 
@@ -281,8 +276,21 @@ class Glue2(object):
                 'GLUE2StorageShareRetentionPolicy': 
                     data["retentionPolicy"].lower(),
                 'GLUE2StorageShareServingState': "production",
+                'GLUE2StorageSharePath': data["stfnRoot"][0],
                 'GLUE2StorageShareSharingID': sharing_id
             })
+            if self._is_anonymous(data["voname"]):
+                node.add({
+                    'GLUE2StorageShareSharingID': "dedicated"
+                    })
+            else:
+                node.add({
+                    'GLUE2StorageShareSharingID': self._get_sharing_id(name,
+                        data["retentionPolicy"], data["accessLatency"]),
+                    'GLUE2StorageShareTag': data["voname"],
+                    'GLUE2StorageShareDescription': 
+                        "Share for " + str(data["voname"])
+                    })
             nodes.append(node)
 
             # GLUE2MappingPolicy
