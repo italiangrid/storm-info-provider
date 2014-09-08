@@ -287,7 +287,7 @@ class Glue2(object):
                     'GLUE2StorageShareSharingID': self._get_sharing_id(name,
                         data["retentionPolicy"], data["accessLatency"]),
                     'GLUE2StorageShareTag': data["voname"],
-                    'GLUE2StorageShareDescription': 
+                    'GLUE2ShareDescription': 
                         "Share for " + str(data["voname"])
                     })
             nodes.append(node)
