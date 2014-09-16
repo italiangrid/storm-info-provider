@@ -32,6 +32,9 @@ class Glue2(object):
     def _get_site_id(self):
         return self._configuration.get("SITE_NAME")
 
+    def _get_domain(self):
+        return self._configuration.get("MY_DOMAIN")
+
     def _get_manager_id(self):
         return self._get_service_id() + "/manager"
 
@@ -184,7 +187,7 @@ class Glue2(object):
         node = GLUE2StorageService(service_id)
         node.init().add({
             'GLUE2ServiceQualityLevel': self._get_quality_level(),
-            'GLUE2ServiceAdminDomainForeignKey': self._get_site_id()
+            'GLUE2ServiceAdminDomainForeignKey': self._get_domain()
             })
         nodes.append(node)
 
