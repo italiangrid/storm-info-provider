@@ -187,7 +187,7 @@ class Glue2(object):
         node = GLUE2StorageService(service_id)
         node.init().add({
             'GLUE2ServiceQualityLevel': self._get_quality_level(),
-            'GLUE2ServiceAdminDomainForeignKey': self._get_domain()
+            'GLUE2ServiceAdminDomainForeignKey': self._get_site_id()
             })
         nodes.append(node)
 
