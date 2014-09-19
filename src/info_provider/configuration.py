@@ -113,6 +113,16 @@ class Configuration:
     def get_supported_VOs(self):
         return self.get("VOS").split(' ')
 
+    def get_used_VOs(self):
+        vo_list = []
+        for sa in self.get_storage_area_list():
+            vo_name = self.get_sa_voname(sa)
+            if "*" in vo_name:
+                continue
+            if not vo_name in vo_list:
+                vo_list.append(vo_name)
+        return vo_list
+
     def get_storage_area_list(self):
         return self.get("STORM_STORAGEAREA_LIST").split(' ')
 

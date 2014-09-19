@@ -75,7 +75,7 @@ class Glue13(object):
         return
 
     def _create_service_config_file(self):
-        vos = self._configuration.get_supported_VOs()
+        vos = self._configuration.get_used_VOs()
         params = { 
             'ENDPOINT': self._configuration.get_public_srm_endpoint(),
             'ACBR': "VO:" + "\\nVO:".join(vos),

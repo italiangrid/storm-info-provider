@@ -123,7 +123,7 @@ class Glue2(object):
         return
 
     def _create_srm_endpoint_config_file(self):
-        vos = self._configuration.get_supported_VOs()
+        vos = self._configuration.get_used_VOs()
         params = {
             'SITEID': self._get_site_id(),
             'ENDPOINT': self._configuration.get_public_srm_endpoint(),
@@ -344,7 +344,7 @@ class Glue2(object):
                 nodes.append(node)
 
         access_policy_rules = []
-        for vo in self._configuration.get_supported_VOs():
+        for vo in self._configuration.get_used_VOs():
             access_policy_rules.append("vo:" + vo)
 
         if self._configuration.has_gridhttps():
@@ -369,7 +369,7 @@ class Glue2(object):
             node.init().add({ 
                 'GLUE2PolicyRule': access_policy_rules,
                 'GLUE2PolicyUserDomainForeignKey': 
-                    self._configuration.get_supported_VOs()
+                    self._configuration.get_used_VOs()
                 })
             nodes.append(node)
 
@@ -393,7 +393,7 @@ class Glue2(object):
             node.init().add({ 
                 'GLUE2PolicyRule': access_policy_rules,
                 'GLUE2PolicyUserDomainForeignKey': 
-                    self._configuration.get_supported_VOs()
+                    self._configuration.get_used_VOs()
                 })
             nodes.append(node)
 
