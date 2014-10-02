@@ -1,0 +1,156 @@
+.TH storm-info-provider 1 "23 Sep 2014" "version 1.7.7"
+
+.SH NAME
+storm-info-provider - StoRM component which configure and update the storage information published on BDII
+
+.SH SYNOPSIS
+
+.B /usr/libexec/storm-info-provider
+[\fIOPTIONS\fR] \fIconfigure [\fICONFIGURE-OPTIONS\fR]
+.br
+.B /usr/libexec/storm-info-provider
+[\fIOPTIONS\fR] \fIget-static-ldif [\fIGET-STATIC-LDIF-OPTIONS\fR]
+.br
+.B /usr/libexec/storm-info-provider
+[\fIOPTIONS\fR] \fIget-update-ldif [\fIGET-UPDATE-LDIF-OPTIONS\fR]
+.br
+
+.SH DESCRIPTION
+
+StoRM Info Provider is the component of StoRM deployment in charge of feeding resource BDII with information on the Grid Storage Element and the status of its Storage Areas. It produces ldif files populated by gatering information from StoRM BackEnd.
+.br
+Supported platforms are Scientific Linux 5 on x86_64 architecture Scientific Linux 6 on x86_64 architecture
+.br
+StoRM Info Provider consists of a Python script:
+.br
+.B /usr/libexec/storm-info-provider
+.br
+which can be executed by specifying one of these three actions:
+.br
+.TP
+.B configure
+
+The
+.B configure
+action installs/creates all the necessary files to make BDII able to retrieve information from StoRM service and publish them by following the GLUE specifications. It should be launched every time StoRM service is reconfigured. By default, the BDII uses the following three directories to obtain information sources:
+.br
+
+.I /var/lib/bdii/gip/ldif
+.br
+.I /var/lib/bdii/gip/provider
+.br
+.I /var/lib/bdii/gip/plugin
+.br
+
+These directories are specified as configuration parameters in the BDII's configuration (see http://gridinfo.web.cern.ch/developers/resource-bdii). StoRM info provider
+.B configure
+action, by default, creates the provider, plugin and static LDIF file for both GLUE v1.3 and GLUE v2 specifications:
+.br
+
+.I /var/lib/bdii/gip/plugin/storm-glue13-plugin
+.br
+.I /var/lib/bdii/gip/provider/storm-glue13-provider
+.br
+.I /var/lib/bdii/gip/static/storm-glue13-static.ldif
+.br
+.I /var/lib/bdii/gip/plugin/storm-glue2-plugin
+.br
+.I /var/lib/bdii/gip/provider/storm-glue2-provider
+.br
+.I /var/lib/bdii/gip/static/storm-glue2-static.ldif
+
+The
+.B configure
+action creates also several configuration files, used by the providers scripts:
+
+.I /etc/storm/info-provider/glite-info-glue2-service-storm-endpoint-webdav.conf
+.br
+.I /etc/storm/info-provider/glite-info-glue13-service-storm.conf
+.br
+.I /etc/storm/info-provider/glite-info-glue2-service-storm-endpoint-srm.conf
+.br
+.I /etc/storm/info-provider/glite-info-glue2-service-storm.conf
+
+
+.TP
+.B get-static-ldif
+
+The
+.B get-static-ldif
+action can be used to obtain the static LDIF of a particular GLUE specification version. It's the LDIF that during
+.B configure
+action is saved into /var/lib/bdii/gip/static directory.
+
+.TP
+.B get-update-ldif
+
+The
+.B get-update-ldif
+action can be used to obtain the LDIF that updates the BDII information (for example the information about free/used space for a storage area). It's used, by default, by the scripts saved into /var/lib/bdii/gip/plugin directory, created during
+.B configure
+execution.
+
+
+.SH OPTIONS
+
+.IP "-h, --help"
+Print usage information.
+
+.IP "-v LOG_LEVEL"
+Set the logging level. Values: 10 (DEBUG), 20 (INFO), 30 (WARNING) or 40 (ERROR)
+
+.IP "-o LOG_FILENAME"
+Redirect log messages to a file. LOG_FILENAME contains the file path.
+
+
+.IP
+.I CONFIGURE-OPTIONS
+.RS
+
+.IP "-f FILEPATH"
+Specify an alternative path to the file that contains the last StoRM related YAIM variables.
+Default path is /etc/storm/info-provider/storm-yaim-variables.conf
+
+.IP "-g {glue13|glue2|all}"
+Specify the format of your published information: GLUE v1.3, GLUE v2 or both.
+.RE
+
+.IP
+.I GET-STATIC-LDIF-OPTIONS/GET-UPDATE-LDIF-OPTIONS
+.RS
+
+.IP "-f FILEPATH"
+Specify an alternative path to the file that contains the last StoRM related YAIM variables.
+Default path is /etc/storm/info-provider/storm-yaim-variables.conf
+
+.IP "-g {glue13|glue2}"
+Specify the format of your published information: GLUE v1.3 or GLUE v2.
+.RE
+
+
+.SH FILES
+.TP
+.I /usr/libexec/storm-info-provider
+.RS
+The StoRM info provider main script.
+.RE
+
+.TP
+.I /etc/storm/info-provider/templates/glite-info-glue2-service-storm-endpoint-srm.conf.template
+.br
+.RE
+.I /etc/storm/info-provider/templates/glite-info-glue2-service-storm.conf.template
+.br
+.RE
+.I /etc/storm/info-provider/templates/glite-info-glue13-service-storm.conf.template
+.br
+.RS
+The template files used by StoRM info provider script to generate the configuration files needed by the BDII provider scripts.  
+.RE
+
+
+.SH AUTHOR
+
+Andrea Ceccanti <andrea.ceccanti@cnaf.infn.it>
+.br
+Enrico Vianello <enrico.vianello@cnaf.infn.it>
