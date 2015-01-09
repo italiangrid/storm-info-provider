@@ -1,0 +1,12 @@
+init=echo
+service_type=SRM
+get_version=echo 2.2.0
+get_endpoint=echo $ENDPOINT
+get_status=glite-info-service-test SRM_V2 && glite-info-service-status storm-backend-server
+WSDL_URL=http://sdm.lbl.gov/srm-wg/srm.v2.2.wsdl
+semantics_URL=http://sdm.lbl.gov/srm-wg/doc/SRM.v2.2.html
+get_starttime=perl -e '@st=stat("/var/run/storm-backend-server.pid");print "@st[10]\n";'
+get_acbr=echo -e "$ACBR"
+get_owner=echo -e "$OWNER"
+get_data=echo
+get_services=echo

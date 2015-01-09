@@ -1,0 +1,210 @@
+#!/usr/bin/env python 
+
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2006-2010.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+import argparse
+import logging
+import logging.config
+import os
+import exceptions
+import time
+import pwd
+
+from info_provider.configuration import Configuration
+from info_provider.ldap_utils import LDIFExporter
+from info_provider.glue.glue13 import Glue13
+from info_provider.glue.glue2 import Glue2
+from info_provider.space_info import SpaceInfo
+
+CONFIG_FILE = "/etc/storm/info-provider/storm-yaim-variables.conf"
+LOG_FORMAT = "%(asctime)s %(name)-12s: %(levelname)s %(message)s"
+
+def parse_args():
+    parser = argparse.ArgumentParser(description = 'storm-info-provider args')
+    parser.add_argument('-v', action = 'store', dest = 'log_level', 
+        required = False, default=20, type=int)
+    parser.add_argument('-o', action = 'store', dest = 'log_filename',
+        required = False)
+    subparsers = parser.add_subparsers()
+    # create parser for "init" command
+    parser_init = subparsers.add_parser('configure')
+    parser_init.add_argument('-f', action = 'store', dest = 'filepath', 
+        required = False, default=CONFIG_FILE)
+    parser_init.add_argument('-g', action = 'store', dest = 'glue_protocol', 
+        required = False, choices=['glue13', 'glue2', 'all'], default='all')
+    parser_init.set_defaults(action=configure)
+    # create parser for "get-update-ldif" command
+    parser_update = subparsers.add_parser('get-update-ldif')
+    parser_update.add_argument('-f', action = 'store', dest = 'filepath', 
+        required = False, default=CONFIG_FILE)
+    parser_update.add_argument('-g', action = 'store', dest = 'glue_protocol', 
+        required = False, choices=['glue13', 'glue2'], default='glue2')
+    parser_update.set_defaults(action=get_update_ldif)
+    # create parser for "get-static-ldif" command
+    parser_static = subparsers.add_parser('get-static-ldif')
+    parser_static.add_argument('-f', action = 'store', dest = 'filepath', 
+        required = False, default=CONFIG_FILE)
+    parser_static.add_argument('-g', action = 'store', dest = 'glue_protocol', 
+        required = False, choices=['glue13', 'glue2'], default='glue2')
+    parser_static.set_defaults(action=get_static_ldif)
+    return parser.parse_args()
+
+def is_backend_running():
+    backend_pid_path = "/var/run/storm-backend-server.pid"
+    return os.path.isfile(backend_pid_path)
+
+def get_current_serving_state():
+    if not is_backend_running():
+        return (1, "closed")
+    return (4, "production")
+
+def configure(arguments):
+    logging.debug("Configure ...")
+    # load configuration from file    
+    configuration = Configuration(arguments.filepath)
+    # get current serving state (used by GLUE2)
+    (value_int, value_str) = get_current_serving_state()
+    configuration.set("STORM_SERVING_STATE_VALUE", value_int)
+    configuration.set("STORM_SERVING_STATE", value_str)
+    spaceinfo = SpaceInfo()
+    # load space info
+    try:
+        if value_int == 1:
+            raise Exception("StoRM Backend is not running")
+        spaceinfo.init_from_remote(configuration.get_backend_rest_endpoint())
+    except Exception, ex:
+        logging.error('%s', ex)
+        logging.warning("Loading space information from configuration")
+        spaceinfo.init_from_configuration(configuration)
+    # configure Glue13 info
+    if arguments.glue_protocol in ['glue13', 'all']:
+        glue13 = Glue13(configuration)
+        glue13.configure(spaceinfo)
+    # configure Glue2 info
+    if arguments.glue_protocol in ['glue2', 'all']:    
+        glue2 = Glue2(configuration)
+        glue2.configure(spaceinfo)
+    return
+
+def get_static_ldif(arguments):
+
+    # load configuration from file    
+    configuration = Configuration(arguments.filepath)
+    
+    # get current serving state (used by GLUE2)
+    (value_int, value_str) = get_current_serving_state()
+    configuration.set("STORM_SERVING_STATE_VALUE", value_int)
+    configuration.set("STORM_SERVING_STATE", value_str)
+
+    # load space info
+    spaceinfo = SpaceInfo()
+    try:
+        if value_int == 1:
+            raise Exception("StoRM Backend is not running")
+        spaceinfo.init_from_remote(configuration.get_backend_rest_endpoint())
+    except Exception, ex:
+        logging.error('%s', ex)
+        logging.warning("Loading space information from configuration")
+        spaceinfo.init_from_configuration(configuration)
+
+    exporter = LDIFExporter()
+
+    # get Glue13 static ldif info
+    if arguments.glue_protocol in ['glue13']:
+        glue13 = Glue13(configuration)
+        exporter.add_nodes(glue13.get_static_ldif_nodes(spaceinfo))
+
+    # get Glue2 static ldif info
+    if arguments.glue_protocol in ['glue2']:
+        glue2 = Glue2(configuration)
+        exporter.add_nodes(glue2.get_static_ldif_nodes(spaceinfo))
+
+    exporter.print_nodes(sys.stdout)
+    return
+
+def get_update_ldif(arguments):
+
+    # load configuration from file    
+    configuration = Configuration(arguments.filepath)
+
+    # get current serving state
+    (value_int, value_str) = get_current_serving_state()
+    configuration.set("STORM_SERVING_STATE_VALUE", value_int)
+    configuration.set("STORM_SERVING_STATE", value_str)
+
+    # Backend is not running
+    if value_int == 1:
+        logging.error("StoRM Backend is not running")
+        # update endpoints serving state
+        if arguments.glue_protocol in ['glue2']:
+            glue2 = Glue2(configuration)
+            exporter = LDIFExporter()
+            exporter.add_nodes(glue2.get_update_ldif_endpoints(value_str))
+            exporter.print_nodes(sys.stdout)
+            return
+        return
+
+    # load space info
+    spaceinfo = SpaceInfo()
+    try:
+        spaceinfo.init_from_remote(configuration.get_backend_rest_endpoint())
+    except Exception, ex:
+        logging.error('%s', ex)
+        return
+
+    exporter = LDIFExporter()
+
+    # get Glue13 update ldif info
+    if arguments.glue_protocol in ['glue13']:
+        glue13 = Glue13(configuration)
+        exporter.add_nodes(glue13.get_update_ldif_nodes(spaceinfo))
+
+    # get Glue2 update ldif info
+    if arguments.glue_protocol in ['glue2']:
+        glue2 = Glue2(configuration)
+        exporter.add_nodes(glue2.get_update_ldif_endpoints(value_str))
+        exporter.add_nodes(glue2.get_update_ldif_spaceinfo(spaceinfo, value_str))
+
+    exporter.print_nodes(sys.stdout)
+    return
+
+def initialize_logger(arguments):
+    if arguments.log_filename:
+        logging.basicConfig(filename=arguments.log_filename, filemode='a',
+            format=LOG_FORMAT, level=arguments.log_level)
+    else:
+        logging.basicConfig(stream=sys.stderr, format=LOG_FORMAT,
+            level=arguments.log_level)
+
+
+if __name__ == '__main__':
+
+    # command line parsing
+    arguments = parse_args()
+
+    # initialize logging
+    initialize_logger(arguments)
+
+    start = time.clock()
+    # do ...
+    try:
+        arguments.action(arguments)
+    except Exception, e:
+        print str(e)
+
+    elapsed = time.clock() - start
+    logging.info("Received %s - It took %s sec", arguments.action.__name__, 
+        elapsed)
