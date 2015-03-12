@@ -30,7 +30,7 @@ class Configuration:
         try:
             f = open(filepath, 'r')
             for line in f:
-                (key, val) = line.split('=')
+                (key, val) = line.split('=',1)
                 out[key] = self.clear_quotes(self.clear_newlines(val.strip()))
         finally:
             f.close()
