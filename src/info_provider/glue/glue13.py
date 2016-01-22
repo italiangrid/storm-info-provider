@@ -139,6 +139,7 @@ class Glue13(object):
                 d["accessLatency"])
             node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
             node.init().add({
+                'GlueSAPath': str(d["root"]),
                 'GlueSATotalOnlineSize': as_GB(d["space"]["total-space"]),
                 'GlueSAUsedOnlineSize': as_GB(d["space"]["used-space"]),
                 'GlueSAFreeOnlineSize': as_GB(d["space"]["free-space"]),

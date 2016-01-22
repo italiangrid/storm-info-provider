@@ -204,7 +204,10 @@ if __name__ == '__main__':
         arguments.action(arguments)
     except Exception, e:
         print str(e)
+        sys.exit(1)
 
     elapsed = time.clock() - start
     logging.info("Received %s - It took %s sec", arguments.action.__name__, 
         elapsed)
+
+    sys.exit()
