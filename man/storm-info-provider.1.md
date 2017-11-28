@@ -4,7 +4,7 @@
 
 storm-info-provider(1) - Publish StoRM storage service information
 
-## SYNOPSIS
+## SYNOPSIS
 
 **/usr/libexec/storm-info-provider** &lt;options&gt; **configure** | **get-static-ldif** | **get-update-ldif** | **get-report-json** &lt;options&gt;
 
