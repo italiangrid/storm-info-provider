@@ -9,4 +9,4 @@ Supported platforms:
 
 - Scientific Linux 6 on x86\_64 architecture
 
-Read [man page](man/README.md).
+Read [man page](man/storm-info-provider.1.md).

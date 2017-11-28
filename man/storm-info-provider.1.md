@@ -1,4 +1,8 @@
-# storm-info-provider(1) -- Publish StoRM storage service information
+# storm-info-provider(1)
+
+## NAME
+
+storm-info-provider(1) - Publish StoRM storage service information
 
 ## SYNOPSIS
 
