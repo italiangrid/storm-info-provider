@@ -11,4 +11,4 @@ Install [`ronn`](http://rtomayko.github.com/ronn/):
 
 Build man page:
 
-    ronn -r storm-info-provider.1.ronn
+    ronn -r storm-info-provider.1.md

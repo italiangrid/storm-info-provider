@@ -5,20 +5,8 @@ StoRM Info Provider is the component of StoRM deployment in charge of feeding re
 information on the Grid Storage Element and the status of its Storage Areas. It produces ldif
 files populated by gatering information from StoRM BackEnd.
 
-Supported platforms
-Scientific Linux 5 on x86\_64 architecture
-Scientific Linux 6 on x86\_64 architecture
+Supported platforms:
 
-### Building
-Required packages:
+- Scientific Linux 6 on x86\_64 architecture
 
-Build command:
-```bash
-```
-
-# Contact info
-
-If you have problems, questions, ideas or suggestions, please contact us at
-the following URLs
-
-* GGUS (official support channel): http://www.ggus.eu
+Read [man page](man/README.md).
