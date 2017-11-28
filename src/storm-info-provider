@@ -28,9 +28,12 @@ from info_provider.ldap_utils import LDIFExporter
 from info_provider.glue.glue13 import Glue13
 from info_provider.glue.glue2 import Glue2
 from info_provider.space_info import SpaceInfo
+from info_provider.model.storage_service import StorageService
+from info_provider.report import Report
 
 CONFIG_FILE = "/etc/storm/info-provider/storm-yaim-variables.conf"
 LOG_FORMAT = "%(asctime)s %(name)-12s: %(levelname)s %(message)s"
+EXPORT_TO_JSON_FILE = "/etc/storm/info-provider/site-report.json"
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'storm-info-provider args')
@@ -45,6 +48,8 @@ def parse_args():
         required = False, default=CONFIG_FILE)
     parser_init.add_argument('-g', action = 'store', dest = 'glue_protocol', 
         required = False, choices=['glue13', 'glue2', 'all'], default='all')
+    parser_init.add_argument('-o', action = 'store', dest = 'exported_json_file_path', 
+        required = False, default=EXPORT_TO_JSON_FILE)
     parser_init.set_defaults(action=configure)
     # create parser for "get-update-ldif" command
     parser_update = subparsers.add_parser('get-update-ldif')
@@ -60,6 +65,13 @@ def parse_args():
     parser_static.add_argument('-g', action = 'store', dest = 'glue_protocol', 
         required = False, choices=['glue13', 'glue2'], default='glue2')
     parser_static.set_defaults(action=get_static_ldif)
+    # create parser for "build-report" command
+    parser_report = subparsers.add_parser('get-report-json')
+    parser_report.add_argument('-f', action = 'store', dest = 'filepath', 
+        required = False, default=CONFIG_FILE)
+    parser_report.add_argument('-o', action = 'store', dest = 'exported_json_file_path', 
+        required = False, default=EXPORT_TO_JSON_FILE)
+    parser_report.set_defaults(action=get_report_json)
     return parser.parse_args()
 
 def is_backend_running():
@@ -97,6 +109,33 @@ def configure(arguments):
     if arguments.glue_protocol in ['glue2', 'all']:    
         glue2 = Glue2(configuration)
         glue2.configure(spaceinfo)
+    # create report json
+    get_report_json(arguments)
+    return
+
+def get_report_json(arguments):
+    logging.debug("Build JSON report ...")
+    # load configuration from file    
+    configuration = Configuration(arguments.filepath)
+    # get current serving state
+    (value_int, value_str) = get_current_serving_state()
+    configuration.set("STORM_SERVING_STATE_VALUE", value_int)
+    configuration.set("STORM_SERVING_STATE", value_str)
+    spaceinfo = SpaceInfo()
+    # load space info
+    try:
+        if value_int == 1:
+            raise Exception("StoRM Backend is not running")
+        spaceinfo.init_from_remote(configuration.get_backend_rest_endpoint())
+    except Exception, ex:
+        logging.error('%s', ex)
+        logging.warning("Loading space information from configuration")
+        spaceinfo.init_from_configuration(configuration)
+    # create report json
+    storage_service = StorageService(configuration, spaceinfo)
+    report = Report(storage_service)
+    report.save_to_file(arguments.exported_json_file_path)
+    logging.info("Exported JSON report to %s", arguments.exported_json_file_path)
     return
 
 def get_static_ldif(arguments):

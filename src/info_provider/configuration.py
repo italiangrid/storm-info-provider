@@ -223,6 +223,7 @@ class Configuration:
             out.append("ALL")
         return out
 
-
+    def get_sitename(self):
+        return self.get("SITE_NAME")
 
 
