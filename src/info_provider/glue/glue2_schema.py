@@ -1,28 +1,29 @@
 import time
-import os
 
-from info_provider.ldap_utils import LDIFNode
-from info_provider.glue.constants import *
+from info_provider.utils.ldap_utils import LDIFNode
+from info_provider.glue.glue2_constants import GLUE2_BASEDN
+
 
 class GLUE2StorageService(LDIFNode):
 
     def __init__(self, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2ServiceID=" + GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
                 'GLUE2EntityCreationTime': time.strftime('%Y-%m-%dT%T'),
                 'objectClass': ['GLUE2Service', 'GLUE2StorageService'],
                 'GLUE2ServiceType': 'storm',
                 'GLUE2ServiceCapability': 'data.management.storage',
-                'GLUE2EntityOtherInfo': ['ProfileName=EGI', 
+                'GLUE2EntityOtherInfo': ['ProfileName=EGI',
                     'ProfileVersion=1.0']
             })
         return
 
+
 class GLUE2StorageServiceCapacity(LDIFNode):
 
     def __init__(self, GLUE2StorageServiceCapacityID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2StorageServiceCapacityID=" + GLUE2StorageServiceCapacityID + 
                 ",GLUE2ServiceID=" + GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
@@ -34,10 +35,11 @@ class GLUE2StorageServiceCapacity(LDIFNode):
             })
         return
 
+
 class GLUE2StorageAccessProtocol(LDIFNode):
 
     def __init__(self, GLUE2StorageAccessProtocolID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2StorageAccessProtocolID=" + GLUE2StorageAccessProtocolID + 
                 ",GLUE2ServiceID=" + GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
@@ -49,10 +51,11 @@ class GLUE2StorageAccessProtocol(LDIFNode):
             })
         return
 
+
 class GLUE2StorageManager(LDIFNode):
 
     def __init__(self, GLUE2ManagerID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2ManagerID=" + GLUE2ManagerID + ",GLUE2ServiceID=" + 
                 GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
@@ -65,10 +68,11 @@ class GLUE2StorageManager(LDIFNode):
             })
         return
 
+
 class GLUE2DataStore(LDIFNode):
 
     def __init__(self, GLUE2ResourceID, GLUE2ManagerID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2ResourceID=" + GLUE2ResourceID + ",GLUE2ManagerID=" + 
                 GLUE2ManagerID + ",GLUE2ServiceID=" + GLUE2ServiceID + "," + 
                 GLUE2_BASEDN,
@@ -82,10 +86,11 @@ class GLUE2DataStore(LDIFNode):
             })
         return
 
+
 class GLUE2StorageShare(LDIFNode):
 
     def __init__(self, GLUE2ShareID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2ShareID=" + GLUE2ShareID + ",GLUE2ServiceID=" + 
                 GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
@@ -99,10 +104,11 @@ class GLUE2StorageShare(LDIFNode):
             })
         return
 
+
 class GLUE2MappingPolicy(LDIFNode):
 
     def __init__(self, GLUE2PolicyID, GLUE2ShareID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2PolicyID=" + GLUE2PolicyID + ",GLUE2ShareID=" + 
                 GLUE2ShareID + ",GLUE2ServiceID=" + GLUE2ServiceID + "," + 
                 GLUE2_BASEDN,
@@ -115,10 +121,11 @@ class GLUE2MappingPolicy(LDIFNode):
             })
         return
 
+
 class GLUE2StorageShareCapacity(LDIFNode):
 
     def __init__(self, GLUE2StorageShareCapacityID, GLUE2ShareID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2StorageShareCapacityID=" + GLUE2StorageShareCapacityID + 
                 ",GLUE2ShareID=" + GLUE2ShareID + ",GLUE2ServiceID=" + 
                 GLUE2ServiceID + "," + GLUE2_BASEDN,
@@ -130,10 +137,11 @@ class GLUE2StorageShareCapacity(LDIFNode):
             })
         return
 
+
 class GLUE2StorageEndpoint(LDIFNode):
 
     def __init__(self, GLUE2EndpointID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2EndpointID=" + GLUE2EndpointID + ",GLUE2ServiceID=" + 
                 GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
@@ -144,10 +152,11 @@ class GLUE2StorageEndpoint(LDIFNode):
             })
         return
 
+
 class GLUE2HttpStorageEndpoint(LDIFNode):
 
     def __init__(self, GLUE2EndpointID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2EndpointID=" + GLUE2EndpointID + ",GLUE2ServiceID=" + 
                 GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
@@ -166,10 +175,11 @@ class GLUE2HttpStorageEndpoint(LDIFNode):
             })
         return
 
+
 class GLUE2HttpsStorageEndpoint(LDIFNode):
 
     def __init__(self, GLUE2EndpointID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2EndpointID=" + GLUE2EndpointID + ",GLUE2ServiceID=" + 
                 GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
@@ -188,10 +198,11 @@ class GLUE2HttpsStorageEndpoint(LDIFNode):
             })
         return
 
+
 class GLUE2WebDAVStorageEndpoint(LDIFNode):
 
     def __init__(self, GLUE2EndpointID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2EndpointID=" + GLUE2EndpointID + ",GLUE2ServiceID=" + 
                 GLUE2ServiceID + "," + GLUE2_BASEDN,
             {
@@ -213,10 +224,11 @@ class GLUE2WebDAVStorageEndpoint(LDIFNode):
             })
         return
 
+
 class GLUE2AccessPolicy(LDIFNode):
 
     def __init__(self, GLUE2PolicyID, GLUE2EndpointID, GLUE2ServiceID):
-        LDIFNode.__init__(self, 
+        LDIFNode.__init__(self,
             "GLUE2PolicyID=" + GLUE2PolicyID + ",GLUE2EndpointID=" + 
                 GLUE2EndpointID + ",GLUE2ServiceID=" + GLUE2ServiceID + "," + 
                 GLUE2_BASEDN,

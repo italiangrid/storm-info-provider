@@ -24,12 +24,9 @@ import time
 import pwd
 
 from info_provider.configuration import Configuration
-from info_provider.ldap_utils import LDIFExporter
-from info_provider.glue.glue13 import Glue13
-from info_provider.glue.glue2 import Glue2
-from info_provider.space_info import SpaceInfo
-from info_provider.model.storage_service import StorageService
-from info_provider.report import Report
+from info_provider.utils.ldap_utils import LDIFExporter
+from symbol import argument
+from info_provider.storm_info_provider import StormInfoProvider
 
 CONFIG_FILE = "/etc/storm/info-provider/storm-yaim-variables.conf"
 LOG_FORMAT = "%(asctime)s %(name)-12s: %(levelname)s %(message)s"
@@ -75,149 +72,47 @@ def parse_args():
     return parser.parse_args()
 
 def is_backend_running():
+    logging.debug("Checking if backend is running ...")
     backend_pid_path = "/var/run/storm-backend-server.pid"
     return os.path.isfile(backend_pid_path)
 
 def get_current_serving_state():
+    logging.debug("Getting serving state ...")
     if not is_backend_running():
         return (1, "closed")
     return (4, "production")
 
-def configure(arguments):
-    logging.debug("Configure ...")
+def get_implementation_version():
+    cmd = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
+    return os.popen(cmd).read()
+
+def init_configuration(yaim_filepath):
     # load configuration from file    
-    configuration = Configuration(arguments.filepath)
+    configuration = Configuration(yaim_filepath)
     # get current serving state (used by GLUE2)
     (value_int, value_str) = get_current_serving_state()
     configuration.set("STORM_SERVING_STATE_VALUE", value_int)
     configuration.set("STORM_SERVING_STATE", value_str)
-    spaceinfo = SpaceInfo()
-    # load space info
-    try:
-        if value_int == 1:
-            raise Exception("StoRM Backend is not running")
-        spaceinfo.init_from_remote(configuration.get_backend_rest_endpoint())
-    except Exception, ex:
-        logging.error('%s', ex)
-        logging.warning("Loading space information from configuration")
-        spaceinfo.init_from_configuration(configuration)
-    # configure Glue13 info
-    if arguments.glue_protocol in ['glue13', 'all']:
-        glue13 = Glue13(configuration)
-        glue13.configure(spaceinfo)
-    # configure Glue2 info
-    if arguments.glue_protocol in ['glue2', 'all']:    
-        glue2 = Glue2(configuration)
-        glue2.configure(spaceinfo)
-    # create report json
-    get_report_json(arguments)
+    configuration.set("STORM_IMPLEMENTATION_VERSION", get_implementation_version())
+    return configuration
+
+def configure(arguments):
+    logging.debug("Configure ...")
+    info_provider.configure(arguments.glue_protocol, arguments.exported_json_file_path);
     return
 
 def get_report_json(arguments):
     logging.debug("Build JSON report ...")
-    # load configuration from file    
-    configuration = Configuration(arguments.filepath)
-    # get current serving state
-    (value_int, value_str) = get_current_serving_state()
-    configuration.set("STORM_SERVING_STATE_VALUE", value_int)
-    configuration.set("STORM_SERVING_STATE", value_str)
-    spaceinfo = SpaceInfo()
-    # load space info
-    try:
-        if value_int == 1:
-            raise Exception("StoRM Backend is not running")
-        spaceinfo.init_from_remote(configuration.get_backend_rest_endpoint())
-    except Exception, ex:
-        logging.error('%s', ex)
-        logging.warning("Loading space information from configuration")
-        spaceinfo.init_from_configuration(configuration)
-    # create report json
-    storage_service = StorageService(configuration, spaceinfo)
-    report = Report(storage_service)
-    report.save_to_file(arguments.exported_json_file_path)
-    logging.info("Exported JSON report to %s", arguments.exported_json_file_path)
+    info_provider.get_report_json(arguments.exported_json_file_path)
     return
 
 def get_static_ldif(arguments):
-
-    # load configuration from file    
-    configuration = Configuration(arguments.filepath)
-    
-    # get current serving state (used by GLUE2)
-    (value_int, value_str) = get_current_serving_state()
-    configuration.set("STORM_SERVING_STATE_VALUE", value_int)
-    configuration.set("STORM_SERVING_STATE", value_str)
-
-    # load space info
-    spaceinfo = SpaceInfo()
-    try:
-        if value_int == 1:
-            raise Exception("StoRM Backend is not running")
-        spaceinfo.init_from_remote(configuration.get_backend_rest_endpoint())
-    except Exception, ex:
-        logging.error('%s', ex)
-        logging.warning("Loading space information from configuration")
-        spaceinfo.init_from_configuration(configuration)
-
-    exporter = LDIFExporter()
-
-    # get Glue13 static ldif info
-    if arguments.glue_protocol in ['glue13']:
-        glue13 = Glue13(configuration)
-        exporter.add_nodes(glue13.get_static_ldif_nodes(spaceinfo))
-
-    # get Glue2 static ldif info
-    if arguments.glue_protocol in ['glue2']:
-        glue2 = Glue2(configuration)
-        exporter.add_nodes(glue2.get_static_ldif_nodes(spaceinfo))
-
-    exporter.print_nodes(sys.stdout)
+    logging.debug("Get static LDIF ...")
+    info_provider.get_static_ldif(arguments.glue_protocol)
     return
 
 def get_update_ldif(arguments):
-
-    # load configuration from file    
-    configuration = Configuration(arguments.filepath)
-
-    # get current serving state
-    (value_int, value_str) = get_current_serving_state()
-    configuration.set("STORM_SERVING_STATE_VALUE", value_int)
-    configuration.set("STORM_SERVING_STATE", value_str)
-
-    # Backend is not running
-    if value_int == 1:
-        logging.error("StoRM Backend is not running")
-        # update endpoints serving state
-        if arguments.glue_protocol in ['glue2']:
-            glue2 = Glue2(configuration)
-            exporter = LDIFExporter()
-            exporter.add_nodes(glue2.get_update_ldif_endpoints(value_str))
-            exporter.print_nodes(sys.stdout)
-            return
-        return
-
-    # load space info
-    spaceinfo = SpaceInfo()
-    try:
-        spaceinfo.init_from_remote(configuration.get_backend_rest_endpoint())
-    except Exception, ex:
-        logging.error('%s', ex)
-        return
-
-    exporter = LDIFExporter()
-
-    # get Glue13 update ldif info
-    if arguments.glue_protocol in ['glue13']:
-        glue13 = Glue13(configuration)
-        exporter.add_nodes(glue13.get_update_ldif_nodes(spaceinfo))
-
-    # get Glue2 update ldif info
-    if arguments.glue_protocol in ['glue2']:
-        glue2 = Glue2(configuration)
-        exporter.add_nodes(glue2.get_update_ldif_endpoints(value_str))
-        exporter.add_nodes(glue2.get_update_ldif_spaceinfo(spaceinfo, value_str))
-
-    exporter.print_nodes(sys.stdout)
+    info_provider.get_update_ldif(arguments.glue_protocol)
     return
 
 def initialize_logger(arguments):
@@ -237,6 +132,12 @@ if __name__ == '__main__':
     # initialize logging
     initialize_logger(arguments)
 
+    # load configuration
+    configuration = init_configuration(arguments.filepath)
+
+    # create info_provider
+    info_provider = StormInfoProvider(configuration=configuration)
+
     start = time.clock()
     # do ...
     try:
@@ -246,7 +147,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     elapsed = time.clock() - start
-    logging.info("Received %s - It took %s sec", arguments.action.__name__, 
-        elapsed)
+    logging.info("Received %s - It took %s sec", arguments.action.__name__, elapsed)
 
     sys.exit()

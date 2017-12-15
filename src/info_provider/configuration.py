@@ -1,7 +1,14 @@
-import string
 import logging
 
+
 class Configuration:
+
+    __quality_levels = {
+        0: "development",
+        1: "testing",
+        2: "pre-production",
+        3: "production"
+    }
 
     _mandatories = ["SITE_NAME", "STORM_BACKEND_HOST", "STORM_DEFAULT_ROOT",
         "STORM_FRONTEND_PATH", "STORM_FRONTEND_PORT",
@@ -9,43 +16,38 @@ class Configuration:
         "VOS", "STORM_ENDPOINT_QUALITY_LEVEL", "STORM_ENDPOINT_CAPABILITY",
         "STORM_GRIDHTTPS_PUBLIC_HOST"]
 
-    def __init__(self, param):
-        if isinstance(param, dict):
-            logging.debug("Init configuration from dictionary ...")
-            self._configuration = param
-        if isinstance(param, basestring):
-            logging.debug("Init configuration from file %s ...", param)
-            self._configuration = self.load_configuration_from_file(param)
-        self.configuration_sanity_check()
+    def __init__(self, filepath):
+        logging.debug("Initialize configuration from file %s ...", filepath)
+        self._configuration = self._load_configuration_from_file(filepath)
+        self._configuration_sanity_check()
         return
 
-    def clear_quotes(self, s):
-        return s.replace('\"','').replace("\'",'')
+    def _clear_quotes(self, s):
+        return s.replace('\"', '').replace("\'", '')
 
-    def clear_newlines(self, s):
-        return s.replace("\n",'')
+    def _clear_newlines(self, s):
+        return s.replace("\n", '')
 
-    def load_configuration_from_file(self, filepath):
+    def _load_configuration_from_file(self, filepath):
         out = {}
         try:
             f = open(filepath, 'r')
             for line in f:
-                (key, val) = line.split('=',1)
-                out[key] = self.clear_quotes(self.clear_newlines(val.strip()))
+                (key, val) = line.split('=', 1)
+                out[key] = self._clear_quotes(self._clear_newlines(val.strip()))
         finally:
             f.close()
         return out
 
-    def configuration_sanity_check(self):
+    def _configuration_sanity_check(self):
         logging.debug("Configuration sanity check ...")
         for key in self._mandatories:
             if not key in self._configuration:
-                raise ValueError("Configuration error: Missing mandatory \"" + 
-                    key + "\" variable!")
+                raise ValueError("Configuration error: Missing mandatory %s variable!" % key)
 
     def print_configuration(self):
-        for key,value in self._configuration.items():
-            print str(key) + "=" + str(value) + "\n"
+        for key, value in self._configuration.items():
+            print(str(key) + "=" + str(value) + "\n")
 
     def get(self, key):
         return self._configuration[key]
@@ -127,7 +129,7 @@ class Configuration:
         return self.get("STORM_STORAGEAREA_LIST").split(' ')
 
     def get_sa_short(self, sa):
-        return sa.replace(".","").replace("-","").replace("_","").upper()
+        return sa.replace(".", "").replace("-", "").replace("_", "").upper()
 
     def get_sa_voname(self, sa):
         sa_name = self.get_sa_short(sa)
@@ -141,30 +143,28 @@ class Configuration:
         logging.debug("configuration.get_online_size %s started", options)
         tot = 0
         for sa in self.get_storage_area_list():
-            if options.get("sa"):
-                if sa != options.get("sa"):
-                    continue
-            if options.get("vo"):
-                if self.get_sa_voname(sa) != options.get("vo"):
-                    continue
+            if options.get("sa") and sa != options.get("sa"):
+                continue
+            if options.get("vo") and self.get_sa_voname(sa) != options.get("vo"):
+                continue
             sa_name = self.get_sa_short(sa)
             tot += int(self.get("STORM_" + sa_name + "_ONLINE_SIZE"))
-        return tot
+        logging.debug("online_size: %d", tot)
+        return tot*1000000000
 
     def get_nearline_size(self, **options):
-        logging.debug("configuration.get_online_size %s started", options)
+        logging.debug("configuration.get_nearline_size %s started", options)
         tot = 0
         for sa in self.get_storage_area_list():
-            if options.get("sa"):
-                if sa != options.get("sa"):
-                    continue
-            if options.get("vo"):
-                if self.get_sa_voname(sa) != options.get("vo"):
-                    continue
+            if options.get("sa") and sa != options.get("sa"):
+                continue
+            if options.get("vo") and self.get_sa_voname(sa) != options.get("vo"):
+                continue
             sa_name = self.get_sa_short(sa)
             if "STORM_" + sa_name + "_NEARLINE_SIZE" in self._configuration:
                 tot += int(self.get("STORM_" + sa_name + "_NEARLINE_SIZE"))
-        return tot
+        logging.debug("nearline_size: %d", tot)
+        return tot*1000000000
 
     def get_sa_token(self, sa):
         sa_name = self.get_sa_short(sa)
@@ -226,4 +226,17 @@ class Configuration:
     def get_sitename(self):
         return self.get("SITE_NAME")
 
+    def get_implementation_version(self):
+        return self.get("STORM_IMPLEMENTATION_VERSION")
 
+    def get_quality_level(self):
+        return self.__quality_levels[int(self.get('STORM_ENDPOINT_QUALITY_LEVEL'))]
+
+    def get_serving_state(self):
+        return self.get("STORM_SERVING_STATE")
+
+    def get_backend_hostname(self):
+        return self.get("STORM_BACKEND_HOST")
+
+    def get_domain(self):
+        return self.get("MY_DOMAIN")
