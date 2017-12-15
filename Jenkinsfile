@@ -1,5 +1,7 @@
 pipeline {
 
+    agent { label 'generic' }
+
     options {
       buildDiscarder(logRotator(numToKeepStr: '5'))
       timeout(time: 1, unit: 'HOURS')
