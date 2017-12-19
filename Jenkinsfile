@@ -11,6 +11,13 @@ pipeline {
             }
         }
     }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '5'))
+        timeout(time: 1, unit: 'HOURS')
+    }
+    triggers {
+        cron('@daily')
+    }
     stages {
         stage('prepare') {
             steps {
