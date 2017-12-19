@@ -1,6 +1,6 @@
 FROM python:2.7
 
-ARG GIT_BRANCH=fix/STOR-982
+ARG GIT_BRANCH
 
 RUN apt-get -y update
 RUN apt-get -y install libsasl2-dev python-dev libldap2-dev libssl-dev git
