@@ -1,5 +1,6 @@
-from info_provider.utils.ldap_utils import LDIFNode
 from info_provider.glue.glue13_constants import GLUE13_BASEDN
+from info_provider.utils.ldap_utils import LDIFNode
+
 
 class GlueSE(LDIFNode):
     

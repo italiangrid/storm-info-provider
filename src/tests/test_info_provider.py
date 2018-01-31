@@ -1,11 +1,14 @@
 from mock.mock import patch
-from test.utils import get_default_test_configuration, get_default_storm_gateway
+
+from info_provider.storm_info_provider import StormInfoProvider
+from tests.utils import get_default_test_configuration,\
+    get_default_storm_gateway
+
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-from info_provider.storm_info_provider import StormInfoProvider
 
 class TestInfoProvider(unittest.TestCase):
 
@@ -40,3 +43,6 @@ class TestInfoProvider(unittest.TestCase):
         gateway = get_default_storm_gateway()
         ip = StormInfoProvider(configuration=configuration, gateway=gateway)
         ip.get_report_json("/tmp/report.json")
+
+if __name__ == "__main__":
+    unittest.main()

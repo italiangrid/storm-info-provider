@@ -1,5 +1,6 @@
-from info_provider.glue.commons import BDII_PROVIDER_PATH, BDII_LDIF_PATH,\
+from info_provider.glue.commons import BDII_PROVIDER_PATH, BDII_LDIF_PATH, \
     BDII_PLUGIN_PATH, INFO_PROVIDER_TEMPLATES_DIR, INFO_PROVIDER_CONFIG_DIR
+
 
 # Glue 13
 GLUE13_BASEDN = "mds-vo-name=resource,o=grid"

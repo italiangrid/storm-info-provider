@@ -1,18 +1,25 @@
 import json
 import os
-from info_provider.configuration import Configuration
-from info_provider.storm_gateway import StormGateway
+
 from mock.mock import MagicMock
+
+from info_provider.configuration import Configuration
 from info_provider.model.space import SpaceRecord
+from info_provider.storm_gateway import StormGateway
+
 
 def get_default_test_configuration_filepath():
     return os.path.join(os.path.dirname(__file__), "resources/storm.def")
+
+def get_incomplete_test_configuration_filepath():
+    return os.path.join(os.path.dirname(__file__), "resources/storm-incomplete.def")
 
 def get_default_test_configuration():
     configuration = Configuration(get_default_test_configuration_filepath())
     configuration.set("STORM_SERVING_STATE_VALUE", 1)
     configuration.set("STORM_SERVING_STATE", "production")
     configuration.set("STORM_IMPLEMENTATION_VERSION", "1.11.13")
+    configuration.set("ISSUER_CA", "INFN-CA-2016")
     return configuration
 
 def get_default_storm_gateway():

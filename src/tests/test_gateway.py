@@ -1,8 +1,11 @@
-from info_provider.storm_gateway import StormGateway
-from mock.mock import MagicMock, patch
-from urllib2 import HTTPError, URLError
 from httplib import HTTPException
-from test.utils import get_default_test_configuration, get_response_from_url
+from urllib2 import HTTPError, URLError
+
+from info_provider.storm_gateway import StormGateway
+from tests.utils import get_default_test_configuration, get_response_from_url
+from mock.mock import patch, MagicMock
+
+
 try:
     import unittest2 as unittest
 except ImportError:
@@ -70,3 +73,6 @@ class TestGateway(unittest.TestCase):
     @staticmethod
     def raise_http_exception(url):
         raise HTTPException("HTTPException on getting URL: " + url)
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,5 +1,6 @@
-from info_provider.model.storage import StorageShare, StorageEndpoint,\
+from info_provider.model.storage import StorageShare, StorageEndpoint, \
     StorageService
+
 
 class StorageServiceBuilder:
 

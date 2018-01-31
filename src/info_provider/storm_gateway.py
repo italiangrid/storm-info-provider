@@ -1,10 +1,10 @@
-import httplib
-import logging
-import json
-import time
-import urllib2
-from urllib2 import HTTPError, URLError
 from httplib import HTTPException
+import httplib
+import json
+import logging
+import time
+from urllib2 import HTTPError, URLError
+import urllib2
 
 
 class StormGateway:

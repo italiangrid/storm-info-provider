@@ -1,17 +1,19 @@
 import json
 
+from mock.mock import patch
+
 from info_provider.storm_storage_service_builder import StorageServiceBuilder
-from info_provider.storm_space_info_builder import SpaceInfoBuilder
-from test.test_gateway import TestGateway
-from info_provider.storm_gateway import StormGateway
-from test.utils import get_default_test_configuration,\
+from tests.utils import get_default_test_configuration,\
     get_default_space_info_summary_from_configuration
+from info_provider.storm_gateway import StormGateway
+from tests.test_gateway import TestGateway
+from info_provider.storm_space_info_builder import SpaceInfoBuilder
+
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-from mock.mock import patch
 
 class TestStorageService(unittest.TestCase):
 

@@ -1,7 +1,7 @@
 from info_provider.glue.commons import *
 
-# Glue2
 
+# Glue2
 GLUE2_BASEDN = "GLUE2GroupID=resource,o=glue"
 
 GLUE2_INFO_PROVIDER_FILE = BDII_PROVIDER_PATH + "/storm-glue2-provider"

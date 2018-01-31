@@ -27,6 +27,7 @@ from info_provider.configuration import Configuration
 from info_provider.utils.ldap_utils import LDIFExporter
 from symbol import argument
 from info_provider.storm_info_provider import StormInfoProvider
+from info_provider.glue.utils import get_issuer_ca
 
 CONFIG_FILE = "/etc/storm/info-provider/storm-yaim-variables.conf"
 LOG_FORMAT = "%(asctime)s %(name)-12s: %(levelname)s %(message)s"
@@ -94,6 +95,7 @@ def init_configuration(yaim_filepath):
     configuration.set("STORM_SERVING_STATE_VALUE", value_int)
     configuration.set("STORM_SERVING_STATE", value_str)
     configuration.set("STORM_IMPLEMENTATION_VERSION", get_implementation_version())
+    configuration.set("ISSUER_CA", get_issuer_ca())
     return configuration
 
 def configure(arguments):

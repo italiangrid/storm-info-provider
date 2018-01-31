@@ -1,18 +1,18 @@
 import logging
 import os
 import re
-from info_provider.glue.glue13_constants import GLUE13_INFO_SERVICE_CONFIG_FILE,\
-    GLUE13_INFO_PROVIDER_FILE, GLUE13_INFO_PLUGIN_FILE,\
-    GLUE13_INFO_STATIC_LDIF_FILE, GLUE13_INFO_SERVICE_CONFIG_FILE_TEMPLATE,\
+
+from info_provider.glue.commons import INFO_PROVIDER_SCRIPT, \
+    INPUT_YAIM_CONFIGURATION
+from info_provider.glue.glue13_constants import GLUE13_INFO_SERVICE_CONFIG_FILE, \
+    GLUE13_INFO_PROVIDER_FILE, GLUE13_INFO_PLUGIN_FILE, \
+    GLUE13_INFO_STATIC_LDIF_FILE, GLUE13_INFO_SERVICE_CONFIG_FILE_TEMPLATE, \
     GLUE13_BASEDN, GLUE13_ACCESS_PROTOCOLS
-from info_provider.glue.utils import set_owner, create_file_from_template,\
+from info_provider.glue.glue13_schema import GlueSE, GlueSALocal, \
+    GlueSAVOInfoLocal, GlueSEControlProtocol, GlueSEAccessProtocol
+from info_provider.glue.utils import set_owner, create_file_from_template, \
     as_gigabytes, as_kilobytes
 from info_provider.utils.ldap_utils import LDIFExporter
-from info_provider.glue.commons import INFO_PROVIDER_SCRIPT,\
-    INPUT_YAIM_CONFIGURATION
-from info_provider.glue.glue13_schema import GlueSE, GlueSALocal,\
-    GlueSAVOInfoLocal, GlueSEControlProtocol, GlueSEAccessProtocol
-
 
 
 class Glue13:

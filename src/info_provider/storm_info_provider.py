@@ -4,10 +4,10 @@ import sys
 
 from info_provider.glue.glue13 import Glue13
 from info_provider.glue.glue2 import Glue2
-from info_provider.utils.ldap_utils import LDIFExporter
-from info_provider.storm_storage_service_builder import StorageServiceBuilder
-from info_provider.storm_space_info_builder import SpaceInfoBuilder
 from info_provider.storm_gateway import StormGateway
+from info_provider.storm_space_info_builder import SpaceInfoBuilder
+from info_provider.storm_storage_service_builder import StorageServiceBuilder
+from info_provider.utils.ldap_utils import LDIFExporter
 
 
 class StormInfoProvider:

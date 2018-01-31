@@ -4,6 +4,7 @@ import os
 import pwd
 import string
 
+
 def create_file_from_template(dest_file, template_file, params):
     logging.debug("Creating file %s from template %s with parameters %s", dest_file, template_file, params)
     # open files
@@ -33,3 +34,6 @@ def as_gigabytes(numbytes):
 
 def as_kilobytes(numbytes):
     return int(round(1.0 * numbytes / 1000))
+
+def get_issuer_ca():
+    return str(os.popen("openssl x509 -issuer -noout -in /etc/grid-security/hostcert.pem").read())[8:-1]

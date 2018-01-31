@@ -1,7 +1,9 @@
 from info_provider.storm_space_info_builder import SpaceInfoBuilder
-from test.utils import get_default_storm_gateway, get_default_test_configuration,\
-    get_default_space_info_summary,\
+from tests.utils import get_default_test_configuration,\
+    get_default_storm_gateway, get_default_space_info_summary,\
     get_default_space_info_summary_from_configuration
+
+
 try:
     import unittest2 as unittest
 except ImportError:

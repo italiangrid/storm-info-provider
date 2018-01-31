@@ -240,3 +240,6 @@ class Configuration:
 
     def get_domain(self):
         return self.get("MY_DOMAIN")
+
+    def get_issuer_ca(self):
+        return self.get("ISSUER_CA")

@@ -1,7 +1,7 @@
 import time
 
-from info_provider.utils.ldap_utils import LDIFNode
 from info_provider.glue.glue2_constants import GLUE2_BASEDN
+from info_provider.utils.ldap_utils import LDIFNode
 
 
 class GLUE2StorageService(LDIFNode):

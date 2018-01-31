@@ -3,6 +3,7 @@ import json
 import logging
 import time
 
+
 class StorageService:
 
     def __init__(self, **data):

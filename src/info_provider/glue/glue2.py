@@ -1,21 +1,21 @@
 import logging
-import re
 import os
+import re
 
-from info_provider.utils.ldap_utils import LDIFExporter
+from info_provider.glue.commons import INFO_PROVIDER_SCRIPT, \
+    INPUT_YAIM_CONFIGURATION
+from info_provider.glue.glue2_constants import GLUE2_ACCESS_PROTOCOLS_VERSIONS, \
+    GLUE2_INFO_SERVICE_CONFIG_FILE, GLUE2_INFO_SERVICE_SRM_CONFIG_FILE, \
+    GLUE2_INFO_PROVIDER_FILE, GLUE2_INFO_PLUGIN_FILE, \
+    GLUE2_INFO_STATIC_LDIF_FILE, GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE, \
+    GLUE2_INFO_SERVICE_SRM_CONFIG_FILE_TEMPLATE
 from info_provider.glue.glue2_schema import GLUE2StorageService, \
     GLUE2StorageServiceCapacity, GLUE2StorageAccessProtocol, GLUE2StorageManager, \
     GLUE2DataStore, GLUE2StorageShare, GLUE2MappingPolicy, \
     GLUE2StorageShareCapacity, GLUE2WebDAVStorageEndpoint, GLUE2AccessPolicy, \
     GLUE2StorageEndpoint
-from info_provider.glue.glue2_constants import GLUE2_ACCESS_PROTOCOLS_VERSIONS,\
-    GLUE2_INFO_SERVICE_CONFIG_FILE, GLUE2_INFO_SERVICE_SRM_CONFIG_FILE,\
-    GLUE2_INFO_PROVIDER_FILE, GLUE2_INFO_PLUGIN_FILE,\
-    GLUE2_INFO_STATIC_LDIF_FILE, GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE,\
-    GLUE2_INFO_SERVICE_SRM_CONFIG_FILE_TEMPLATE
 from info_provider.glue.utils import create_file_from_template, set_owner, as_gigabytes
-from info_provider.glue.commons import INFO_PROVIDER_SCRIPT,\
-    INPUT_YAIM_CONFIGURATION
+from info_provider.utils.ldap_utils import LDIFExporter
 
 
 class Glue2:
@@ -75,13 +75,6 @@ class Glue2:
     def _is_anonymous(self, voname):
         return "*" in voname
 
-    def _get_quality_level(self):
-        return self._configuration.get_quality_level()
-
-    def _get_implementation_version(self):
-        cmd = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
-        return os.popen(cmd).read()
-
     def configure(self, spaceinfo):
         # remove old static ldif backup files
         self._delete_backup_files()
@@ -111,7 +104,7 @@ class Glue2:
         params = { 
             'SITEID': self._get_site_id(),
             'SERVICEID': self._get_service_id(),
-            'QUALITY_LEVEL': self._get_quality_level()
+            'QUALITY_LEVEL': self._configuration.get_quality_level()
         }
         create_file_from_template(
             GLUE2_INFO_SERVICE_CONFIG_FILE,
@@ -124,7 +117,7 @@ class Glue2:
         params = {
             'SITEID': self._get_site_id(),
             'ENDPOINT': self._configuration.get_public_srm_endpoint(),
-            'QUALITY_LEVEL': self._get_quality_level(),
+            'QUALITY_LEVEL': self._configuration.get_quality_level(),
             'SERVICEID': self._get_service_id(),
             'ACBR': "VO:" + "\\nVO:".join(vos),
             'OWNER': "\\n".join(vos)
@@ -173,14 +166,14 @@ class Glue2:
         nodes = []
         # Commons
         service_id = self._get_service_id()
-        storm_version = self._get_implementation_version()
-        issuer_ca = str(os.popen("openssl x509 -issuer -noout -in /etc/grid-security/hostcert.pem").read())[8:-1]
+        storm_version = self._configuration.get_implementation_version()
+        issuer_ca = self._configuration.get_issuer_ca()
 
         # Glue2StorageService
         # NOTE: It must be removed when 'storm' type will be added
         node = GLUE2StorageService(service_id)
         node.init().add({
-            'GLUE2ServiceQualityLevel': self._get_quality_level(),
+            'GLUE2ServiceQualityLevel': self._configuration.get_quality_level(),
             'GLUE2ServiceAdminDomainForeignKey': self._get_site_id()
             })
         nodes.append(node)
@@ -340,7 +333,7 @@ class Glue2:
             node.init().add({
                 'GLUE2EndpointURL': self._configuration.get_public_http_endpoint(),
                 'GLUE2EndpointImplementationVersion': storm_version,
-                'GLUE2EndpointQualityLevel': self._get_quality_level(),
+                'GLUE2EndpointQualityLevel': self._configuration.get_quality_level(),
                 'GLUE2EndpointServingState': self._configuration.get_serving_state(),
                 'GLUE2EndpointIssuerCA': issuer_ca
             })
@@ -361,7 +354,7 @@ class Glue2:
             node.init().add({
                 'GLUE2EndpointURL': self._configuration.get_public_https_endpoint(),
                 'GLUE2EndpointImplementationVersion': storm_version,
-                'GLUE2EndpointQualityLevel': self._get_quality_level(),
+                'GLUE2EndpointQualityLevel': self._configuration.get_quality_level(),
                 'GLUE2EndpointServingState': self._configuration.get_serving_state(),
                 'GLUE2EndpointIssuerCA': issuer_ca
             })

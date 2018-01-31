@@ -2,6 +2,7 @@ import logging
 
 from info_provider.model.space import SpaceInfo, SpaceRecord, VirtualFileSystemRecord
 
+
 class SpaceInfoBuilder:
 
     def __init__(self, configuration, gateway):
