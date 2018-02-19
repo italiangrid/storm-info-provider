@@ -1,5 +1,7 @@
 import logging
+
 from ldif import LDIFWriter
+
 
 class LDIFNode:
 
@@ -37,6 +39,7 @@ class LDIFNode:
                 out += "# " + entry_name + " = '" + str(value) + "'\n"
         return out 
 
+
 class LDIFExporter:
 
     def __init__(self):
@@ -47,7 +50,7 @@ class LDIFExporter:
         if not isinstance(node, LDIFNode):
             raise Exception("LDIFExporter.add_node error: Invalid node type")
         self.nodes.append(node.get_info())
-        logging.debug("LDIFExporter - Added %s node:\n%s", 
+        logging.debug("LDIFExporter - Added %s node:\n%s",
             node.__class__.__name__, node)
         return self
 

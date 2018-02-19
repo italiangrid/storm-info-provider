@@ -1,12 +1,12 @@
+import grp
+import logging
 import os
 import pwd
-import grp
 import string
-import logging
+
 
 def create_file_from_template(dest_file, template_file, params):
-    logging.debug("Creating file %s from template %s with params %s", 
-        dest_file, template_file, params)
+    logging.debug("Creating file %s from template %s with parameters %s", dest_file, template_file, params)
     # open files
     ftemplate = open(template_file)
     fconfig = open(dest_file, "w")
@@ -14,9 +14,9 @@ def create_file_from_template(dest_file, template_file, params):
     logging.debug("Reading from template ...")
     src = string.Template(ftemplate.read())
     # ... substitute values ...       
-    logging.debug("Substitute params ...")
+    logging.debug("Substitute parameters ...")
     out = src.substitute(params)
-    # ... and write to the config file
+    # ... and write to the configuration file
     logging.debug("Writing on target file ...")
     fconfig.write(out)
     # close files
@@ -26,11 +26,14 @@ def create_file_from_template(dest_file, template_file, params):
 
 def set_owner(user, filepath):
     logging.debug("chown %s:%s %s", user, user, filepath)
-    return os.chown(filepath, pwd.getpwnam(user).pw_uid, 
+    return os.chown(filepath, pwd.getpwnam(user).pw_uid,
         grp.getgrnam(user).gr_gid)
 
-def as_GB(numbytes):
-    return int(round(1.0 * numbytes/1000000000))
+def as_gigabytes(numbytes):
+    return int(round(1.0 * numbytes / 1000000000))
 
-def as_KB(numbytes):
-    return int(round(1.0 * numbytes/1000))
+def as_kilobytes(numbytes):
+    return int(round(1.0 * numbytes / 1000))
+
+def get_issuer_ca():
+    return str(os.popen("openssl x509 -issuer -noout -in /etc/grid-security/hostcert.pem").read())[8:-1]
