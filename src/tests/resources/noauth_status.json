@@ -1,0 +1,12 @@
+{
+    "sa-status": {
+        "alias": "NOAUTH_TOKEN",
+        "busy-space": 4096,
+        "used-space": 4096,
+        "unavailable-space": 0,
+        "reserved-space": 0,
+        "total-space": 4000000000,
+        "free-space": 3999995904,
+        "available-space": 3999995904
+    }
+}

@@ -1,0 +1,176 @@
+{
+    "NESTED-FS": {
+        "name": "NESTED-FS",
+        "token": "NESTED_TOKEN",
+        "voname": "test.vo.2",
+        "root": "/storage/nested",
+        "storageclass": "T0D1",
+        "stfnRoot": [
+            "/test.vo.2/nested",
+            "/alias"
+        ],
+        "retentionPolicy": "REPLICA",
+        "accessLatency": "ONLINE",
+        "protocols": [
+            "xroot",
+            "https",
+            "http",
+            "root",
+            "gsiftp",
+            "file"
+        ],
+        "anonymous": "NOREAD",
+        "availableNearlineSpace": 0,
+        "approachableRules": [
+            "vo:test.vo.2"
+        ]
+    },
+    "IGI-FS": {
+        "name": "IGI-FS",
+        "token": "IGI_TOKEN",
+        "voname": "test.vo",
+        "root": "/storage/igi",
+        "storageclass": "T0D1",
+        "stfnRoot": [
+            "/igi"
+        ],
+        "retentionPolicy": "REPLICA",
+        "accessLatency": "ONLINE",
+        "protocols": [
+            "xroot",
+            "https",
+            "http",
+            "root",
+            "gsiftp",
+            "file"
+        ],
+        "anonymous": "NOREAD",
+        "availableNearlineSpace": 0,
+        "approachableRules": [
+            "vo:test.vo"
+        ]
+    },
+    "TAPE-FS": {
+        "name": "TAPE-FS",
+        "token": "TAPE_TOKEN",
+        "voname": "test.vo.2",
+        "root": "/storage/tape",
+        "storageclass": "T1D0",
+        "stfnRoot": [
+            "/tape"
+        ],
+        "retentionPolicy": "CUSTODIAL",
+        "accessLatency": "NEARLINE",
+        "protocols": [
+            "https",
+            "http",
+            "gsiftp",
+            "file"
+        ],
+        "anonymous": "NOREAD",
+        "availableNearlineSpace": 8000000000,
+        "approachableRules": [
+            "vo:test.vo.2"
+        ]
+    },
+    "TESTVOBIS-FS": {
+        "name": "TESTVOBIS-FS",
+        "token": "TESTVOBIS_TOKEN",
+        "voname": "test.vo.2",
+        "root": "/storage/test.vo.bis",
+        "storageclass": "T0D1",
+        "stfnRoot": [
+            "/test.vo.bis"
+        ],
+        "retentionPolicy": "REPLICA",
+        "accessLatency": "ONLINE",
+        "protocols": [
+            "xroot",
+            "https",
+            "http",
+            "root",
+            "gsiftp",
+            "file"
+        ],
+        "anonymous": "NOREAD",
+        "availableNearlineSpace": 0,
+        "approachableRules": [
+            "vo:test.vo.2"
+        ]
+    },
+    "NOAUTH-FS": {
+        "name": "NOAUTH-FS",
+        "token": "NOAUTH_TOKEN",
+        "voname": "test.vo",
+        "root": "/storage/noauth",
+        "storageclass": "T0D1",
+        "stfnRoot": [
+            "/noauth"
+        ],
+        "retentionPolicy": "REPLICA",
+        "accessLatency": "ONLINE",
+        "protocols": [
+            "xroot",
+            "https",
+            "http",
+            "root",
+            "gsiftp",
+            "file"
+        ],
+        "anonymous": "READ",
+        "availableNearlineSpace": 0,
+        "approachableRules": [
+            "vo:test.vo"
+        ]
+    },
+    "TESTVO2-FS": {
+        "name": "TESTVO2-FS",
+        "token": "TESTVO2_TOKEN",
+        "voname": "test.vo.2",
+        "root": "/storage/test.vo.2",
+        "storageclass": "T0D1",
+        "stfnRoot": [
+            "/test.vo.2"
+        ],
+        "retentionPolicy": "REPLICA",
+        "accessLatency": "ONLINE",
+        "protocols": [
+            "xroot",
+            "https",
+            "http",
+            "root",
+            "gsiftp",
+            "file"
+        ],
+        "anonymous": "NOREAD",
+        "availableNearlineSpace": 0,
+        "approachableRules": [
+            "vo:test.vo.2"
+        ]
+    },
+    "TESTVO-FS": {
+        "name": "TESTVO-FS",
+        "token": "TESTVO_TOKEN",
+        "voname": "test.vo",
+        "root": "/storage/test.vo",
+        "storageclass": "T0D1",
+        "stfnRoot": [
+            "/test.vo"
+        ],
+        "retentionPolicy": "REPLICA",
+        "accessLatency": "ONLINE",
+        "protocols": [
+            "xroot",
+            "https",
+            "http",
+            "root",
+            "gsiftp",
+            "file"
+        ],
+        "anonymous": "NOREAD",
+        "availableNearlineSpace": 0,
+        "approachableRules": [
+            "vo:test.vo"
+        ]
+    }
+}
