@@ -99,12 +99,12 @@ class Configuration:
     def get_public_https_endpoint(self):
         host = self.get("STORM_GRIDHTTPS_PUBLIC_HOST")
         port = str(self.get("STORM_GRIDHTTPS_HTTPS_PORT"))
-        return "https://" + host + ":" + port + "/webdav"
+        return "https://" + host + ":" + port + "/"
 
     def get_public_http_endpoint(self):
         host = self.get("STORM_GRIDHTTPS_PUBLIC_HOST")
         port = str(self.get("STORM_GRIDHTTPS_HTTP_PORT"))
-        return "http://" + host + ":" + port + "/webdav"
+        return "http://" + host + ":" + port + "/"
 
     def is_info_overwrite(self):
         return self.get("STORM_INFO_OVERWRITE").lower() == "true"
