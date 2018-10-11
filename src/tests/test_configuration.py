@@ -1,3 +1,5 @@
+import logging
+
 from tests.utils import get_default_test_configuration,\
     get_default_test_configuration_filepath,\
     get_incomplete_test_configuration_filepath
@@ -8,17 +10,22 @@ try:
 except ImportError:
     import unittest
 
+logging.getLogger(__name__)
+
 class TestConfiguration(unittest.TestCase):
 
     def _check_is_test_configuration(self, configuration, filepath):
+        logging.debug("Configuration check: verify %s contains values from file %s", configuration, filepath)
         config = {}
         configfile = open(filepath,'r')
         configlist = configfile.readlines()
         for x in configlist:
             if not (x[:1] == '[' or x[:1] == '/'):
                 line = x.replace(';','').replace('\n','').replace('\'','').split('=')
-                self.assertEqual(configuration.get(line[0]), line[1])
-                config[line[0]] = line[1]
+                key = line[0]
+                value = line[1]
+                self.assertEqual(configuration.get(key), value)
+                config[key] = value
         self.assertEqual(configuration.get_sitename(), config["SITE_NAME"])
         self.assertEqual(configuration.get_domain(), config["MY_DOMAIN"])
         self.assertEqual(configuration.get_serving_state(), "production")
@@ -27,6 +34,7 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(configuration.get_implementation_version(), "1.11.13")
         self.assertEqual(configuration.get_storage_area_list(), config["STORM_STORAGEAREA_LIST"].split(' '))
         self.assertEqual(configuration.get_frontend_list(), config["STORM_FRONTEND_HOST_LIST"].split(','))
+        logging.debug("Check success")
 
     def test_load_default_configuration(self):
         configuration = get_default_test_configuration()

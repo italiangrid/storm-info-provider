@@ -17,7 +17,7 @@ class Configuration:
         "STORM_GRIDHTTPS_PUBLIC_HOST"]
 
     def __init__(self, filepath):
-        logging.debug("Initialize configuration from file %s ...", filepath)
+        logging.debug("Init configuration from file %s ...", filepath)
         self._configuration = self._load_configuration_from_file(filepath)
         self._configuration_sanity_check()
         return
@@ -46,8 +46,12 @@ class Configuration:
                 raise ValueError("Configuration error: Missing mandatory %s variable!" % key)
 
     def print_configuration(self):
+        logging.debug("##############################################")
+        logging.debug("##             CONFIGURATION                ##")
+        logging.debug("##############################################")
         for key, value in self._configuration.items():
-            print(str(key) + "=" + str(value) + "\n")
+            logging.debug("%s=%s", str(key), str(value))
+        logging.debug("##############################################")
 
     def get(self, key):
         return self._configuration[key]
@@ -140,7 +144,10 @@ class Configuration:
         return "*"
 
     def get_online_size(self, **options):
-        logging.debug("configuration.get_online_size %s started", options)
+        if options.get("sa"):
+            logging.debug("configuration.get_online_size %s started", options.get("sa"))
+        if options.get("vo"):
+            logging.debug("configuration.get_online_size %s started", options.get("vo"))
         tot = 0
         for sa in self.get_storage_area_list():
             if options.get("sa") and sa != options.get("sa"):
@@ -153,7 +160,10 @@ class Configuration:
         return tot*1000000000
 
     def get_nearline_size(self, **options):
-        logging.debug("configuration.get_nearline_size %s started", options)
+        if options.get("sa"):
+            logging.debug("configuration.get_nearline_size %s started", options.get("sa"))
+        if options.get("vo"):
+            logging.debug("configuration.get_nearline_size %s started", options.get("vo"))
         tot = 0
         for sa in self.get_storage_area_list():
             if options.get("sa") and sa != options.get("sa"):
