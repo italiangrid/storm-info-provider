@@ -5,6 +5,7 @@ from info_provider.storm_gateway import StormGateway
 from tests.utils import get_default_test_configuration, get_response_from_url
 from mock.mock import patch, MagicMock
 
+import logging
 
 try:
     import unittest2 as unittest
@@ -21,45 +22,45 @@ class TestGateway(unittest.TestCase):
 
     @patch('info_provider.storm_gateway.urllib2')
     def test_with_successful_remote_call(self, mock_urllib2):
-        print("Testing gateway with successful mocked response ...")
+        logging.debug("Testing gateway with successful mocked response ...")
         mock_urllib2.urlopen = MagicMock(side_effect=get_response_from_url)
         response = self._gateway.get_vfs_list_with_status()
         self.assertEqual(len(response.items()), 7)
         for name, data in response.items():
-            print("%s: %s" % (name, data))
+            logging.debug("%s: %s", name, data)
 
     @patch('info_provider.storm_gateway.urllib2')
     def test_http_error(self, mock_urllib2):
-        print("Testing HTTPError ...")
+        logging.debug("Testing HTTPError ...")
         mock_urllib2.urlopen.side_effect = TestGateway.raise_http_error
         try:
             self._gateway.get_vfs_list_with_status()
             self.fail("HTTPError expected")
         except HTTPError as ex:
-            print("Received HTTPError: %d %s" % (ex.code, ex.reason))
+            logging.debug("Received HTTPError: %d %s" % (ex.code, ex.reason))
             self.assertEqual(ex.code, 500)
             self.assertEqual(ex.reason, "Bad Gateway")
 
     @patch('info_provider.storm_gateway.urllib2')
     def test_url_error(self, mock_urllib2):
-        print("Testing URLError ...")
+        logging.debug("Testing URLError ...")
         mock_urllib2.urlopen.side_effect = TestGateway.raise_url_error
         try:
             self._gateway.get_vfs_list_with_status()
             self.fail("URLError expected")
         except URLError as ex:
-            print("Received URLError: %s" % (ex.reason))
+            logging.debug("Received URLError: %s" % (ex.reason))
             self.assertTrue("Malformed URL" in ex.reason)
 
     @patch('info_provider.storm_gateway.urllib2')
     def test_http_exception(self, mock_urllib2):
-        print("Testing HTTPException ...")
+        logging.debug("Testing HTTPException ...")
         mock_urllib2.urlopen.side_effect = TestGateway.raise_http_exception
         try:
             self._gateway.get_vfs_list_with_status()
             self.fail("HTTPException expected")
         except HTTPException as ex:
-            print("Received HTTPException: %s" % (ex))
+            logging.debug("Received HTTPException: %s" % (ex))
             self.assertTrue("HTTPException on getting URL: " in ex.message)
 
     @staticmethod

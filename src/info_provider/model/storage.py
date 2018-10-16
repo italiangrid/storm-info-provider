@@ -3,7 +3,6 @@ import json
 import logging
 import time
 
-
 class StorageService:
 
     def __init__(self, **data):
@@ -21,8 +20,8 @@ class StorageService:
         else:
             raise ValueError("quality_level not found")
         # initialize with default value:
-        self.endpoints = data.get("endpoints") if data.get("endpoints") else []
-        self.shares = data.get("shares") if data.get("shares") else []
+        self.storageendpoints = data.get("storage_endpoints") if data.get("storage_endpoints") else []
+        self.storageshares = data.get("storage_shares") if data.get("storage_shares") else []
         # automatic values:
         self.implementation = "storm"
         self.capabilities = ['data.management.transfer', 'data.management.storage']
@@ -46,26 +45,23 @@ class StorageService:
     def get_capabilities(self):
         return self.capabilities
 
-    def get_endpoints(self):
-        return self.endpoints
+    def get_storage_endpoints(self):
+        return self.storageendpoints
 
-    def get_shares(self):
-        return self.shares
+    def get_storage_shares(self):
+        return self.storageshares
 
     def add_endpoint(self, endpoint):
         if isinstance(endpoint, StorageEndpoint):
-            self.endpoints.append(endpoint)
+            self.storageendpoints.append(endpoint)
         else:
             raise ValueError("value is not a StorageEndpoint")
 
     def add_share(self, share):
         if isinstance(share, StorageShare):
-            self.shares.append(share)
+            self.storageshares.append(share)
         else:
             raise ValueError("value is not a StorageShare")
-
-    def to_json(self):
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
 class StorageShare:
@@ -127,6 +123,8 @@ class StorageShare:
     def get_assigned_endpoints(self):
         return self.assignedendpoints
 
+    def add_vo(self,vo_name):
+        self.vos.append(vo_name)
 
 class StorageEndpoint:
 

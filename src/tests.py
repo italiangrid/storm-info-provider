@@ -9,6 +9,11 @@ try:
 except ImportError:
     import unittest
 
+import logging
+import logging.config
+
+logging.config.fileConfig('resources/logging.ini')
+
 def create_suite():
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()

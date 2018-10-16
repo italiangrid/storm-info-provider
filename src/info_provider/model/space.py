@@ -15,6 +15,13 @@ class SpaceInfo:
     def get_vfs(self):
         return self.vfs
 
+    def __str__(self):
+        str_list = []
+        str_list.append("summary: %s" % self.summary)
+        str_list.append("vos: %s" % self.vos)
+        str_list.append("vfs: %s" % self.vfs)
+        return "[" + ", ".join(str_list) + "]"
+
 class SpaceRecord:
 
     def __init__(self, **data):
@@ -154,16 +161,16 @@ class VirtualFileSystemRecord:
 
     def __str__(self):
         str_list = []
-        str_list.append("name: %d" % self.name)
-        str_list.append("token: %d" % self.token)
-        str_list.append("vo_name: %d" % self.root)
-        str_list.append("root: %d" % self.root)
-        str_list.append("storage_class: %d" % self.storageclass)
-        str_list.append("access_latency: %d" % self.accesslatency)
-        str_list.append("retention_policy: %d" % self.retentionpolicy)
-        str_list.append("access_latency: %d" % self.accesslatency)
-        str_list.append("stfn_root: %d" % self.stfnroot)
-        str_list.append("protocols: %d" % self.protocols)
-        str_list.append("approachable_rules: %d" % self.approachablerules)
-        str_list.append("space: %d" % self.space.__str__())
+        str_list.append("name: %s" % self.name)
+        str_list.append("token: %s" % self.token)
+        str_list.append("vo_name: %s" % self.root)
+        str_list.append("root: %s" % self.root)
+        str_list.append("storage_class: %s" % self.storageclass)
+        str_list.append("access_latency: %s" % self.accesslatency)
+        str_list.append("retention_policy: %s" % self.retentionpolicy)
+        str_list.append("access_latency: %s" % self.accesslatency)
+        str_list.append("stfn_root: %s" % self.stfnroot)
+        str_list.append("protocols: %s" % self.protocols)
+        str_list.append("approachable_rules: %s" % self.approachablerules)
+        str_list.append("space: %s" % self.space.__str__())
         return "[" + ", ".join(str_list) + "]"
