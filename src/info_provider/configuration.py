@@ -13,8 +13,7 @@ class Configuration:
     _mandatories = ["SITE_NAME", "STORM_BACKEND_HOST", "STORM_DEFAULT_ROOT",
         "STORM_FRONTEND_PATH", "STORM_FRONTEND_PORT",
         "STORM_FRONTEND_PUBLIC_HOST", "STORM_BACKEND_REST_SERVICES_PORT",
-        "VOS", "STORM_ENDPOINT_QUALITY_LEVEL", "STORM_ENDPOINT_CAPABILITY",
-        "STORM_GRIDHTTPS_PUBLIC_HOST"]
+        "VOS", "STORM_ENDPOINT_QUALITY_LEVEL"]
 
     def __init__(self, filepath):
         logging.debug("Init configuration from file %s ...", filepath)
@@ -73,7 +72,7 @@ class Configuration:
             enabled.append("http")
         if self.get("STORM_INFO_HTTPS_SUPPORT").lower() == "true":
             enabled.append("https")
-        if self.has_gridhttps():
+        if self.has_webdav():
             enabled.append("webdav")
         return enabled
 
@@ -86,13 +85,21 @@ class Configuration:
         return self.get("STORM_FRONTEND_HOST_LIST").split(',')
 
     def has_gridhttps(self):
-        return self.get('STORM_GRIDHTTPS_ENABLED').lower() == "true"
+        if 'STORM_GRIDHTTPS_ENABLED' in self._configuration:
+            return self.get('STORM_GRIDHTTPS_ENABLED').lower() == "true"
+        return False
 
     def get_gridhttps_list(self):
         return self.get("STORM_GRIDHTTPS_POOL_LIST").split(',')
 
     def is_HTTP_endpoint_enabled(self):
         return self.get('STORM_GRIDHTTPS_HTTP_ENABLED').lower() == "true"
+
+    def has_webdav(self):
+        if 'STORM_WEBDAV_POOL_LIST' in self._configuration:
+            if self.get_webdav_endpoints():
+                return True
+        return False
 
     def get_public_srm_endpoint(self):
         host = self.get("STORM_FRONTEND_PUBLIC_HOST")
@@ -109,6 +116,11 @@ class Configuration:
         host = self.get("STORM_GRIDHTTPS_PUBLIC_HOST")
         port = str(self.get("STORM_GRIDHTTPS_HTTP_PORT"))
         return "http://" + host + ":" + port + "/"
+
+    def get_webdav_endpoints(self):
+        endpoints = self.get("STORM_WEBDAV_POOL_LIST").split(',')
+        logging.debug(endpoints)
+        return endpoints
 
     def is_info_overwrite(self):
         return self.get("STORM_INFO_OVERWRITE").lower() == "true"
