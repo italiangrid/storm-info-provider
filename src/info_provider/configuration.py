@@ -97,7 +97,7 @@ class Configuration:
 
     def has_webdav(self):
         if 'STORM_WEBDAV_POOL_LIST' in self._configuration:
-            if self.get_webdav_endpoints():
+            if len(self.get_webdav_endpoints()) > 0:
                 return True
         return False
 
@@ -118,8 +118,8 @@ class Configuration:
         return "http://" + host + ":" + port + "/"
 
     def get_webdav_endpoints(self):
-        endpoints = self.get("STORM_WEBDAV_POOL_LIST").split(',')
-        logging.debug(endpoints)
+        endpoints = filter(None, self.get("STORM_WEBDAV_POOL_LIST").split(','))
+        logging.debug("webdav endpoints: " + str(endpoints))
         return endpoints
 
     def is_info_overwrite(self):
