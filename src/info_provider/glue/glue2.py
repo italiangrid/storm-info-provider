@@ -329,6 +329,7 @@ class Glue2:
         # NEW LOGIC
         if self._configuration.has_webdav():
 
+            logging.debug("new logic webdav endpoints")
             i = 0;
             for endpoint in self._configuration.get_webdav_endpoints():
                 protocol = urlparse(endpoint).scheme.upper()
