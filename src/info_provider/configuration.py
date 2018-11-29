@@ -122,9 +122,6 @@ class Configuration:
         logging.debug("webdav endpoints: " + str(endpoints))
         return endpoints
 
-    def is_info_overwrite(self):
-        return self.get("STORM_INFO_OVERWRITE").lower() == "true"
-
     def vfs_has_custom_token(self, vfs_name):
         return "STORM_" + vfs_name[:-3] + "_TOKEN" in self._configuration
 
