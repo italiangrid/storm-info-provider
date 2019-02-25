@@ -31,7 +31,7 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(configuration.get_serving_state(), "production")
         self.assertEqual(configuration.get_backend_hostname(), config["STORM_BACKEND_HOST"])
         self.assertEqual(configuration.get_quality_level(), "testing")
-        self.assertEqual(configuration.get_implementation_version(), "1.11.13")
+        self.assertEqual(configuration.get_implementation_version(), "1.11.15")
         self.assertEqual(configuration.get_storage_area_list(), config["STORM_STORAGEAREA_LIST"].split(' '))
         self.assertEqual(configuration.get_frontend_list(), config["STORM_FRONTEND_HOST_LIST"].split(','))
         logging.debug("Check success")
