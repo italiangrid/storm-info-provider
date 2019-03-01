@@ -32,7 +32,7 @@ pipeline {
             steps {
                 container('python-runner') {
                     dir('src') {
-                        sh 'coverage run --source=. -m unittest discover'
+                        sh 'coverage run tests.py'
                         sh 'coverage html'
                     }
                     script {

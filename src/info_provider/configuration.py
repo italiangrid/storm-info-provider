@@ -13,11 +13,10 @@ class Configuration:
     _mandatories = ["SITE_NAME", "STORM_BACKEND_HOST", "STORM_DEFAULT_ROOT",
         "STORM_FRONTEND_PATH", "STORM_FRONTEND_PORT",
         "STORM_FRONTEND_PUBLIC_HOST", "STORM_BACKEND_REST_SERVICES_PORT",
-        "VOS", "STORM_ENDPOINT_QUALITY_LEVEL", "STORM_ENDPOINT_CAPABILITY",
-        "STORM_GRIDHTTPS_PUBLIC_HOST"]
+        "VOS", "STORM_ENDPOINT_QUALITY_LEVEL"]
 
     def __init__(self, filepath):
-        logging.debug("Initialize configuration from file %s ...", filepath)
+        logging.debug("Init configuration from file %s ...", filepath)
         self._configuration = self._load_configuration_from_file(filepath)
         self._configuration_sanity_check()
         return
@@ -46,8 +45,12 @@ class Configuration:
                 raise ValueError("Configuration error: Missing mandatory %s variable!" % key)
 
     def print_configuration(self):
+        logging.debug("##############################################")
+        logging.debug("##             CONFIGURATION                ##")
+        logging.debug("##############################################")
         for key, value in self._configuration.items():
-            print(str(key) + "=" + str(value) + "\n")
+            logging.debug("%s=%s", str(key), str(value))
+        logging.debug("##############################################")
 
     def get(self, key):
         return self._configuration[key]
@@ -69,7 +72,7 @@ class Configuration:
             enabled.append("http")
         if self.get("STORM_INFO_HTTPS_SUPPORT").lower() == "true":
             enabled.append("https")
-        if self.has_gridhttps():
+        if self.has_webdav():
             enabled.append("webdav")
         return enabled
 
@@ -82,13 +85,21 @@ class Configuration:
         return self.get("STORM_FRONTEND_HOST_LIST").split(',')
 
     def has_gridhttps(self):
-        return self.get('STORM_GRIDHTTPS_ENABLED').lower() == "true"
+        if 'STORM_GRIDHTTPS_ENABLED' in self._configuration:
+            return self.get('STORM_GRIDHTTPS_ENABLED').lower() == "true"
+        return False
 
     def get_gridhttps_list(self):
         return self.get("STORM_GRIDHTTPS_POOL_LIST").split(',')
 
     def is_HTTP_endpoint_enabled(self):
         return self.get('STORM_GRIDHTTPS_HTTP_ENABLED').lower() == "true"
+
+    def has_webdav(self):
+        if 'STORM_WEBDAV_POOL_LIST' in self._configuration:
+            if len(self.get_webdav_endpoints()) > 0:
+                return True
+        return False
 
     def get_public_srm_endpoint(self):
         host = self.get("STORM_FRONTEND_PUBLIC_HOST")
@@ -99,15 +110,17 @@ class Configuration:
     def get_public_https_endpoint(self):
         host = self.get("STORM_GRIDHTTPS_PUBLIC_HOST")
         port = str(self.get("STORM_GRIDHTTPS_HTTPS_PORT"))
-        return "https://" + host + ":" + port + "/webdav"
+        return "https://" + host + ":" + port + "/"
 
     def get_public_http_endpoint(self):
         host = self.get("STORM_GRIDHTTPS_PUBLIC_HOST")
         port = str(self.get("STORM_GRIDHTTPS_HTTP_PORT"))
-        return "http://" + host + ":" + port + "/webdav"
+        return "http://" + host + ":" + port + "/"
 
-    def is_info_overwrite(self):
-        return self.get("STORM_INFO_OVERWRITE").lower() == "true"
+    def get_webdav_endpoints(self):
+        endpoints = filter(None, self.get("STORM_WEBDAV_POOL_LIST").split(','))
+        logging.debug("webdav endpoints: " + str(endpoints))
+        return endpoints
 
     def vfs_has_custom_token(self, vfs_name):
         return "STORM_" + vfs_name[:-3] + "_TOKEN" in self._configuration
@@ -140,7 +153,10 @@ class Configuration:
         return "*"
 
     def get_online_size(self, **options):
-        logging.debug("configuration.get_online_size %s started", options)
+        if options.get("sa"):
+            logging.debug("configuration.get_online_size %s started", options.get("sa"))
+        if options.get("vo"):
+            logging.debug("configuration.get_online_size %s started", options.get("vo"))
         tot = 0
         for sa in self.get_storage_area_list():
             if options.get("sa") and sa != options.get("sa"):
@@ -153,7 +169,10 @@ class Configuration:
         return tot*1000000000
 
     def get_nearline_size(self, **options):
-        logging.debug("configuration.get_nearline_size %s started", options)
+        if options.get("sa"):
+            logging.debug("configuration.get_nearline_size %s started", options.get("sa"))
+        if options.get("vo"):
+            logging.debug("configuration.get_nearline_size %s started", options.get("vo"))
         tot = 0
         for sa in self.get_storage_area_list():
             if options.get("sa") and sa != options.get("sa"):

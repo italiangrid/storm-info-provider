@@ -1,7 +1,7 @@
 import logging
+import json
 
 from info_provider.model.space import SpaceInfo, SpaceRecord, VirtualFileSystemRecord
-
 
 class SpaceInfoBuilder:
 
@@ -12,10 +12,13 @@ class SpaceInfoBuilder:
     def build(self):
         return self._load_space_info()
 
+    def _as_JSON(self, obj):
+        return json.dumps(obj, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
     def _load_space_info(self):
         serving_state = self._configuration.get_serving_state()
         if serving_state == "closed":
-            logging.info("StoRM serving state is: closed")
+            logging.debug("StoRM serving state is: closed")
             return self._build_from_configuration()
         try:
             return self._build_from_remote_response()
@@ -24,7 +27,7 @@ class SpaceInfoBuilder:
             return self._build_from_configuration()
 
     def _build_from_configuration(self):
-        logging.info("Initializing space info from configuration ...")
+        logging.debug("Initializing space info from configuration ...")
         # initialize summary space info
         summary = SpaceRecord(**{
                     "total": self._configuration.get_online_size(),
@@ -67,7 +70,7 @@ class SpaceInfoBuilder:
             })
 
     def _build_from_remote_response(self):
-        logging.info("Initializing space info from remote storm response ...")
+        logging.debug("Initializing space info from remote storm response ...")
         response = self._gateway.get_vfs_list_with_status()
         summary = SpaceRecord(**{
             "total": 0,
@@ -87,6 +90,7 @@ class SpaceInfoBuilder:
                 "busy": int(data["space"]["busy-space"]),
                 "near_line": int(data["availableNearlineSpace"])
                 })
+            logging.debug("%s", self._as_JSON(space))
             vo_name = data["voname"]
             vfs[name] = VirtualFileSystemRecord(**{
                 "name": name,
@@ -101,6 +105,7 @@ class SpaceInfoBuilder:
                 "approachable_rules": data["approachableRules"],
                 "space": space
                 })
+            logging.debug("%s", self._as_JSON(vfs[name]))
 
             # add/update VO space info
             if not "*" in vo_name:
@@ -112,9 +117,8 @@ class SpaceInfoBuilder:
             # update summary
             summary.sum(space)
 
-        logging.debug("Summary: %s", summary.__str__())
-        logging.debug("VOs: %s", vos.__str__())
-        logging.debug("VFS-list: %s", vfs.__str__())
+        logging.debug("%s", self._as_JSON(summary))
+
         return SpaceInfo(**{
             "summary": summary,
             "vo_list": vos,
