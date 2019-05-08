@@ -5,11 +5,14 @@ pipeline {
             label 'python-pod'
             containerTemplate {
                 name 'python-runner'
-                image 'python:2.7'
+                image 'italiangrid/storm-info-provider:latest'
                 ttyEnabled true
                 command 'cat'
             }
         }
+    }
+    environment {
+        GIT_BRANCH = "${env.BRANCH_NAME}"
     }
     options {
         buildDiscarder(logRotator(numToKeepStr: '5'))
@@ -19,15 +22,6 @@ pipeline {
         cron('@daily')
     }
     stages {
-        stage('prepare') {
-            steps {
-                container('python-runner') {
-                    sh 'apt-get -y update'
-                    sh 'apt-get -y install libsasl2-dev python-dev libldap2-dev libssl-dev'
-                    sh 'pip install mock unittest2 coverage python-ldap==2.3.13'
-                }
-            }
-        }
         stage('tests') {
             steps {
                 container('python-runner') {
