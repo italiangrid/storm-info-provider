@@ -5,7 +5,7 @@ pipeline {
             label 'python-pod'
             containerTemplate {
                 name 'python-runner'
-                image 'italiangrid/storm-info-provider:latest'
+                image "italiangrid/storm-info-provider:${env.BRANCH_NAME}"
                 ttyEnabled true
                 command 'cat'
             }
