@@ -1,7 +1,12 @@
 #!/usr/bin/env groovy
 
 pipeline {
-  agent { label 'docker' }
+
+  kubernetes {
+      label '${env.JOB_NAME}-${env.JOB_BASE_NAME}-${env.BUILD_NUMBER}'
+      cloud 'Kube mwdevel'
+      inheritFrom 'ci-template'
+  }
 
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -23,7 +28,7 @@ pipeline {
   stages {
     stage('build'){
       steps {
-        container('docker-runner'){
+        container('runner'){
           dir("${env.DIRECTORY}") {
             sh "tag=${env.BRANCH_NAME} sh build-image.sh"
           }
@@ -38,7 +43,7 @@ pipeline {
         }
       }
       steps {
-        container('docker-runner') {
+        container('runner') {
           dir("${env.DIRECTORY}") {
             sh "tag=${env.BRANCH_NAME} sh push-image.sh"
           }
@@ -53,7 +58,7 @@ pipeline {
         }
       }
       steps {
-        container('docker-runner') {
+        container('runner') {
           script {
             withDockerRegistry([ credentialsId: "dockerhub-enrico", url: "" ]) {
               dir("${env.DIRECTORY}") {
