@@ -2,10 +2,12 @@
 
 pipeline {
 
-  kubernetes {
-      label '${env.JOB_NAME}-${env.JOB_BASE_NAME}-${env.BUILD_NUMBER}'
-      cloud 'Kube mwdevel'
-      inheritFrom 'ci-template'
+  agent {
+    kubernetes {
+        label '${env.JOB_NAME}-${env.JOB_BASE_NAME}-${env.BUILD_NUMBER}'
+        cloud 'Kube mwdevel'
+        inheritFrom 'ci-template'
+    }
   }
 
   options {
