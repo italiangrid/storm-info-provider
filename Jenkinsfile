@@ -1,10 +1,11 @@
 pipeline {
     agent {
         kubernetes {
+            label '${env.JOB_NAME}-${env.JOB_BASE_NAME}-${env.BUILD_NUMBER}'
             cloud 'Kube mwdevel'
-            label 'python-pod'
+            inheritFrom 'ci-template'
             containerTemplate {
-                name 'python-runner'
+                name 'runner'
                 image "italiangrid/storm-info-provider:${env.BRANCH_NAME}"
                 ttyEnabled true
                 command 'cat'
@@ -24,7 +25,7 @@ pipeline {
     stages {
         stage('tests') {
             steps {
-                container('python-runner') {
+                container('runner') {
                     dir('src') {
                         sh 'coverage run tests.py'
                         sh 'coverage html'
