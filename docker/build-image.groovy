@@ -1,12 +1,15 @@
 #!/usr/bin/env groovy
 
+@Library('sd')_
+def kubeLabel = getKubeLabel()
+
 pipeline {
 
   agent {
     kubernetes {
-        label "storm-info-provider-docker-build-${env.JOB_BASE_NAME}-${env.BUILD_NUMBER}"
-        cloud 'Kube mwdevel'
-        inheritFrom 'ci-template'
+      label "${kubeLabel}"
+      cloud 'Kube mwdevel'
+      inheritFrom 'ci-template'
     }
   }
 
