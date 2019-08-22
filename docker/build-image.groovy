@@ -1,17 +1,7 @@
 #!/usr/bin/env groovy
-
-@Library('sd')_
-def kubeLabel = getKubeLabel()
-
 pipeline {
 
-  agent {
-    kubernetes {
-      label "${kubeLabel}"
-      cloud 'Kube mwdevel'
-      inheritFrom 'ci-template'
-    }
-  }
+  agent { label 'docker' }
 
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -33,10 +23,8 @@ pipeline {
   stages {
     stage('build'){
       steps {
-        container('runner'){
-          dir("${env.DIRECTORY}") {
-            sh "tag=${env.BRANCH_NAME} sh build-image.sh"
-          }
+        dir("${env.DIRECTORY}") {
+          sh "tag=${env.BRANCH_NAME} sh build-image.sh"
         }
       }
     }
@@ -48,10 +36,8 @@ pipeline {
         }
       }
       steps {
-        container('runner') {
-          dir("${env.DIRECTORY}") {
-            sh "tag=${env.BRANCH_NAME} sh push-image.sh"
-          }
+        dir("${env.DIRECTORY}") {
+          sh "tag=${env.BRANCH_NAME} sh push-image.sh"
         }
       }
     }
@@ -63,12 +49,10 @@ pipeline {
         }
       }
       steps {
-        container('runner') {
-          script {
-            withDockerRegistry([ credentialsId: "dockerhub-enrico", url: "" ]) {
-              dir("${env.DIRECTORY}") {
-                sh "tag=${env.BRANCH_NAME} sh push-image-dockerhub.sh"
-              }
+        script {
+          withDockerRegistry([ credentialsId: "dockerhub-enrico", url: "" ]) {
+            dir("${env.DIRECTORY}") {
+              sh "tag=${env.BRANCH_NAME} sh push-image-dockerhub.sh"
             }
           }
         }
