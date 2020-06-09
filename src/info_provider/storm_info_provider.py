@@ -13,7 +13,6 @@ from info_provider.report import Report
 
 class StormInfoProvider:
 
-    BACKEND_PID_PATH = "/var/run/storm-backend-server.pid"
     GET_IMPLEMENTATION_VERSION_CMD = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
 
     def __init__(self, **args):
@@ -84,7 +83,7 @@ class StormInfoProvider:
         serving_state = self._configuration.get_serving_state()
         if serving_state == "closed":
             # Backend is declared not running
-            logging.error("StoRM Backend is not running")
+            logging.debug("StoRM Backend is not running")
             # update endpoints serving state
             if glue_protocol in ['glue2']:
                 exporter = LDIFExporter()
@@ -118,16 +117,6 @@ class StormInfoProvider:
         self._create_json_report(spaceinfo, exported_json_file_path)
         logging.info("Exported JSON report to %s", exported_json_file_path)
         return
-
-    def _is_backend_running(self):
-        logging.debug("Checking if storm-backend-server is running ...")
-        return os.path.isfile(self.BACKEND_PID_PATH)
-
-    def _get_current_serving_state(self):
-        logging.debug("Getting serving state ...")
-        if not self._is_backend_running():
-            return (1, "closed")
-        return (4, "production")
 
     def _get_implementation_version(self):
         return os.popen(self.GET_IMPLEMENTATION_VERSION_CMD).read()
