@@ -7,6 +7,11 @@ from info_provider.configuration import Configuration
 from info_provider.model.space import SpaceRecord
 from info_provider.storm_gateway import StormGateway
 
+class MockHttpResponse:
+    def __init__(self, data={}, code=200):
+        self.code = code
+        self.data = data
+
 def get_test_configuration_filepath(filepath):
     return os.path.join(os.path.dirname(__file__), filepath)
 
@@ -59,6 +64,9 @@ def get_response_from_url(url):
         return open(get_filepath("resources/response.json"))
     sa_token = url.split('/')[-1]
     return open(get_sa_status_filepath(sa_token))
+
+def get_is_online_successful_response(url):
+    return MockHttpResponse()
 
 def get_filepath(filename):
     return os.path.join(os.path.dirname(__file__), filename)

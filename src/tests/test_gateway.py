@@ -2,7 +2,7 @@ from httplib import HTTPException
 from urllib2 import HTTPError, URLError
 
 from info_provider.storm_gateway import StormGateway
-from tests.utils import get_default_test_configuration, get_response_from_url
+from tests.utils import *
 from mock.mock import patch, MagicMock
 
 import logging
@@ -28,6 +28,26 @@ class TestGateway(unittest.TestCase):
         self.assertEqual(len(response.items()), 7)
         for name, data in response.items():
             logging.debug("%s: %s", name, data)
+
+    @patch('info_provider.storm_gateway.urllib2')
+    def test_is_online(self, mock_urllib2):
+        logging.debug("Testing gateway is_online with successful mocked response ...")
+        mock_urllib2.urlopen = MagicMock(side_effect=get_is_online_successful_response)
+        response = self._gateway.is_online()
+        self.assertEqual(response, True)
+
+    @patch('info_provider.storm_gateway.urllib2')
+    def test_is_offline(self, mock_urllib2):
+        logging.debug("Testing gateway is_online with error response ...")
+        mock_urllib2.urlopen = MagicMock(side_effect=TestGateway.raise_http_error)
+        response = self._gateway.is_online()
+        self.assertEqual(response, False)
+        mock_urllib2.urlopen = MagicMock(side_effect=TestGateway.raise_url_error)
+        response = self._gateway.is_online()
+        self.assertEqual(response, False)
+        mock_urllib2.urlopen = MagicMock(side_effect=TestGateway.raise_http_exception)
+        response = self._gateway.is_online()
+        self.assertEqual(response, False)
 
     @patch('info_provider.storm_gateway.urllib2')
     def test_http_error(self, mock_urllib2):
