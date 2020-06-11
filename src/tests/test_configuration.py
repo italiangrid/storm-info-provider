@@ -27,7 +27,6 @@ class TestConfiguration(unittest.TestCase):
                 self.assertEqual(configuration.get(key), value)
                 config[key] = value
         self.assertEqual(configuration.get_sitename(), config["SITE_NAME"])
-        self.assertEqual(configuration.get_domain(), config["MY_DOMAIN"])
         self.assertEqual(configuration.get_serving_state(), "production")
         self.assertEqual(configuration.get_backend_hostname(), config["STORM_BACKEND_HOST"])
         self.assertEqual(configuration.get_quality_level(), "testing")

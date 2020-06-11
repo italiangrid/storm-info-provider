@@ -33,9 +33,6 @@ class Glue2:
     def _get_site_id(self):
         return self._configuration.get_sitename()
 
-    def _get_domain(self):
-        return self._configuration.get_domain()
-
     def _get_manager_id(self):
         return self._get_service_id() + "/manager"
 
