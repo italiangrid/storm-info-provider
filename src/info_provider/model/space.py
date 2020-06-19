@@ -28,25 +28,25 @@ class SpaceRecord:
         self._init_as_empty()
         # initialize with default value:
         if data.get("total"):
-            self.total = int(data.get("total"))
+            self.total = long(data.get("total"))
         if data.get("available"):
-            self.available = int(data.get("available"))
+            self.available = long(data.get("available"))
         else:
             self.available = self.total
         if data.get("used"):
-            self.used = int(data.get("used"))
+            self.used = long(data.get("used"))
         if data.get("free"):
-            self.free = int(data.get("free"))
+            self.free = long(data.get("free"))
         else:
             self.free = self.total
         if data.get("unavailable"):
-            self.unavailable = int(data.get("unavailable"))
+            self.unavailable = long(data.get("unavailable"))
         if data.get("reserved"):
-            self.reserved = int(data.get("reserved"))
+            self.reserved = long(data.get("reserved"))
         if data.get("busy"):
-            self.busy = int(data.get("busy"))
+            self.busy = long(data.get("busy"))
         if data.get("near_line"):
-            self.nearline = int(data.get("near_line"))
+            self.nearline = long(data.get("near_line"))
 
     def _init_as_empty(self):
         self.total = 0
@@ -89,14 +89,14 @@ class SpaceRecord:
         return self.nearline > 0
 
     def sum(self, sr2):
-        self.total = self.total + int(sr2.get_total())
-        self.available = int(self.available) + int(sr2.get_available())
-        self.used = int(self.used) + int(sr2.get_used())
-        self.free = int(self.free) + int(sr2.get_free())
-        self.unavailable = int(self.unavailable) + int(sr2.get_unavailable())
-        self.reserved = int(self.reserved) + int(sr2.get_reserved())
-        self.busy = int(self.busy) + int(sr2.get_busy())
-        self.nearline = int(self.nearline) + int(sr2.get_nearline())
+        self.total = self.total + long(sr2.get_total())
+        self.available = long(self.available) + long(sr2.get_available())
+        self.used = long(self.used) + long(sr2.get_used())
+        self.free = long(self.free) + long(sr2.get_free())
+        self.unavailable = long(self.unavailable) + long(sr2.get_unavailable())
+        self.reserved = long(self.reserved) + long(sr2.get_reserved())
+        self.busy = long(self.busy) + long(sr2.get_busy())
+        self.nearline = long(self.nearline) + long(sr2.get_nearline())
 
     def __str__(self):
         str_list = []
