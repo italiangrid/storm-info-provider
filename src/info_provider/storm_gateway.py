@@ -35,6 +35,23 @@ class StormGateway:
             vfs_list[name]["space"] = self.get_vfs_space_info(data["token"])
         return vfs_list
 
+    def is_online(self):
+        url = self._endpoint + "/configuration/1.3/VirtualFSList"
+        request = urllib2.Request(url)
+        request.get_method = lambda : 'HEAD'
+        try:
+            response = urllib2.urlopen(request)
+            return response.code == 200
+        except HTTPError as e:
+            logging.debug("HTTPError = " + str(e.code))
+            return False
+        except URLError as e:
+            logging.debug("URLError = " + str(e.reason))
+            return False
+        except HTTPException as e:
+            logging.debug("HTTPException")
+            return False
+
     def _get_json(self, url):
         logging.debug("Getting JSON from URL: " + url)
         max_attempts = 5

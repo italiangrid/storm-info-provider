@@ -81,14 +81,14 @@ class SpaceInfoBuilder:
         for name, data in response.items():
 
             space = SpaceRecord(**{
-                "total": int(data["space"]["total-space"]),
-                "available": int(data["space"]["available-space"]),
-                "used": int(data["space"]["used-space"]),
-                "free": int(data["space"]["free-space"]),
-                "unavailable": int(data["space"]["unavailable-space"]),
-                "reserved": int(data["space"]["reserved-space"]),
-                "busy": int(data["space"]["busy-space"]),
-                "near_line": int(data["availableNearlineSpace"])
+                "total": long(data["space"]["total-space"]),
+                "available": long(data["space"]["available-space"]),
+                "used": long(data["space"]["used-space"]),
+                "free": long(data["space"]["free-space"]),
+                "unavailable": long(data["space"]["unavailable-space"]),
+                "reserved": long(data["space"]["reserved-space"]),
+                "busy": long(data["space"]["busy-space"]),
+                "near_line": long(data["availableNearlineSpace"])
                 })
             logging.debug("%s", self._as_JSON(space))
             vo_name = data["voname"]
@@ -110,7 +110,16 @@ class SpaceInfoBuilder:
             # add/update VO space info
             if not "*" in vo_name:
                 if not vo_name in vos:
-                    vos[vo_name] = space
+                    vos[vo_name] = SpaceRecord(**{
+                        "total": long(data["space"]["total-space"]),
+                        "available": long(data["space"]["available-space"]),
+                        "used": long(data["space"]["used-space"]),
+                        "free": long(data["space"]["free-space"]),
+                        "unavailable": long(data["space"]["unavailable-space"]),
+                        "reserved": long(data["space"]["reserved-space"]),
+                        "busy": long(data["space"]["busy-space"]),
+                        "near_line": long(data["availableNearlineSpace"])
+                        })
                 else:
                     vos[vo_name].sum(space)
 

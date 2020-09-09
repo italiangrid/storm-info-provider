@@ -257,8 +257,5 @@ class Configuration:
     def get_backend_hostname(self):
         return self.get("STORM_BACKEND_HOST")
 
-    def get_domain(self):
-        return self.get("MY_DOMAIN")
-
     def get_issuer_ca(self):
         return self.get("ISSUER_CA")

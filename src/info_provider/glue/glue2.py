@@ -33,9 +33,6 @@ class Glue2:
     def _get_site_id(self):
         return self._configuration.get_sitename()
 
-    def _get_domain(self):
-        return self._configuration.get_domain()
-
     def _get_manager_id(self):
         return self._get_service_id() + "/manager"
 
@@ -330,13 +327,16 @@ class Glue2:
         if self._configuration.has_webdav():
 
             logging.debug("new logic webdav endpoints")
-            i = 0;
+            http_i = 0
+            https_i = 0
             for endpoint in self._configuration.get_webdav_endpoints():
                 protocol = urlparse(endpoint).scheme.upper()
                 if protocol == "HTTP":
-                    endpoint_id = self._get_http_endpoint_id(i)
+                    endpoint_id = self._get_http_endpoint_id(http_i)
+                    http_i += 1
                 elif protocol == "HTTPS":
-                    endpoint_id = self._get_https_endpoint_id(i)
+                    endpoint_id = self._get_https_endpoint_id(https_i)
+                    https_i += 1
                 else:
                     raise ValueError("unable to read a valid protocol from " + endpoint)
                 node = GLUE2WebDAVStorageEndpoint(endpoint_id, service_id)
@@ -356,7 +356,6 @@ class Glue2:
                     'GLUE2PolicyUserDomainForeignKey': self._configuration.get_used_VOs()
                     })
                 nodes.append(node)
-                i += 1
 
         else:
 
@@ -422,12 +421,20 @@ class Glue2:
 
         if self._configuration.has_webdav():
 
+            i = 0
             for endpoint in self._configuration.get_webdav_endpoints():
-                endpoint_id = self._get_webdav_endpoint_id(endpoint)
+                protocol = urlparse(endpoint).scheme.upper()
+                if protocol == "HTTP":
+                    endpoint_id = self._get_http_endpoint_id(i)
+                elif protocol == "HTTPS":
+                    endpoint_id = self._get_https_endpoint_id(i)
+                else:
+                    raise ValueError("unable to read a valid protocol from " + endpoint)
                 # Glue2StorageEndpoint http webdav serving_state_value
                 node = GLUE2StorageEndpoint(endpoint_id, service_ID)
                 node.add({ 'GLUE2EndpointServingState': serving_state_value })
                 nodes.append(node)
+                i += 1
 
         elif self._configuration.has_gridhttps():
 

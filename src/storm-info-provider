@@ -24,6 +24,7 @@ import time
 import pwd
 
 from info_provider.configuration import Configuration
+from info_provider.storm_gateway import StormGateway
 from info_provider.utils.ldap_utils import LDIFExporter
 from symbol import argument
 from info_provider.storm_info_provider import StormInfoProvider
@@ -72,14 +73,14 @@ def parse_args():
     parser_report.set_defaults(action=get_report_json)
     return parser.parse_args()
 
-def is_backend_running():
+def is_backend_running(endpoint):
     logging.debug("Checking if backend is running ...")
-    backend_pid_path = "/var/run/storm-backend-server.pid"
-    return os.path.isfile(backend_pid_path)
+    gateway = StormGateway(endpoint)
+    return gateway.is_online()
 
-def get_current_serving_state():
+def get_current_serving_state(configuration):
     logging.debug("Getting serving state ...")
-    if not is_backend_running():
+    if not is_backend_running(configuration.get_backend_rest_endpoint()):
         return (1, "closed")
     return (4, "production")
 
@@ -91,7 +92,7 @@ def init_configuration(yaim_filepath):
     # load configuration from file    
     configuration = Configuration(yaim_filepath)
     # get current serving state (used by GLUE2)
-    (value_int, value_str) = get_current_serving_state()
+    (value_int, value_str) = get_current_serving_state(configuration)
     configuration.set("STORM_SERVING_STATE_VALUE", value_int)
     configuration.set("STORM_SERVING_STATE", value_str)
     configuration.set("STORM_IMPLEMENTATION_VERSION", get_implementation_version())
