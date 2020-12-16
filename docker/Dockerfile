@@ -24,7 +24,7 @@ RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
 RUN $PYTHON_COMMAND get-pip.py
 
 RUN yum groupinstall -y "Development tools"
-RUN yum install -y openldap-devel python2-devel
+RUN yum install -y openldap-devel python2-devel sqlite-devel
 
 RUN $PYTHON_COMMAND -m pip install mock coverage unittest2 python-ldap==2.3.13
 
