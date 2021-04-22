@@ -77,11 +77,11 @@ class TestStorageService(unittest.TestCase):
         json.loads(report.to_json())
         logging.debug(report.to_json())
 
-    @patch('info_provider.storm_gateway.urllib2')
-    def test_storage_service_builder_when_remote_gateway_has_http_error(self, mock_urllib2):
+    @patch('info_provider.storm_gateway.urllib')
+    def test_storage_service_builder_when_remote_gateway_has_http_error(self, mock_urllib):
         configuration = get_default_test_configuration()
         gateway = StormGateway(configuration.get_backend_rest_endpoint())
-        mock_urllib2.urlopen.side_effect = TestGateway.raise_http_error
+        mock_urllib.request.urlopen.side_effect = TestGateway.raise_http_error
         spaceinfo = SpaceInfoBuilder(configuration, gateway).build()
         expected_summary = get_default_space_info_summary_from_configuration()
         self.assertEqual(spaceinfo.get_summary().get_total(), expected_summary.get_total())

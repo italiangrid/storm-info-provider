@@ -76,7 +76,7 @@ class Glue13:
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE13_INFO_PROVIDER_FILE)
-        os.chmod(GLUE13_INFO_PROVIDER_FILE, 0755)
+        os.chmod(GLUE13_INFO_PROVIDER_FILE, 0o755)
         return
 
     def _create_service_config_file(self):
@@ -108,7 +108,7 @@ class Glue13:
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE13_INFO_PLUGIN_FILE)
-        os.chmod(GLUE13_INFO_PLUGIN_FILE, 0755)
+        os.chmod(GLUE13_INFO_PLUGIN_FILE, 0o755)
         return
 
     def get_static_ldif_nodes(self, spaceinfo):
@@ -139,7 +139,7 @@ class Glue13:
         logging.debug(node)
 
         # for each storage area / virtual file system
-        for n, d in spaceinfo.get_vfs().iteritems():
+        for n, d in list(spaceinfo.get_vfs().items()):
             # GlueSA
             GlueSALocalID = self._get_sa_local_id(n, d.get_retentionpolicy(), d.get_accesslatency())
             node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)
@@ -234,7 +234,7 @@ class Glue13:
         })
         nodes.append(node)
 
-        for sa_name, sa_data in spaceinfo.vfs.iteritems():
+        for sa_name, sa_data in list(spaceinfo.vfs.items()):
             # GlueSA
             GlueSALocalID = self._get_sa_local_id(sa_name, sa_data.get_retentionpolicy(), sa_data.get_accesslatency())
             node = GlueSALocal(GlueSALocalID, GlueSEUniqueID)

@@ -18,7 +18,7 @@ class LDIFNode:
                 self.entries[entry_name] = []
                 for item in entries[entry_name]:
                     self.entries[entry_name].append(str(item))
-            elif isinstance(entries[entry_name], basestring):
+            elif isinstance(entries[entry_name], str):
                 self.entries[entry_name] = [entries[entry_name]]
             else:
                 self.entries[entry_name] = [str(entries[entry_name])]
@@ -34,7 +34,7 @@ class LDIFNode:
 
     def __str__(self):
         out = "dn = '" + self.dn + "'\n"
-        for entry_name, entry_values in self.entries.items():
+        for entry_name, entry_values in list(self.entries.items()):
             for value in entry_values:
                 out += "# " + entry_name + " = '" + str(value) + "'\n"
         return out 

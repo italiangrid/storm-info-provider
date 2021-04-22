@@ -1,10 +1,10 @@
-from httplib import HTTPException
-import httplib
+from http.client import HTTPException
+import http.client
 import json
 import logging
 import time
-from urllib2 import HTTPError, URLError
-import urllib2
+from urllib.error import HTTPError, URLError
+import urllib.request, urllib.error, urllib.parse
 
 
 class StormGateway:
@@ -30,17 +30,17 @@ class StormGateway:
 
     def get_vfs_list_with_status(self):
         vfs_list = self.get_vfs_list()
-        for name, data in vfs_list.iteritems():
+        for name, data in list(vfs_list.items()):
             logging.debug("retrieving space info data for %s", name)
             vfs_list[name]["space"] = self.get_vfs_space_info(data["token"])
         return vfs_list
 
     def is_online(self):
         url = self._endpoint + "/configuration/1.3/VirtualFSList"
-        request = urllib2.Request(url)
+        request = urllib.Request(url)
         request.get_method = lambda : 'HEAD'
         try:
-            response = urllib2.urlopen(request)
+            response = urllib.request.urlopen(request)
             return response.code == 200
         except HTTPError as e:
             logging.debug("HTTPError = " + str(e.code))
@@ -61,7 +61,7 @@ class StormGateway:
             attempt += 1
             logging.debug("Attempt %d/%d ...", attempt, max_attempts)
             try:
-                response = urllib2.urlopen(url)
+                response = urllib.request.urlopen(url)
                 logging.debug("Response: %s", response)
                 return json.load(response)
             except HTTPError as e:

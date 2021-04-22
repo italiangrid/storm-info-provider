@@ -48,7 +48,7 @@ class Configuration:
         logging.debug("##############################################")
         logging.debug("##             CONFIGURATION                ##")
         logging.debug("##############################################")
-        for key, value in self._configuration.items():
+        for key, value in list(self._configuration.items()):
             logging.debug("%s=%s", str(key), str(value))
         logging.debug("##############################################")
 
@@ -118,7 +118,8 @@ class Configuration:
         return "http://" + host + ":" + port + "/"
 
     def get_webdav_endpoints(self):
-        endpoints = filter(None, self.get("STORM_WEBDAV_POOL_LIST").split(','))
+        endpoints = [e for e in self.get("STORM_WEBDAV_POOL_LIST").split(',') if e is not None]
+
         logging.debug("webdav endpoints: " + str(endpoints))
         return endpoints
 

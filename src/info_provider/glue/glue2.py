@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 from info_provider.glue.commons import INFO_PROVIDER_SCRIPT, \
     INPUT_YAIM_CONFIGURATION
@@ -138,7 +138,7 @@ class Glue2:
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE2_INFO_PROVIDER_FILE)
-        os.chmod(GLUE2_INFO_PROVIDER_FILE, 0755)
+        os.chmod(GLUE2_INFO_PROVIDER_FILE, 0o755)
         return
 
     def _create_plugin_file(self):
@@ -148,7 +148,7 @@ class Glue2:
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE2_INFO_PLUGIN_FILE)
-        os.chmod(GLUE2_INFO_PLUGIN_FILE, 0755)
+        os.chmod(GLUE2_INFO_PLUGIN_FILE, 0o755)
         return
 
     def _create_static_ldif_file(self, spaceinfo):
@@ -249,7 +249,7 @@ class Glue2:
 
         # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each
         # VFS
-        for name, data in spaceinfo.get_vfs().items():
+        for name, data in list(spaceinfo.get_vfs().items()):
 
             # GLUE2Share
             share_id = self._get_share_id(name)
@@ -492,7 +492,7 @@ class Glue2:
 
         # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each
         # VFS
-        for name, data in spaceinfo.get_vfs().iteritems():
+        for name, data in list(spaceinfo.get_vfs().items()):
 
             # GLUE2Share
             share_id = self._get_share_id(name)

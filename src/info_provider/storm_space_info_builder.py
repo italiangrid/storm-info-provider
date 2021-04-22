@@ -22,7 +22,7 @@ class SpaceInfoBuilder:
             return self._build_from_configuration()
         try:
             return self._build_from_remote_response()
-        except Exception, ex:
+        except Exception as ex:
             logging.error('%s', ex)
             return self._build_from_configuration()
 
@@ -78,17 +78,17 @@ class SpaceInfoBuilder:
             })
         vfs = {}
         vos = {}
-        for name, data in response.items():
+        for name, data in list(response.items()):
 
             space = SpaceRecord(**{
-                "total": long(data["space"]["total-space"]),
-                "available": long(data["space"]["available-space"]),
-                "used": long(data["space"]["used-space"]),
-                "free": long(data["space"]["free-space"]),
-                "unavailable": long(data["space"]["unavailable-space"]),
-                "reserved": long(data["space"]["reserved-space"]),
-                "busy": long(data["space"]["busy-space"]),
-                "near_line": long(data["availableNearlineSpace"])
+                "total": int(data["space"]["total-space"]),
+                "available": int(data["space"]["available-space"]),
+                "used": int(data["space"]["used-space"]),
+                "free": int(data["space"]["free-space"]),
+                "unavailable": int(data["space"]["unavailable-space"]),
+                "reserved": int(data["space"]["reserved-space"]),
+                "busy": int(data["space"]["busy-space"]),
+                "near_line": int(data["availableNearlineSpace"])
                 })
             logging.debug("%s", self._as_JSON(space))
             vo_name = data["voname"]
@@ -111,14 +111,14 @@ class SpaceInfoBuilder:
             if not "*" in vo_name:
                 if not vo_name in vos:
                     vos[vo_name] = SpaceRecord(**{
-                        "total": long(data["space"]["total-space"]),
-                        "available": long(data["space"]["available-space"]),
-                        "used": long(data["space"]["used-space"]),
-                        "free": long(data["space"]["free-space"]),
-                        "unavailable": long(data["space"]["unavailable-space"]),
-                        "reserved": long(data["space"]["reserved-space"]),
-                        "busy": long(data["space"]["busy-space"]),
-                        "near_line": long(data["availableNearlineSpace"])
+                        "total": int(data["space"]["total-space"]),
+                        "available": int(data["space"]["available-space"]),
+                        "used": int(data["space"]["used-space"]),
+                        "free": int(data["space"]["free-space"]),
+                        "unavailable": int(data["space"]["unavailable-space"]),
+                        "reserved": int(data["space"]["reserved-space"]),
+                        "busy": int(data["space"]["busy-space"]),
+                        "near_line": int(data["availableNearlineSpace"])
                         })
                 else:
                     vos[vo_name].sum(space)
