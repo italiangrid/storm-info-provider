@@ -1,6 +1,6 @@
 import logging
 
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 from info_provider.model.storage import StorageShare, StorageEndpoint, \
     StorageService
@@ -19,7 +19,7 @@ class StorageServiceBuilder:
 
         service = StorageService(name=sitename, version=version, quality_level=quality_level)
 
-        for name, vfs in self._spaceinfo.get_vfs().items():
+        for name, vfs in list(self._spaceinfo.get_vfs().items()):
             access_latency = vfs.get_accesslatency().lower()
             retention_policy = vfs.get_retentionpolicy().lower()
             total_size = vfs.get_space().get_total()

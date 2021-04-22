@@ -51,7 +51,7 @@ class TestConfiguration(unittest.TestCase):
     def test_missing_mandatory_variable(self):
         with self.assertRaises(ValueError) as cm:
             Configuration(get_incomplete_test_configuration_filepath())
-        self.assertEqual(cm.exception.message, "Configuration error: Missing mandatory SITE_NAME variable!")
+        self.assertEqual(str(cm.exception), "Configuration error: Missing mandatory SITE_NAME variable!")
 
     def test_print_configuration(self):
         configuration = get_default_test_configuration()

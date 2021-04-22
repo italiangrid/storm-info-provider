@@ -145,8 +145,8 @@ if __name__ == '__main__':
     # do ...
     try:
         arguments.action(arguments)
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(e)
         sys.exit(1)
 
     elapsed = time.clock() - start
