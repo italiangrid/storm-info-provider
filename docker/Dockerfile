@@ -7,6 +7,9 @@ ENV PYTHON_COMMAND python2.7
 RUN yum install -y epel-release
 RUN yum install -y gcc make openssl-devel bzip2-devel libffi-devel wget git
 
+RUN yum groupinstall -y "Development tools"
+RUN yum install -y openldap-devel python2-devel sqlite-devel
+
 RUN cd /usr/src && \
     wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz && \
     tar xzf Python-$PYTHON_VERSION.tgz && \
@@ -20,11 +23,9 @@ RUN $PYTHON_COMMAND -V
 RUN python -V
 
 # Install pip 
-RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+RUN curl "https://bootstrap.pypa.io/pip/2.7/get-pip.py" -o "get-pip.py"
+# RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
 RUN $PYTHON_COMMAND get-pip.py
-
-RUN yum groupinstall -y "Development tools"
-RUN yum install -y openldap-devel python2-devel
 
 RUN $PYTHON_COMMAND -m pip install mock coverage unittest2 python-ldap==2.3.13
 

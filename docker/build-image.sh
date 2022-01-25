@@ -2,4 +2,4 @@
 
 tag=${tag:-"latest"}
 
-docker build --pull=false --rm=true -t italiangrid/storm-info-provider:${tag} .
+docker build --pull=false --no-cache --rm=true -t italiangrid/storm-info-provider:${tag} .

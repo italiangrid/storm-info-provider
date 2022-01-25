@@ -11,13 +11,7 @@ pipeline {
   triggers { cron('@daily') }
 
   environment {
-    DOCKER_REGISTRY_HOST = "${env.DOCKER_REGISTRY_HOST}"
     DIRECTORY = "docker"
-  }
-
-  parameters {
-    booleanParam(defaultValue: false, description: '', name: 'PUSH_TO_REGISTRY')
-    booleanParam(defaultValue: true, description: '', name: 'PUSH_TO_DOCKERHUB')
   }
 
   stages {
@@ -29,25 +23,7 @@ pipeline {
       }
     }
 
-    stage('push-registry') {
-      when {
-        expression {
-          return params.PUSH_TO_REGISTRY
-        }
-      }
-      steps {
-        dir("${env.DIRECTORY}") {
-          sh "tag=${env.BRANCH_NAME} sh push-image.sh"
-        }
-      }
-    }
-
     stage('push-dockerhub') {
-      when {
-        expression {
-          return params.PUSH_TO_DOCKERHUB
-        }
-      }
       steps {
         script {
           withDockerRegistry([ credentialsId: "dockerhub-enrico", url: "" ]) {
