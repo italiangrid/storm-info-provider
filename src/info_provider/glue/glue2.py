@@ -70,8 +70,8 @@ class Glue2:
     def _get_share_capacity_id(self, vfs_name, capacity_type):
         return self._get_share_id(vfs_name) + "/capacity/" + capacity_type
 
-    def _is_anonymous(self, voname):
-        return "*" in voname
+    def _is_anonymous(self, vos):
+        return len(vos) == 0
 
     def configure(self, spaceinfo):
         # remove old static ldif backup files
@@ -258,30 +258,37 @@ class Glue2:
                 'GLUE2StorageShareAccessLatency': data.get_accesslatency().lower(),
                 'GLUE2StorageShareRetentionPolicy': data.get_retentionpolicy().lower(),
                 'GLUE2StorageShareServingState': "production",
-                'GLUE2StorageSharePath': data.get_stfnroot()[0]
+                # Path: A default namespace where files are logically placed when they are store
+                # into this Share. This will typically be used as a prefix when generating
+                # a file name under which the file is stored. Expected: 0..1
+                'GLUE2StorageSharePath': data.get_stfnroot()[0],
+                # A local identifier common to the set of Storage Shares which use the same underlying
+                # extents, i.e. which share the same pool of storage space. ('dedicated' is a reserved
+                # value which means that the Storage Share extents are not shared with other Storage
+                # Shares.). Expected: 1
+                'GLUE2StorageShareSharingID': data.get_token() if data.get_token() else "dedicated"
             })
-            if self._is_anonymous(data.get_voname()):
-                node.add({
-                    'GLUE2StorageShareSharingID': "dedicated"
-                    })
-            else:
-                node.add({
-                    'GLUE2StorageShareSharingID': self._get_sharing_id(name,
-                        data.get_retentionpolicy(), data.get_accesslatency()),
-                    'GLUE2StorageShareTag': data.get_voname(),
-                    'GLUE2ShareDescription': "Share for " + str(data.get_voname())
-                    })
             nodes.append(node)
 
             # GLUE2MappingPolicy
             policy_id = self._get_share_policy_id(name)
-            node = GLUE2MappingPolicy(policy_id, share_id, service_id)
-            node.init().add({
-                'GLUE2PolicyRule': data.get_approachablerules()
-            })
-            if not self._is_anonymous(data.get_voname()):
+            node = GLUE2MappingPolicy(policy_id, share_id, service_id).init()
+            vo_rules = []
+            dn_rules = []
+            for ar in data.get_approachablerules():
+                dn_rule = ar['dn']
+                vo_rule = ar['vo']
+                if len(dn_rule) > 0 and not dn_rule in dn_rules:
+                    dn_rules.append(dn_rule)
+                if len(vo_rule) > 0 and not vo_rule in vo_rules:
+                    vo_rules.append(vo_rule)
+            for dn_rule in dn_rules:
                 node.add({
-                    'GLUE2PolicyUserDomainForeignKey': data.get_voname()
+                    'GLUE2PolicyRule': 'dn:' + dn_rule
+                })
+            for vo_rule in vo_rules:
+                node.add({
+                    'GLUE2PolicyRule': 'vo:' + vo_rule
                 })
             nodes.append(node)
 

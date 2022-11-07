@@ -38,12 +38,13 @@ class Glue13:
     def _get_se_control_protocol_id(self):
         return 'srm_v2.2'
 
-    def _get_sa_vo_info_id(self, sa_name, sa_voname, sa_token):
+    def _get_sa_vo_info_id(self, sa_name, sa_vos, sa_token):
+        sa_vos_as_str = ":".join(sa_vos)
         if self._configuration.vfs_has_custom_token(sa_name): 
             # reserved space
-            return ":".join((str(sa_voname), str(sa_token)))                    
+            return ":".join((str(sa_vos_as_str), str(sa_token)))                    
         # unreserved space
-        return sa_voname
+        return sa_vos_as_str
 
     def configure(self, spaceinfo):
         # remove old static LDIF backup files
@@ -155,7 +156,7 @@ class Glue13:
                 'GlueSARetentionPolicy': str(d.get_retentionpolicy()).lower(),
                 'GlueSAStateAvailableSpace': as_kilobytes(d.get_space().get_available()),
                 'GlueSAStateUsedSpace': as_kilobytes(d.get_space().get_used()),
-                'GlueSAAccessControlBaseRule': "VO:" + str(d.get_voname()),
+                'GlueSAAccessControlBaseRule': "VO:" + ",VO:".join(d.get_vos()),
                 'GlueSACapability': [
                     "InstalledOnlineCapacity=" + 
                         str(as_gigabytes(d.get_space().get_total())),
@@ -163,10 +164,10 @@ class Glue13:
                         str(as_gigabytes(d.get_space().get_nearline()))
                     ]
                 })
-            vo_name = str(d.get_voname())
-            if self.is_VO(vo_name):
+            vos = d.get_vos()
+            if self.is_VO(vos):
                 node.add({ 
-                    'GlueSAName': "Reserved space for " + vo_name + " VO" 
+                    'GlueSAName': "Reserved space for " + ",".join(vos) + " VO" 
                 })
             else:
                 node.add({ 
@@ -174,13 +175,13 @@ class Glue13:
                 })
             nodes.append(node)
 
-            if self.is_VO(vo_name):
+            if self.is_VO(vos):
                 # GlueVOInfoLocal
-                GlueSAVOInfoLocalID = self._get_sa_vo_info_id(n, vo_name, d.get_token())
+                GlueSAVOInfoLocalID = self._get_sa_vo_info_id(n, vos, d.get_token())
                 node = GlueSAVOInfoLocal(GlueSAVOInfoLocalID, GlueSALocalID, GlueSEUniqueID)
                 node.init().add({
                     'GlueVOInfoPath': d.get_stfnroot()[0],
-                    'GlueVOInfoAccessControlBaseRule': "VO:" + vo_name
+                    'GlueVOInfoAccessControlBaseRule': "VO:" + ",VO:".join(vos)
                     })
                 if self._configuration.vfs_has_custom_token(n):
                     node.add({ 
@@ -273,5 +274,5 @@ class Glue13:
         logging.debug("Removed backup files: [%s]", removed_list)
         return len(removed_list)
 
-    def is_VO(self, vo):
-        return not '*' in vo
+    def is_VO(self, vos):
+        return len(vos) > 0
