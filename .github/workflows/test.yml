@@ -21,12 +21,16 @@ jobs:
         working-directory: ./src
         run: |
           pytest --cov-report xml --cov=. tests/
+          coverage html
           ls
-          ls tests
-          ls ../
       - name: Get Coverage
         uses: orgoro/coverage@v3
         if: github.event_name == 'pull_request'
         with:
           coverageFile: ./src/coverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v2
+        with: 
+          name: assets-for-download
+          path: ./src/htmlcov
