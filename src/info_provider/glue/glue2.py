@@ -175,6 +175,8 @@ class Glue2:
             'GLUE2ServiceAdminDomainForeignKey': self._get_site_id()
             })
         nodes.append(node)
+        logging.debug("Added node " + str(node))
+
 
         # Glue2StorageServiceCapacity online
         if spaceinfo.get_summary().has_online_capacity():
@@ -192,6 +194,7 @@ class Glue2:
                     as_gigabytes(spaceinfo.get_summary().get_reserved())
             })
             nodes.append(node)
+            logging.debug("Added node " + str(node))
 
         # Glue2StorageServiceCapacity near-line
         if spaceinfo.get_summary().has_nearline_capacity():
@@ -207,6 +210,8 @@ class Glue2:
                 'GLUE2StorageServiceCapacityReservedSize': 0
             })
             nodes.append(node)
+            logging.debug("Added node " + str(node))
+
 
         # GLUE2StorageAccessProtocol for each protocol
         for protocol in self._configuration.get_enabled_access_protocols():
@@ -218,6 +223,7 @@ class Glue2:
                 'GLUE2StorageAccessProtocolVersion': p_ver
                 })
             nodes.append(node)
+            logging.debug("Added node " + str(node))
 
         # Glue2StorageManager
         manager_id = self._get_manager_id()
@@ -226,6 +232,7 @@ class Glue2:
             'GLUE2ManagerProductVersion': storm_version
         })
         nodes.append(node)
+        logging.debug("Added node " + str(node))
 
         # Glue2DataStore disk online
         if spaceinfo.get_summary().has_online_capacity():
@@ -236,6 +243,7 @@ class Glue2:
                 'GLUE2DataStoreTotalSize': as_gigabytes(spaceinfo.get_summary().get_total())
             })
             nodes.append(node)
+            logging.debug("Added node " + str(node))
 
         # Glue2DataStore tape near-line
         if spaceinfo.get_summary().has_nearline_capacity():
@@ -246,6 +254,7 @@ class Glue2:
                 'GLUE2DataStoreTotalSize': as_gigabytes(spaceinfo.get_summary().get_nearline())
             })
             nodes.append(node)
+            logging.debug("Added node " + str(node))
 
         # Glue2Share, GLUE2MappingPolicy and Glue2StorageShareCapacity for each
         # VFS
@@ -269,6 +278,7 @@ class Glue2:
                 'GLUE2StorageShareSharingID': data.get_token() if data.get_token() else "dedicated"
             })
             nodes.append(node)
+            logging.debug("Added node " + str(node))
 
             # GLUE2MappingPolicy
             policy_id = self._get_share_policy_id(name)
@@ -291,6 +301,7 @@ class Glue2:
                     'GLUE2PolicyRule': 'vo:' + vo_rule
                 })
             nodes.append(node)
+            logging.debug("Added node " + str(node))
 
             # Glue2StorageShareCapacities
 
@@ -310,6 +321,7 @@ class Glue2:
                         as_gigabytes(data.get_space().get_reserved())
                     })
                 nodes.append(node)
+                logging.debug("Added node " + str(node))
 
             if data.get_space().has_nearline_capacity():
                 # Glue2StorageShareCapacity near-line
@@ -325,6 +337,7 @@ class Glue2:
                     'GLUE2StorageShareCapacityReservedSize': 0
                 })
                 nodes.append(node)
+                logging.debug("Added node " + str(node))
 
         access_policy_rules = []
         for vo in self._configuration.get_used_VOs():
@@ -355,6 +368,7 @@ class Glue2:
                     'GLUE2EndpointIssuerCA': issuer_ca
                     })
                 nodes.append(node)
+                logging.debug("Added node " + str(node))
                 # Add Endpoint Policy
                 policy_id = self._get_endpoint_policy_id(endpoint_id)
                 node = GLUE2AccessPolicy(policy_id, endpoint_id, service_id)
@@ -363,53 +377,7 @@ class Glue2:
                     'GLUE2PolicyUserDomainForeignKey': self._configuration.get_used_VOs()
                     })
                 nodes.append(node)
-
-        else:
-
-            # OLD_LOGIC
-            if self._configuration.has_gridhttps():
-
-                # Add HTTP WebDAV Endpoint
-                endpoint_id = self._get_http_endpoint_id()
-                node = GLUE2WebDAVStorageEndpoint(endpoint_id, service_id)
-                node.init().add({
-                    'GLUE2EndpointURL': self._configuration.get_public_http_endpoint(),
-                    'GLUE2EndpointImplementationVersion': storm_version,
-                    'GLUE2EndpointQualityLevel': self._configuration.get_quality_level(),
-                    'GLUE2EndpointServingState': self._configuration.get_serving_state(),
-                    'GLUE2EndpointIssuerCA': issuer_ca
-                    })
-                nodes.append(node)
-
-                # Add Endpoint Policy
-                policy_id = self._get_endpoint_policy_id(endpoint_id)
-                node = GLUE2AccessPolicy(policy_id, endpoint_id, service_id)
-                node.init().add({
-                    'GLUE2PolicyRule': access_policy_rules,
-                    'GLUE2PolicyUserDomainForeignKey': self._configuration.get_used_VOs()
-                    })
-                nodes.append(node)
-
-                # Add HTTPs Endpoint
-                endpoint_id = self._get_https_endpoint_id()
-                node = GLUE2WebDAVStorageEndpoint(endpoint_id, service_id)
-                node.init().add({
-                    'GLUE2EndpointURL': self._configuration.get_public_https_endpoint(),
-                    'GLUE2EndpointImplementationVersion': storm_version,
-                    'GLUE2EndpointQualityLevel': self._configuration.get_quality_level(),
-                    'GLUE2EndpointServingState': self._configuration.get_serving_state(),
-                    'GLUE2EndpointIssuerCA': issuer_ca
-                    })
-                nodes.append(node)
-
-                # Add Endpoint Policy
-                policy_id = self._get_endpoint_policy_id(endpoint_id)
-                node = GLUE2AccessPolicy(policy_id, endpoint_id, service_id)
-                node.init().add({
-                    'GLUE2PolicyRule': access_policy_rules,
-                    'GLUE2PolicyUserDomainForeignKey': self._configuration.get_used_VOs()
-                    })
-                nodes.append(node)
+                logging.debug("Added node " + str(node))
 
         return nodes
 
