@@ -286,12 +286,11 @@ class Glue2:
             vo_rules = []
             dn_rules = []
             for ar in data.get_approachablerules():
-                dn_rule = ar['dn']
-                vo_rule = ar['vo']
-                if len(dn_rule) > 0 and not dn_rule in dn_rules:
-                    dn_rules.append(dn_rule)
-                if len(vo_rule) > 0 and not vo_rule in vo_rules:
-                    vo_rules.append(vo_rule)
+                logging.debug(ar)
+                if ar.startswith('dn') and not ar in dn_rules:
+                    dn_rules.append(ar)
+                if ar.startswith('vo') and not ar in vo_rules:
+                    vo_rules.append(ar)
             for dn_rule in dn_rules:
                 node.add({
                     'GLUE2PolicyRule': 'dn:' + dn_rule
