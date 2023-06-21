@@ -6,12 +6,11 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container:
+      image: python:2.7.18-slim-stretch
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2 
-        with:
-          python-version: 2.7
       - name: Install dependencies
         run: |
           sudo apt-get install -y libldap2-dev libpython2-dev libc6-dev libsasl2-dev
