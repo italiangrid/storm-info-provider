@@ -1,5 +1,7 @@
 import logging
 
+from info_provider.model.space import ApproachableRule
+
 
 class Configuration:
 
@@ -131,11 +133,13 @@ class Configuration:
     def get_used_VOs(self):
         vo_list = []
         for sa in self.get_storage_area_list():
-            vo_name = self.get_sa_voname(sa)
-            if "*" in vo_name:
-                continue
-            if not vo_name in vo_list:
-                vo_list.append(vo_name)
+            vos = self.get_sa_vos(sa)
+            for vo_name in vos:
+                if vo_name == "*":
+                    continue
+                if not vo_name in vo_list:
+                    vo_list.append(vo_name)
+
         return vo_list
 
     def get_storage_area_list(self):
@@ -144,13 +148,13 @@ class Configuration:
     def get_sa_short(self, sa):
         return sa.replace(".", "").replace("-", "").replace("_", "").upper()
 
-    def get_sa_voname(self, sa):
+    def get_sa_vos(self, sa):
         sa_name = self.get_sa_short(sa)
         if "STORM_" + sa_name + "_VONAME" in self._configuration:
-            return self.get("STORM_" + sa_name + "_VONAME")
+            return self.get("STORM_" + sa_name + "_VONAME").split(',')
         if sa in self.get_supported_VOs():
-            return sa
-        return "*"
+            return [sa]
+        return []
 
     def get_online_size(self, **options):
         if options.get("sa"):
@@ -161,7 +165,7 @@ class Configuration:
         for sa in self.get_storage_area_list():
             if options.get("sa") and sa != options.get("sa"):
                 continue
-            if options.get("vo") and self.get_sa_voname(sa) != options.get("vo"):
+            if options.get("vo") and options.get("vo") in self.get_sa_vos(sa):
                 continue
             sa_name = self.get_sa_short(sa)
             tot += int(self.get("STORM_" + sa_name + "_ONLINE_SIZE"))
@@ -177,7 +181,7 @@ class Configuration:
         for sa in self.get_storage_area_list():
             if options.get("sa") and sa != options.get("sa"):
                 continue
-            if options.get("vo") and self.get_sa_voname(sa) != options.get("vo"):
+            if options.get("vo") and options.get("vo") in self.get_sa_vos(sa):
                 continue
             sa_name = self.get_sa_short(sa)
             if "STORM_" + sa_name + "_NEARLINE_SIZE" in self._configuration:
@@ -220,10 +224,7 @@ class Configuration:
         return "online"
 
     def get_sa_approachable_rules(self, sa):
-        voname = self.get_sa_voname(sa)
-        out = []
-        if not "*" in voname:
-            out.append("vo:" + voname)
+        # compute dn regex if present
         sa_name = self.get_sa_short(sa)
         dn = []
         if "STORM_" + sa_name + "_DN_C_REGEX" in self._configuration:
@@ -236,10 +237,24 @@ class Configuration:
             dn.append("/L=" + self.get("STORM_" + sa_name + "_DN_L_REGEX"))
         if "STORM_" + sa_name + "_DN_CN_REGEX" in self._configuration:
             dn.append("/CN=" + self.get("STORM_" + sa_name + "_DN_CN_REGEX"))
-        if len(dn) > 0:
-            out.append(''.join(dn))
+        # compute list of ar, one for each supported vo
+        out = []
+        for vo_name in self.get_sa_vos(sa):
+            if len(dn) > 0:
+                out.append(ApproachableRule(**{
+                    "dn": dn,
+                    "vo": vo_name,
+                }))
+            else:
+                out.append(ApproachableRule(**{
+                    "dn": "*",
+                    "vo": vo_name,
+                }))
         if len(out) == 0:
-            out.append("ALL")
+            out.append(ApproachableRule(**{
+                "dn": "*",
+                "vo": "*",
+            }))
         return out
 
     def get_sitename(self):

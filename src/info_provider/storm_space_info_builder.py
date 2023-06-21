@@ -47,7 +47,7 @@ class SpaceInfoBuilder:
             vfs[name] = VirtualFileSystemRecord(**{
                 "name": name,
                 "token": self._configuration.get_sa_token(sa),
-                "vo_name": self._configuration.get_sa_voname(sa),
+                "vos": self._configuration.get_sa_vos(sa),
                 "root": self._configuration.get_sa_root(sa),
                 "storage_class": self._configuration.get_sa_class(sa),
                 "stfn_root": self._configuration.get_sa_accesspoints(sa),
@@ -91,11 +91,10 @@ class SpaceInfoBuilder:
                 "near_line": long(data["availableNearlineSpace"])
                 })
             logging.debug("%s", self._as_JSON(space))
-            vo_name = data["voname"]
             vfs[name] = VirtualFileSystemRecord(**{
                 "name": name,
                 "token": data["token"],
-                "vo_name": vo_name,
+                "vos": data["vos"],
                 "root": data["root"],
                 "storage_class": data["storageclass"],
                 "stfn_root": data["stfnRoot"],
@@ -108,20 +107,21 @@ class SpaceInfoBuilder:
             logging.debug("%s", self._as_JSON(vfs[name]))
 
             # add/update VO space info
-            if not "*" in vo_name:
-                if not vo_name in vos:
-                    vos[vo_name] = SpaceRecord(**{
-                        "total": long(data["space"]["total-space"]),
-                        "available": long(data["space"]["available-space"]),
-                        "used": long(data["space"]["used-space"]),
-                        "free": long(data["space"]["free-space"]),
-                        "unavailable": long(data["space"]["unavailable-space"]),
-                        "reserved": long(data["space"]["reserved-space"]),
-                        "busy": long(data["space"]["busy-space"]),
-                        "near_line": long(data["availableNearlineSpace"])
-                        })
-                else:
-                    vos[vo_name].sum(space)
+            if not "*" in data["vos"]:
+                for vo_name in data["vos"]:
+                    if not vo_name in vos:
+                        vos[vo_name] = SpaceRecord(**{
+                            "total": long(data["space"]["total-space"]),
+                            "available": long(data["space"]["available-space"]),
+                            "used": long(data["space"]["used-space"]),
+                            "free": long(data["space"]["free-space"]),
+                            "unavailable": long(data["space"]["unavailable-space"]),
+                            "reserved": long(data["space"]["reserved-space"]),
+                            "busy": long(data["space"]["busy-space"]),
+                            "near_line": long(data["availableNearlineSpace"])
+                            })
+                    else:
+                        vos[vo_name].sum(space)
 
             # update summary
             summary.sum(space)

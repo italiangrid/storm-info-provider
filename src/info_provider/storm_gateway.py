@@ -24,7 +24,7 @@ class StormGateway:
 
     def get_vfs_list(self):
         logging.debug("Retrieving backend configuration from %s ...", self._endpoint)
-        url = self._endpoint + "/configuration/1.3/VirtualFSList"
+        url = self._endpoint + "/configuration/1.4/VirtualFSList"
         response = self._get_json(url)
         return response
 
