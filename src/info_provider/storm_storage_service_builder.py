@@ -25,7 +25,7 @@ class StorageServiceBuilder:
             total_size = vfs.get_space().get_total()
             used_size = vfs.get_space().get_used()
             paths = vfs.get_stfnroot()
-            vos = vfs.get_voname().split()
+            vos = vfs.get_vos()
             token = vfs.get_token()
             sa = StorageShare(name=token, access_latency=access_latency, retention_policy=retention_policy, total_size=total_size, used_size=used_size, path=paths, vo_list=vos)
             service.add_share(sa)

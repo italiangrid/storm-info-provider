@@ -2,7 +2,9 @@
     "NESTED-FS": {
         "name": "NESTED-FS",
         "token": "NESTED_TOKEN",
-        "voname": "test.vo.2",
+        "vos": [
+            "test.vo.2"
+        ],
         "root": "/storage/nested",
         "storageclass": "T0D1",
         "stfnRoot": [
@@ -22,13 +24,18 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            "vo:test.vo.2"
+            {
+                "vo": "test.vo.2",
+                "dn": "*"
+            }
         ]
     },
     "IGI-FS": {
         "name": "IGI-FS",
         "token": "IGI_TOKEN",
-        "voname": "test.vo",
+        "vos": [
+            "test.vo"
+        ],
         "root": "/storage/igi",
         "storageclass": "T0D1",
         "stfnRoot": [
@@ -47,13 +54,18 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            "vo:test.vo"
+            {
+                "vo": "test.vo",
+                "dn": "*"
+            }
         ]
     },
     "TAPE-FS": {
         "name": "TAPE-FS",
         "token": "TAPE_TOKEN",
-        "voname": "test.vo.2",
+        "vos": [
+            "test.vo.2"
+        ],
         "root": "/storage/tape",
         "storageclass": "T1D0",
         "stfnRoot": [
@@ -70,13 +82,18 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 8000000000,
         "approachableRules": [
-            "vo:test.vo.2"
+            {
+                "vo": "test.vo.2",
+                "dn": "*"
+            }
         ]
     },
     "TESTVOBIS-FS": {
         "name": "TESTVOBIS-FS",
         "token": "TESTVOBIS_TOKEN",
-        "voname": "test.vo.2",
+        "vos": [
+            "test.vo.2"
+        ],
         "root": "/storage/test.vo.bis",
         "storageclass": "T0D1",
         "stfnRoot": [
@@ -95,13 +112,19 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            "vo:test.vo.2"
+            {
+                "vo": "test.vo.2",
+                "dn": "*"
+            }
         ]
     },
     "NOAUTH-FS": {
         "name": "NOAUTH-FS",
         "token": "NOAUTH_TOKEN",
-        "voname": "test.vo",
+        "vos": [
+            "test.vo",
+            "test.vo.2"
+        ],
         "root": "/storage/noauth",
         "storageclass": "T0D1",
         "stfnRoot": [
@@ -120,13 +143,22 @@
         "anonymous": "READ",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            "vo:test.vo"
+            {
+                "vo": "test.vo",
+                "dn": "*"
+            },
+            {
+                "vo": "test.vo.2",
+                "dn": "*"
+            }
         ]
     },
     "TESTVO2-FS": {
         "name": "TESTVO2-FS",
         "token": "TESTVO2_TOKEN",
-        "voname": "test.vo.2",
+        "vos": [
+            "test.vo.2"
+        ],
         "root": "/storage/test.vo.2",
         "storageclass": "T0D1",
         "stfnRoot": [
@@ -145,13 +177,18 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            "vo:test.vo.2"
+            {
+                "vo": "test.vo.2",
+                "dn": "*"
+            }
         ]
     },
     "TESTVO-FS": {
         "name": "TESTVO-FS",
         "token": "TESTVO_TOKEN",
-        "voname": "test.vo",
+        "vos": [
+            "test.vo"
+        ],
         "root": "/storage/test.vo",
         "storageclass": "T0D1",
         "stfnRoot": [
@@ -170,7 +207,10 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            "vo:test.vo"
+            {
+                "vo": "test.vo",
+                "dn": "*"
+            }
         ]
     }
 }

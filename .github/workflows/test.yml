@@ -1,0 +1,35 @@
+name: StoRM Info Provider tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    container:
+      image: python:2.7.18-buster
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y libldap2-dev libpython2-dev libc6-dev libsasl2-dev
+          python -m pip install --upgrade pip
+          pip install pytest-cov mock coverage unittest2 python-ldap==3.3.1
+      - name: Run coverage
+        working-directory: ./src
+        run: |
+          pytest --cov-report xml --cov=. tests/
+          coverage html
+          ls
+      - name: Get Coverage
+        uses: orgoro/coverage@v3
+        if: github.event_name == 'pull_request'
+        with:
+          coverageFile: ./src/coverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v2
+        with: 
+          name: assets-for-download
+          path: ./src/htmlcov

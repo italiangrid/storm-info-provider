@@ -110,21 +110,38 @@ class SpaceRecord:
         str_list.append("near_line: %d" % self.nearline)
         return "[" + ", ".join(str_list) + "]"
 
+class ApproachableRule:
+
+    def __init__(self, **data):
+        self.dn = data.get("dn") if data.get("dn") else ""
+        self.vo = data.get("vo") if data.get("vo") else ""
+
+    def get_dn(self):
+        return self.dn
+
+    def get_vo(self):
+        return self.vo
+
+    def __str__(self):
+        str_list = []
+        str_list.append("dn: %s" % self.dn)
+        str_list.append("vo: %s" % self.vo)
+        return "{" + ", ".join(str_list) + "}"
 
 class VirtualFileSystemRecord:
 
     def __init__(self, **data):
         self.name = data.get("name") if data.get("name") else ""
         self.token = data.get("token") if data.get("token") else ""
-        self.voname = data.get("vo_name") if data.get("vo_name") else ""
+        self.vos = data.get("vos") if data.get("vos") else []
         self.root = data.get("root") if data.get("root") else ""
         self.storageclass = data.get("storage_class") if data.get("storage_class") else ""
         self.stfnroot = data.get("stfn_root") if data.get("stfn_root") else []
         self.retentionpolicy = data.get("retention_policy") if data.get("retention_policy") else ""
         self.accesslatency = data.get("access_latency") if data.get("access_latency") else ""
         self.protocols = data.get("protocols") if data.get("protocols") else []
-        self.approachablerules = data.get("approachable_rules") if data.get("approachable_rules") else []
         self.space = data.get("space") if data.get("space") else SpaceRecord()
+        self.approachablerules = data.get("approachable_rules") if data.get("approachable_rules") else []
 
     def get_name(self):
         return self.name
@@ -132,8 +149,8 @@ class VirtualFileSystemRecord:
     def get_token(self):
         return self.token
 
-    def get_voname(self):
-        return self.voname
+    def get_vos(self):
+        return self.vos
 
     def get_root(self):
         return self.root
@@ -163,7 +180,7 @@ class VirtualFileSystemRecord:
         str_list = []
         str_list.append("name: %s" % self.name)
         str_list.append("token: %s" % self.token)
-        str_list.append("vo_name: %s" % self.root)
+        str_list.append("vos: %s" % self.vos)
         str_list.append("root: %s" % self.root)
         str_list.append("storage_class: %s" % self.storageclass)
         str_list.append("access_latency: %s" % self.accesslatency)
@@ -171,6 +188,9 @@ class VirtualFileSystemRecord:
         str_list.append("access_latency: %s" % self.accesslatency)
         str_list.append("stfn_root: %s" % self.stfnroot)
         str_list.append("protocols: %s" % self.protocols)
-        str_list.append("approachable_rules: %s" % self.approachablerules)
+        ar_list = []
+        for ar in self.approachablerules:
+            ar_list.append(ar.__str__())
+        str_list.append("approachable_rules: [ %s ]" % ", ".join(ar_list))
         str_list.append("space: %s" % self.space.__str__())
         return "[" + ", ".join(str_list) + "]"
