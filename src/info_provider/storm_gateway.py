@@ -37,7 +37,7 @@ class StormGateway:
 
     def is_online(self):
         url = self._endpoint + "/configuration/1.4/VirtualFSList"
-        request = urllib.Request(url)
+        request = urllib.request.Request(url)
         request.get_method = lambda : 'HEAD'
         try:
             response = urllib.request.urlopen(request)

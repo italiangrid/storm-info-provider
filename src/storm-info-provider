@@ -19,14 +19,12 @@ import argparse
 import logging
 import logging.config
 import os
-import exceptions
-import time
+from time import perf_counter as clock
 import pwd
 
 from info_provider.configuration import Configuration
 from info_provider.storm_gateway import StormGateway
 from info_provider.utils.ldap_utils import LDIFExporter
-from symbol import argument
 from info_provider.storm_info_provider import StormInfoProvider
 from info_provider.glue.utils import get_issuer_ca
 
@@ -141,7 +139,7 @@ if __name__ == '__main__':
     # create info_provider
     info_provider = StormInfoProvider(configuration=configuration)
 
-    start = time.clock()
+    start = clock()
     # do ...
     try:
         arguments.action(arguments)
@@ -149,7 +147,7 @@ if __name__ == '__main__':
         print(e)
         sys.exit(1)
 
-    elapsed = time.clock() - start
+    elapsed = clock() - start
     logging.info("Received %s - It took %s sec", arguments.action.__name__, elapsed)
 
     sys.exit()

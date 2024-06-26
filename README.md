@@ -7,6 +7,6 @@ files populated by gatering information from StoRM BackEnd.
 
 Supported platforms:
 
-- Scientific Linux 6 on x86\_64 architecture
+- RedHat Entrerprise 9 on x86\_64 architecture
 
 Read [man page](man/storm-info-provider.1.md).
