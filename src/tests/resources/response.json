@@ -24,10 +24,7 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            {
-                "vo": "test.vo.2",
-                "dn": "*"
-            }
+          "vo:test.vo.2"
         ]
     },
     "IGI-FS": {
@@ -54,10 +51,7 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            {
-                "vo": "test.vo",
-                "dn": "*"
-            }
+          "vo:test.vo"
         ]
     },
     "TAPE-FS": {
@@ -82,10 +76,7 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 8000000000,
         "approachableRules": [
-            {
-                "vo": "test.vo.2",
-                "dn": "*"
-            }
+          "vo:test.vo.2"
         ]
     },
     "TESTVOBIS-FS": {
@@ -112,10 +103,7 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            {
-                "vo": "test.vo.2",
-                "dn": "*"
-            }
+          "vo:test.vo.2"
         ]
     },
     "NOAUTH-FS": {
@@ -143,14 +131,8 @@
         "anonymous": "READ",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            {
-                "vo": "test.vo",
-                "dn": "*"
-            },
-            {
-                "vo": "test.vo.2",
-                "dn": "*"
-            }
+          "vo:test.vo",
+          "vo:test.vo.2"
         ]
     },
     "TESTVO2-FS": {
@@ -177,10 +159,7 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            {
-                "vo": "test.vo.2",
-                "dn": "*"
-            }
+          "vo:test.vo.2"
         ]
     },
     "TESTVO-FS": {
@@ -207,10 +186,7 @@
         "anonymous": "NOREAD",
         "availableNearlineSpace": 0,
         "approachableRules": [
-            {
-                "vo": "test.vo",
-                "dn": "*"
-            }
+          "vo:test.vo"
         ]
     }
 }
