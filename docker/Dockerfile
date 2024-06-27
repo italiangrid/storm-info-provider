@@ -1,7 +1,7 @@
 FROM centos:7
 
-ENV GIT_BRANCH develop
-ENV PYTHON_VERSION 3.9.2
+ENV GIT_BRANCH python3
+ENV PYTHON_VERSION 3.9.19
 ENV PYTHON_COMMAND python3.9
 
 RUN yum install -y epel-release
