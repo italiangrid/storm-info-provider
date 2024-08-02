@@ -15,13 +15,9 @@ class LDIFNode:
         # add/update entries
         for entry_name in entries:
             if isinstance(entries[entry_name], list):
-                self.entries[entry_name] = []
-                for item in entries[entry_name]:
-                    self.entries[entry_name].append(str(item))
-            elif isinstance(entries[entry_name], str):
-                self.entries[entry_name] = [entries[entry_name]]
+                self.entries[entry_name] = list(map(lambda e: str(e).encode('utf-8'), entries[entry_name]))
             else:
-                self.entries[entry_name] = [str(entries[entry_name])]
+                self.entries[entry_name] = [str(entries[entry_name]).encode('utf-8')]
         return self
 
     def init(self):
@@ -60,14 +56,13 @@ class LDIFExporter:
         return self
 
     def print_nodes(self, stream):
-        ldif_writer = LDIFWriter(stream, cols=512)
+        ldif_writer = LDIFWriter(stream)
         for node in self.nodes:
             ldif_writer.unparse(node["dn"], node["entries"])
         return self
 
     def save_to_file(self, fname):
         logging.debug("Saving nodes to file %s", fname)
-        f = open(fname, 'w')
-        self.print_nodes(f)
-        f.close()
-        return
+        with open(fname, 'w') as f:
+          self.print_nodes(f)
+        return self
