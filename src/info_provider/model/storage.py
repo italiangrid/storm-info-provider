@@ -1,5 +1,4 @@
 import calendar
-import json
 import logging
 import time
 

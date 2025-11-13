@@ -29,40 +29,26 @@ class SpaceRecord:
         # initialize with default value:
         if data.get("total"):
             self.total = int(data.get("total"))
-        if data.get("available"):
-            self.available = int(data.get("available"))
-        else:
-            self.available = self.total
         if data.get("used"):
             self.used = int(data.get("used"))
         if data.get("free"):
             self.free = int(data.get("free"))
         else:
             self.free = self.total
-        if data.get("unavailable"):
-            self.unavailable = int(data.get("unavailable"))
         if data.get("reserved"):
             self.reserved = int(data.get("reserved"))
-        if data.get("busy"):
-            self.busy = int(data.get("busy"))
         if data.get("near_line"):
             self.nearline = int(data.get("near_line"))
 
     def _init_as_empty(self):
         self.total = 0
-        self.available = 0
         self.used = 0
         self.free = 0
-        self.unavailable = 0
         self.reserved = 0
-        self.busy = 0
         self.nearline = 0
 
     def get_total(self):
         return self.total
-
-    def get_available(self):
-        return self.available
 
     def get_used(self):
         return self.used
@@ -70,14 +56,8 @@ class SpaceRecord:
     def get_free(self):
         return self.free
 
-    def get_unavailable(self):
-        return self.unavailable
-
     def get_reserved(self):
         return self.reserved
-
-    def get_busy(self):
-        return self.busy
 
     def get_nearline(self):
         return self.nearline
@@ -90,23 +70,17 @@ class SpaceRecord:
 
     def sum(self, sr2):
         self.total = self.total + int(sr2.get_total())
-        self.available = int(self.available) + int(sr2.get_available())
         self.used = int(self.used) + int(sr2.get_used())
         self.free = int(self.free) + int(sr2.get_free())
-        self.unavailable = int(self.unavailable) + int(sr2.get_unavailable())
         self.reserved = int(self.reserved) + int(sr2.get_reserved())
-        self.busy = int(self.busy) + int(sr2.get_busy())
         self.nearline = int(self.nearline) + int(sr2.get_nearline())
 
     def __str__(self):
         str_list = []
         str_list.append("total: %d" % self.total)
-        str_list.append("available: %d" % self.available)
         str_list.append("used: %d" % self.used)
         str_list.append("free: %d" % self.free)
-        str_list.append("unavailable: %d" % self.unavailable)
         str_list.append("reserved: %d" % self.reserved)
-        str_list.append("busy: %d" % self.busy)
         str_list.append("near_line: %d" % self.nearline)
         return "[" + ", ".join(str_list) + "]"
 
@@ -134,8 +108,6 @@ class VirtualFileSystemRecord:
         self.name = data.get("name") if data.get("name") else ""
         self.token = data.get("token") if data.get("token") else ""
         self.vos = data.get("vos") if data.get("vos") else []
-        self.root = data.get("root") if data.get("root") else ""
-        self.storageclass = data.get("storage_class") if data.get("storage_class") else ""
         self.stfnroot = data.get("stfn_root") if data.get("stfn_root") else []
         self.retentionpolicy = data.get("retention_policy") if data.get("retention_policy") else ""
         self.accesslatency = data.get("access_latency") if data.get("access_latency") else ""
@@ -151,12 +123,6 @@ class VirtualFileSystemRecord:
 
     def get_vos(self):
         return self.vos
-
-    def get_root(self):
-        return self.root
-
-    def get_storageclass(self):
-        return self.storageclass
 
     def get_retentionpolicy(self):
         return self.retentionpolicy
@@ -181,8 +147,6 @@ class VirtualFileSystemRecord:
         str_list.append("name: %s" % self.name)
         str_list.append("token: %s" % self.token)
         str_list.append("vos: %s" % self.vos)
-        str_list.append("root: %s" % self.root)
-        str_list.append("storage_class: %s" % self.storageclass)
         str_list.append("access_latency: %s" % self.accesslatency)
         str_list.append("retention_policy: %s" % self.retentionpolicy)
         str_list.append("access_latency: %s" % self.accesslatency)

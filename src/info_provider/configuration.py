@@ -1,50 +1,49 @@
 import logging
+import urllib.request
+import json
+import ssl
 
 from info_provider.model.space import ApproachableRule
 
 
 class Configuration:
 
-    __quality_levels = {
-        0: "development",
-        1: "testing",
-        2: "pre-production",
-        3: "production"
-    }
-
-    _mandatories = ["SITE_NAME", "STORM_BACKEND_HOST", "STORM_DEFAULT_ROOT",
-        "STORM_FRONTEND_PATH", "STORM_FRONTEND_PORT",
-        "STORM_FRONTEND_PUBLIC_HOST", "STORM_BACKEND_REST_SERVICES_PORT",
-        "VOS", "STORM_ENDPOINT_QUALITY_LEVEL"]
-
-    def __init__(self, filepath):
-        logging.debug("Init configuration from file %s ...", filepath)
-        self._configuration = self._load_configuration_from_file(filepath)
-        self._configuration_sanity_check()
+    def __init__(self, **data):
+        if data.get("url"):
+            logging.debug("Init configuration from %s ...", data.get("url"))
+            self._configuration = self._load_configuration_from_url(data.get("url"), data.get("cert_file"))
+            self._configuration["SRR_URL"] = data.get("url")
+            self._configuration["CERT_FILE"] = data.get("cert_file")
+        elif data.get("path"):
+            logging.debug("Init configuration from %s ...", data.get("path"))
+            self._configuration = self._load_configuration_from_file(data.get("path"))
         return
 
-    def _clear_quotes(self, s):
-        return s.replace('\"', '').replace("\'", '')
+    def _load_configuration_from_url(self, url, cert_file):
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        context.load_verify_locations(capath="/etc/grid-security/certificates/")
+        context.load_cert_chain(certfile=cert_file)
+        with urllib.request.urlopen(url, context=context) as f:
+            return self._load_configuration(f)
 
-    def _clear_newlines(self, s):
-        return s.replace("\n", '')
+    def _load_configuration_from_file(self, path):
+        with open(path) as f:
+            return self._load_configuration(f)
 
-    def _load_configuration_from_file(self, filepath):
+    def _load_configuration(self, readable):
         out = {}
-        try:
-            f = open(filepath, 'r')
-            for line in f:
-                (key, val) = line.split('=', 1)
-                out[key] = self._clear_quotes(self._clear_newlines(val.strip()))
-        finally:
-            f.close()
+        srr = json.load(readable);
+        out["SRR_JSON"] = srr
+        out["SITE_NAME"] = srr.get("storageservice").get("name")
+        out["STORM_ENDPOINT_QUALITY_LEVEL"] = srr["storageservice"]["storageendpoints"][0]["qualitylevel"]
+        out["STORM_WEBDAV_POOL_LIST"] = srr["storageservice"]["storageendpoints"][0]["endpointurl"]
+        out["STORM_IMPLEMENTATION_VERSION"] = srr["storageservice"]["implementationversion"]
+        out["STORM_STORAGEAREA_LIST"] = ' '.join([storageshare["name"] for storageshare in srr["storageservice"]["storageshares"]])
+        out["STORM_SERVING_STATE"] = srr["storageservice"]["qualitylevel"]
+        out["VOS"] = []
+        for share in srr["storageservice"]["storageshares"]:
+            out["VOS"].extend(share["vos"])
         return out
-
-    def _configuration_sanity_check(self):
-        logging.debug("Configuration sanity check ...")
-        for key in self._mandatories:
-            if not key in self._configuration:
-                raise ValueError("Configuration error: Missing mandatory %s variable!" % key)
 
     def print_configuration(self):
         logging.debug("##############################################")
@@ -61,63 +60,7 @@ class Configuration:
         self._configuration[key] = value
 
     def get_enabled_access_protocols(self):
-        enabled = []
-        if self.get("STORM_INFO_FILE_SUPPORT").lower() == "true":
-            enabled.append("file")
-        if self.get("STORM_INFO_RFIO_SUPPORT").lower() == "true":
-            enabled.append("rfio")
-        if self.get("STORM_INFO_GRIDFTP_SUPPORT").lower() == "true":
-            enabled.append("gsiftp")
-        if self.get("STORM_INFO_ROOT_SUPPORT").lower() == "true":
-            enabled.append("xroot")
-        if self.get("STORM_INFO_HTTP_SUPPORT").lower() == "true":
-            enabled.append("http")
-        if self.get("STORM_INFO_HTTPS_SUPPORT").lower() == "true":
-            enabled.append("https")
-        if self.has_webdav():
-            enabled.append("webdav")
-        return enabled
-
-    def get_backend_rest_endpoint(self):
-        host = self.get("STORM_BACKEND_HOST")
-        port = self.get("STORM_BACKEND_REST_SERVICES_PORT")
-        return 'http://' + host + ':' + str(port)
-
-    def get_frontend_list(self):
-        return self.get("STORM_FRONTEND_HOST_LIST").split(',')
-
-    def has_gridhttps(self):
-        if 'STORM_GRIDHTTPS_ENABLED' in self._configuration:
-            return self.get('STORM_GRIDHTTPS_ENABLED').lower() == "true"
-        return False
-
-    def get_gridhttps_list(self):
-        return self.get("STORM_GRIDHTTPS_POOL_LIST").split(',')
-
-    def is_HTTP_endpoint_enabled(self):
-        return self.get('STORM_GRIDHTTPS_HTTP_ENABLED').lower() == "true"
-
-    def has_webdav(self):
-        if 'STORM_WEBDAV_POOL_LIST' in self._configuration:
-            if len(self.get_webdav_endpoints()) > 0:
-                return True
-        return False
-
-    def get_public_srm_endpoint(self):
-        host = self.get("STORM_FRONTEND_PUBLIC_HOST")
-        port = str(self.get("STORM_FRONTEND_PORT"))
-        path = self.get("STORM_FRONTEND_PATH")
-        return "httpg://" + host + ":" + port + path
-
-    def get_public_https_endpoint(self):
-        host = self.get("STORM_GRIDHTTPS_PUBLIC_HOST")
-        port = str(self.get("STORM_GRIDHTTPS_HTTPS_PORT"))
-        return "https://" + host + ":" + port + "/"
-
-    def get_public_http_endpoint(self):
-        host = self.get("STORM_GRIDHTTPS_PUBLIC_HOST")
-        port = str(self.get("STORM_GRIDHTTPS_HTTP_PORT"))
-        return "http://" + host + ":" + port + "/"
+        return ["https", "webdav"]
 
     def get_webdav_endpoints(self):
         endpoints = [e for e in self.get("STORM_WEBDAV_POOL_LIST").split(',') if e is not None]
@@ -125,11 +68,8 @@ class Configuration:
         logging.debug("webdav endpoints: " + str(endpoints))
         return endpoints
 
-    def vfs_has_custom_token(self, vfs_name):
-        return "STORM_" + vfs_name[:-3] + "_TOKEN" in self._configuration
-
     def get_supported_VOs(self):
-        return self.get("VOS").split(' ')
+        return self.get("VOS")
 
     def get_used_VOs(self):
         vo_list = []
@@ -156,51 +96,6 @@ class Configuration:
         if sa in self.get_supported_VOs():
             return [sa]
         return []
-
-    def get_online_size(self, **options):
-        if options.get("sa"):
-            logging.debug("configuration.get_online_size %s started", options.get("sa"))
-        if options.get("vo"):
-            logging.debug("configuration.get_online_size %s started", options.get("vo"))
-        tot = 0
-        for sa in self.get_storage_area_list():
-            if options.get("sa") and sa != options.get("sa"):
-                continue
-            if options.get("vo") and options.get("vo") in self.get_sa_vos(sa):
-                continue
-            sa_name = self.get_sa_short(sa)
-            tot += int(self.get("STORM_" + sa_name + "_ONLINE_SIZE"))
-        logging.debug("online_size: %d", tot)
-        return tot*1000000000
-
-    def get_nearline_size(self, **options):
-        if options.get("sa"):
-            logging.debug("configuration.get_nearline_size %s started", options.get("sa"))
-        if options.get("vo"):
-            logging.debug("configuration.get_nearline_size %s started", options.get("vo"))
-        tot = 0
-        for sa in self.get_storage_area_list():
-            if options.get("sa") and sa != options.get("sa"):
-                continue
-            if options.get("vo") and options.get("vo") in self.get_sa_vos(sa):
-                continue
-            sa_name = self.get_sa_short(sa)
-            if "STORM_" + sa_name + "_NEARLINE_SIZE" in self._configuration:
-                tot += int(self.get("STORM_" + sa_name + "_NEARLINE_SIZE"))
-        logging.debug("nearline_size: %d", tot)
-        return tot*1000000000
-
-    def get_sa_token(self, sa):
-        sa_name = self.get_sa_short(sa)
-        if "STORM_" + sa_name + "_TOKEN" in self._configuration:
-            return self.get("STORM_" + sa_name + "_TOKEN")
-        return sa_name + "_TOKEN"
-
-    def get_sa_root(self, sa):
-        sa_name = self.get_sa_short(sa)
-        if "STORM_" + sa_name + "_ROOT" in self._configuration:
-            return self.get("STORM_" + sa_name + "_ROOT")
-        return self.get("STORM_DEFAULT_ROOT")
 
     def get_sa_class(self, sa):
         sa_name = self.get_sa_short(sa)
@@ -265,13 +160,7 @@ class Configuration:
         return self.get("STORM_IMPLEMENTATION_VERSION")
 
     def get_quality_level(self):
-        return self.__quality_levels[int(self.get('STORM_ENDPOINT_QUALITY_LEVEL'))]
+        return self.get('STORM_ENDPOINT_QUALITY_LEVEL')
 
     def get_serving_state(self):
         return self.get("STORM_SERVING_STATE")
-
-    def get_backend_hostname(self):
-        return self.get("STORM_BACKEND_HOST")
-
-    def get_issuer_ca(self):
-        return self.get("ISSUER_CA")

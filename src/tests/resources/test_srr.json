@@ -1,0 +1,166 @@
+{
+	"storageservice": {
+		"name": "INFN-T1",
+		"servicetype": "org.wlcg.se",
+		"implementation": "StoRM",
+		"implementationversion": "1.11.0",
+		"latestupdate": 1762355225,
+		"storageendpoints": [
+			{
+				"name": "xfer-test",
+				"endpointurl": "https://xfer-test.cr.cnaf.infn.it:8443",
+				"interfacetype": "https",
+				"qualitylevel": "production",
+				"assignedshares": [
+					"all"
+				]
+			}
+		],
+		"storageshares": [
+			{
+				"name": "infotest",
+				"servingstate": "open",
+				"timestamp": 1762355223,
+				"totalsize": 999999999,
+				"usedsize": 0,
+				"path": [
+					"/info"
+				],
+				"vos": [],
+				"accesslatency": "online",
+				"assignedendpoints": [
+					"all"
+				]
+			},
+			{
+				"name": "ops",
+				"servingstate": "open",
+				"timestamp": 1762355223,
+				"totalsize": 4194304,
+				"usedsize": 106880,
+				"path": [
+					"/ops"
+				],
+				"vos": [
+					"ops"
+				],
+				"accesslatency": "online",
+				"assignedendpoints": [
+					"all"
+				]
+			},
+			{
+				"name": "testgrouptape",
+				"servingstate": "open",
+				"timestamp": 1762355224,
+				"totalsize": 554472141824,
+				"usedsize": 1544640,
+				"path": [
+					"/test-tape/testgrouptape"
+				],
+				"vos": [],
+				"accesslatency": "nearline",
+				"assignedendpoints": [
+					"all"
+				]
+			},
+			{
+				"name": "testdatatape",
+				"servingstate": "open",
+				"timestamp": 1762355224,
+				"totalsize": 554472141824,
+				"usedsize": 37294707232,
+				"path": [
+					"/test-tape/testdatatape"
+				],
+				"vos": [],
+				"accesslatency": "nearline",
+				"assignedendpoints": [
+					"all"
+				]
+			},
+			{
+				"name": "wlcg",
+				"servingstate": "open",
+				"timestamp": 1762355224,
+				"totalsize": 999999999,
+				"usedsize": 0,
+				"path": [
+					"/wlcg"
+				],
+				"vos": [
+					"wlcg"
+				],
+				"accesslatency": "online",
+				"assignedendpoints": [
+					"all"
+				]
+			},
+			{
+				"name": "testmctape",
+				"servingstate": "open",
+				"timestamp": 1762355224,
+				"totalsize": 554472141824,
+				"usedsize": 126051326240,
+				"path": [
+					"/test-tape/testmctape"
+				],
+				"vos": [],
+				"accesslatency": "nearline",
+				"assignedendpoints": [
+					"all"
+				]
+			},
+			{
+				"name": "test",
+				"servingstate": "open",
+				"timestamp": 1762355225,
+				"totalsize": 15625000001536,
+				"usedsize": 15322274831360,
+				"path": [
+					"/test"
+				],
+				"vos": [],
+				"accesslatency": "online",
+				"assignedendpoints": [
+					"all"
+				]
+			},
+			{
+				"name": "dteam",
+				"servingstate": "open",
+				"timestamp": 1762355225,
+				"totalsize": 1073741824,
+				"usedsize": 288243072,
+				"path": [
+					"/dteam"
+				],
+				"vos": [
+					"dteam"
+				],
+				"accesslatency": "online",
+				"assignedendpoints": [
+					"all"
+				]
+			},
+			{
+				"name": "dteam-tape",
+				"servingstate": "open",
+				"timestamp": 1762355225,
+				"totalsize": 15625001984,
+				"usedsize": 768,
+				"path": [
+					"/dteam-tape"
+				],
+				"vos": [
+					"dteam"
+				],
+				"accesslatency": "nearline",
+				"assignedendpoints": [
+					"all"
+				]
+			}
+		],
+		"qualitylevel": "production"
+	}
+}

@@ -4,10 +4,7 @@ from tests.test_glue2 import TestGlue2
 from tests.test_info_provider import TestInfoProvider
 from tests.test_space_info import TestSpaceInfo
 from tests.test_storage_service import TestStorageService
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 import logging
 import logging.config

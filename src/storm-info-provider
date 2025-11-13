@@ -17,103 +17,66 @@
 import sys
 import argparse
 import logging
-import logging.config
 import os
 from time import perf_counter as clock
-import pwd
 
 from info_provider.configuration import Configuration
-from info_provider.storm_gateway import StormGateway
-from info_provider.utils.ldap_utils import LDIFExporter
 from info_provider.storm_info_provider import StormInfoProvider
-from info_provider.glue.utils import get_issuer_ca
 
-CONFIG_FILE = "/etc/storm/info-provider/storm-yaim-variables.conf"
 LOG_FORMAT = "%(asctime)s %(name)-12s: %(levelname)s %(message)s"
-EXPORT_TO_JSON_FILE = "/etc/storm/info-provider/site-report.json"
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'storm-info-provider args')
     parser.add_argument('-v', action = 'store', dest = 'log_level', 
-        required = False, default=20, type=int)
+        required = False, default=20, type=int, help="set the logging level. Values: '10' (DEBUG), '20' (INFO), '30' (WARNING) or '40' (ERROR). Default value: '20' (INFO).")
     parser.add_argument('-o', action = 'store', dest = 'log_filename',
-        required = False)
+        required = False, help="redirect log messages to a file. LOG_FILENAME contains the file path.")
+    parser.add_argument('--url', action = 'store', dest = 'srr_url', 
+        required = True, help = "the URL of the SRR report.json file")
+    parser.add_argument('--cert', action = 'store', dest = 'cert_file', 
+        required = True, help = "the path of the certicate file to access the SRR URL")
     subparsers = parser.add_subparsers()
     # create parser for "init" command
-    parser_init = subparsers.add_parser('configure')
-    parser_init.add_argument('-f', action = 'store', dest = 'filepath', 
-        required = False, default=CONFIG_FILE)
-    parser_init.add_argument('-g', action = 'store', dest = 'glue_protocol', 
-        required = False, choices=['glue13', 'glue2', 'all'], default='all')
-    parser_init.add_argument('-o', action = 'store', dest = 'exported_json_file_path', 
-        required = False, default=EXPORT_TO_JSON_FILE)
+    parser_init = subparsers.add_parser('configure', help="installs/creates all the necessary files to make BDII able to retrieve information from StoRM service and publish them by following the needed GLUE specifications. It's automatically re-run during StoRM service YAIM configuration.")
     parser_init.set_defaults(action=configure)
     # create parser for "get-update-ldif" command
-    parser_update = subparsers.add_parser('get-update-ldif')
-    parser_update.add_argument('-f', action = 'store', dest = 'filepath', 
-        required = False, default=CONFIG_FILE)
-    parser_update.add_argument('-g', action = 'store', dest = 'glue_protocol', 
-        required = False, choices=['glue13', 'glue2'], default='glue2')
+    parser_update = subparsers.add_parser('get-update-ldif', help="obtain the LDIF that updates the BDII information (for example the information about free/used space for a storage area). It's used, by default, by the scripts saved into /var/lib/bdii/gip/plugin directory, created launching the info provider script with configure.")
     parser_update.set_defaults(action=get_update_ldif)
     # create parser for "get-static-ldif" command
-    parser_static = subparsers.add_parser('get-static-ldif')
-    parser_static.add_argument('-f', action = 'store', dest = 'filepath', 
-        required = False, default=CONFIG_FILE)
-    parser_static.add_argument('-g', action = 'store', dest = 'glue_protocol', 
-        required = False, choices=['glue13', 'glue2'], default='glue2')
+    parser_static = subparsers.add_parser('get-static-ldif', help="obtain the static LDIF of a particular GLUE specification version. This output is the same content of the LDIF file saved into /var/lib/bdii/gip/static directory during configure execution.")
     parser_static.set_defaults(action=get_static_ldif)
-    # create parser for "build-report" command
-    parser_report = subparsers.add_parser('get-report-json')
-    parser_report.add_argument('-f', action = 'store', dest = 'filepath', 
-        required = False, default=CONFIG_FILE)
-    parser_report.add_argument('-o', action = 'store', dest = 'exported_json_file_path', 
-        required = False, default=EXPORT_TO_JSON_FILE)
-    parser_report.set_defaults(action=get_report_json)
     return parser.parse_args()
 
-def is_backend_running(endpoint):
-    logging.debug("Checking if backend is running ...")
-    gateway = StormGateway(endpoint)
-    return gateway.is_online()
-
-def get_current_serving_state(configuration):
+def get_current_serving_state():
     logging.debug("Getting serving state ...")
-    if not is_backend_running(configuration.get_backend_rest_endpoint()):
-        return (1, "closed")
     return (4, "production")
 
 def get_implementation_version():
     cmd = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
     return os.popen(cmd).read()
 
-def init_configuration(yaim_filepath):
+def init_configuration(srr_url, cert_file):
     # load configuration from file    
-    configuration = Configuration(yaim_filepath)
+    configuration = Configuration(url=srr_url, cert_file=cert_file)
     # get current serving state (used by GLUE2)
-    (value_int, value_str) = get_current_serving_state(configuration)
+    (value_int, value_str) = get_current_serving_state()
     configuration.set("STORM_SERVING_STATE_VALUE", value_int)
     configuration.set("STORM_SERVING_STATE", value_str)
     configuration.set("STORM_IMPLEMENTATION_VERSION", get_implementation_version())
-    configuration.set("ISSUER_CA", get_issuer_ca())
     return configuration
 
 def configure(arguments):
     logging.debug("Configure ...")
-    info_provider.configure(arguments.glue_protocol, arguments.exported_json_file_path);
-    return
-
-def get_report_json(arguments):
-    logging.debug("Build JSON report ...")
-    info_provider.get_report_json(arguments.exported_json_file_path)
+    info_provider.configure();
     return
 
 def get_static_ldif(arguments):
     logging.debug("Get static LDIF ...")
-    info_provider.get_static_ldif(arguments.glue_protocol)
+    info_provider.get_static_ldif()
     return
 
 def get_update_ldif(arguments):
-    info_provider.get_update_ldif(arguments.glue_protocol)
+    info_provider.get_update_ldif()
     return
 
 def initialize_logger(arguments):
@@ -134,7 +97,7 @@ if __name__ == '__main__':
     initialize_logger(arguments)
 
     # load configuration
-    configuration = init_configuration(arguments.filepath)
+    configuration = init_configuration(arguments.srr_url, arguments.cert_file)
 
     # create info_provider
     info_provider = StormInfoProvider(configuration=configuration)

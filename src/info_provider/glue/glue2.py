@@ -3,13 +3,11 @@ import os
 import re
 from urllib.parse import urlparse
 
-from info_provider.glue.commons import INFO_PROVIDER_SCRIPT, \
-    INPUT_YAIM_CONFIGURATION
+from info_provider.glue.commons import INFO_PROVIDER_SCRIPT
 from info_provider.glue.glue2_constants import GLUE2_ACCESS_PROTOCOLS_VERSIONS, \
     GLUE2_INFO_SERVICE_CONFIG_FILE, GLUE2_INFO_SERVICE_SRM_CONFIG_FILE, \
     GLUE2_INFO_PROVIDER_FILE, GLUE2_INFO_PLUGIN_FILE, \
-    GLUE2_INFO_STATIC_LDIF_FILE, GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE, \
-    GLUE2_INFO_SERVICE_SRM_CONFIG_FILE_TEMPLATE
+    GLUE2_INFO_STATIC_LDIF_FILE, GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE
 from info_provider.glue.glue2_schema import GLUE2StorageService, \
     GLUE2StorageServiceCapacity, GLUE2StorageAccessProtocol, GLUE2StorageManager, \
     GLUE2DataStore, GLUE2StorageShare, GLUE2MappingPolicy, \
@@ -28,7 +26,7 @@ class Glue2:
         return GLUE2_ACCESS_PROTOCOLS_VERSIONS[name]
 
     def _get_service_id(self):
-        return self._configuration.get_backend_hostname() + "/storage"
+        return self._configuration.get_webdav_endpoints()[0] + "/storage"
 
     def _get_site_id(self):
         return self._configuration.get_sitename()
@@ -36,8 +34,8 @@ class Glue2:
     def _get_manager_id(self):
         return self._get_service_id() + "/manager"
 
-    def _get_srm_endpoint_id(self, index=0):
-        return self._get_service_id() + "/endpoint/SRM" + str(index)
+    def _get_webdav_endpoint_id(self, index=0):
+        return self._get_service_id() + "/endpoint/WebDAV" + str(index)
 
     def _get_http_endpoint_id(self, index=0):
         return self._get_service_id() + "/endpoint/HTTP" + str(index)
@@ -80,10 +78,6 @@ class Glue2:
         logging.debug("Creating %s ...", GLUE2_INFO_SERVICE_CONFIG_FILE)
         self._create_service_config_file()
         logging.info("Successfully created %s !", GLUE2_INFO_SERVICE_CONFIG_FILE)
-        # create Glue2 srm endpoint configuration file
-        logging.debug("Creating %s ...", GLUE2_INFO_SERVICE_SRM_CONFIG_FILE)
-        self._create_srm_endpoint_config_file()
-        logging.info("Successfully created %s !", GLUE2_INFO_SERVICE_SRM_CONFIG_FILE)
         # create Glue2 service provider file
         logging.debug("Creating %s ...", GLUE2_INFO_PROVIDER_FILE)
         self._create_service_provider_file()
@@ -110,22 +104,6 @@ class Glue2:
             params)
         return
 
-    def _create_srm_endpoint_config_file(self):
-        vos = self._configuration.get_used_VOs()
-        params = {
-            'SITEID': self._get_site_id(),
-            'ENDPOINT': self._configuration.get_public_srm_endpoint(),
-            'QUALITY_LEVEL': self._configuration.get_quality_level(),
-            'SERVICEID': self._get_service_id(),
-            'ACBR': "VO:" + "\\nVO:".join(vos),
-            'OWNER': "\\n".join(vos)
-        }
-        create_file_from_template(
-            GLUE2_INFO_SERVICE_SRM_CONFIG_FILE,
-            GLUE2_INFO_SERVICE_SRM_CONFIG_FILE_TEMPLATE,
-            params)
-        return
-
     def _create_service_provider_file(self):
         # create (overwrite) provider file
         f = open(GLUE2_INFO_PROVIDER_FILE, "w")
@@ -134,7 +112,6 @@ class Glue2:
         f.write("%s,%s " % (GLUE2_INFO_SERVICE_SRM_CONFIG_FILE, GLUE2_INFO_SERVICE_CONFIG_FILE))
         f.write("%s " % (self._get_site_id()))
         f.write("%s " % (self._get_service_id()))
-        f.write("%s\n" % (self._get_srm_endpoint_id()))
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE2_INFO_PROVIDER_FILE)
@@ -144,7 +121,7 @@ class Glue2:
     def _create_plugin_file(self):
         f = open(GLUE2_INFO_PLUGIN_FILE, "w")
         f.write("#!/bin/sh\n")
-        f.write("%s get-update-ldif -f %s -g glue2" % (INFO_PROVIDER_SCRIPT, INPUT_YAIM_CONFIGURATION))
+        f.write("%s --url %s --cert %s get-update-ldif" % (INFO_PROVIDER_SCRIPT, self._configuration.get("SRR_URL"), self._configuration.get("CERT_FILE")))
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE2_INFO_PLUGIN_FILE)
@@ -165,7 +142,6 @@ class Glue2:
         # Commons
         service_id = self._get_service_id()
         storm_version = self._configuration.get_implementation_version()
-        issuer_ca = self._configuration.get_issuer_ca()
 
         # Glue2StorageService
         # NOTE: It must be removed when 'storm' type will be added
@@ -343,40 +319,39 @@ class Glue2:
             access_policy_rules.append("vo:" + vo)
 
         # NEW LOGIC
-        if self._configuration.has_webdav():
-
-            logging.debug("new logic webdav endpoints")
-            http_i = 0
-            https_i = 0
-            for endpoint in self._configuration.get_webdav_endpoints():
-                protocol = urlparse(endpoint).scheme.upper()
-                if protocol == "HTTP":
-                    endpoint_id = self._get_http_endpoint_id(http_i)
-                    http_i += 1
-                elif protocol == "HTTPS":
-                    endpoint_id = self._get_https_endpoint_id(https_i)
-                    https_i += 1
-                else:
-                    raise ValueError("unable to read a valid protocol from " + endpoint)
-                node = GLUE2WebDAVStorageEndpoint(endpoint_id, service_id)
-                node.init().add({
-                    'GLUE2EndpointURL': endpoint,
-                    'GLUE2EndpointImplementationVersion': storm_version,
-                    'GLUE2EndpointQualityLevel': self._configuration.get_quality_level(),
-                    'GLUE2EndpointServingState': self._configuration.get_serving_state(),
-                    'GLUE2EndpointIssuerCA': issuer_ca
-                    })
-                nodes.append(node)
-                logging.debug("Added node " + str(node))
-                # Add Endpoint Policy
-                policy_id = self._get_endpoint_policy_id(endpoint_id)
-                node = GLUE2AccessPolicy(policy_id, endpoint_id, service_id)
-                node.init().add({
-                    'GLUE2PolicyRule': access_policy_rules,
-                    'GLUE2PolicyUserDomainForeignKey': self._configuration.get_used_VOs()
-                    })
-                nodes.append(node)
-                logging.debug("Added node " + str(node))
+        logging.debug("new logic webdav endpoints")
+        http_i = 0
+        https_i = 0
+        for endpoint in self._configuration.get_webdav_endpoints():
+            protocol = urlparse(endpoint).scheme.upper()
+            if protocol == "HTTP":
+                endpoint_id = self._get_http_endpoint_id(http_i)
+                http_i += 1
+            elif protocol == "HTTPS":
+                endpoint_id = self._get_https_endpoint_id(https_i)
+                https_i += 1
+            else:
+                logging.error("unable to read a valid protocol from " + endpoint)
+                continue
+                # raise ValueError("unable to read a valid protocol from " + endpoint)
+            node = GLUE2WebDAVStorageEndpoint(endpoint_id, service_id)
+            node.init().add({
+                'GLUE2EndpointURL': endpoint,
+                'GLUE2EndpointImplementationVersion': storm_version,
+                'GLUE2EndpointQualityLevel': self._configuration.get_quality_level(),
+                'GLUE2EndpointServingState': self._configuration.get_serving_state(),
+                })
+            nodes.append(node)
+            logging.debug("Added node " + str(node))
+            # Add Endpoint Policy
+            policy_id = self._get_endpoint_policy_id(endpoint_id)
+            node = GLUE2AccessPolicy(policy_id, endpoint_id, service_id)
+            node.init().add({
+                'GLUE2PolicyRule': access_policy_rules,
+                'GLUE2PolicyUserDomainForeignKey': self._configuration.get_used_VOs()
+                })
+            nodes.append(node)
+            logging.debug("Added node " + str(node))
 
         return nodes
 
@@ -388,42 +363,26 @@ class Glue2:
         # Commons
         service_ID = self._get_service_id()
 
-        # Glue2StorageEndpoint SRM serving_state_value
-        node = GLUE2StorageEndpoint(self._get_srm_endpoint_id(), service_ID)
+        node = GLUE2StorageEndpoint(self._get_webdav_endpoint_id(), service_ID)
         node.add({ 'GLUE2EndpointServingState': serving_state_value })
         nodes.append(node)
 
-        if self._configuration.has_webdav():
-
-            i = 0
-            for endpoint in self._configuration.get_webdav_endpoints():
-                protocol = urlparse(endpoint).scheme.upper()
-                if protocol == "HTTP":
-                    endpoint_id = self._get_http_endpoint_id(i)
-                elif protocol == "HTTPS":
-                    endpoint_id = self._get_https_endpoint_id(i)
-                else:
-                    raise ValueError("unable to read a valid protocol from " + endpoint)
-                # Glue2StorageEndpoint http webdav serving_state_value
-                node = GLUE2StorageEndpoint(endpoint_id, service_ID)
-                node.add({ 'GLUE2EndpointServingState': serving_state_value })
-                nodes.append(node)
-                i += 1
-
-        elif self._configuration.has_gridhttps():
-
+        i = 0
+        for endpoint in self._configuration.get_webdav_endpoints():
+            protocol = urlparse(endpoint).scheme.upper()
+            if protocol == "HTTP":
+                endpoint_id = self._get_http_endpoint_id(i)
+            elif protocol == "HTTPS":
+                endpoint_id = self._get_https_endpoint_id(i)
+            else:
+                logging.error("unable to read a valid protocol from " + endpoint)
+                continue
+                # raise ValueError("unable to read a valid protocol from " + endpoint)
             # Glue2StorageEndpoint http webdav serving_state_value
-            node = GLUE2StorageEndpoint(self._get_http_endpoint_id(),
-                service_ID)
+            node = GLUE2StorageEndpoint(endpoint_id, service_ID)
             node.add({ 'GLUE2EndpointServingState': serving_state_value })
             nodes.append(node)
-
-            # Glue2StorageEndpoint https webdav serving_state_value
-            node = GLUE2StorageEndpoint(self._get_https_endpoint_id(),
-                service_ID)
-            node.add({ 'GLUE2EndpointServingState': serving_state_value })
-            nodes.append(node)
-
+            i += 1
         return nodes
 
     def get_update_ldif_spaceinfo(self, spaceinfo, serving_state_value):
