@@ -30,7 +30,7 @@ class Configuration:
 
     def _load_configuration(self, readable):
         out = {}
-        srr = json.load(readable);
+        srr = json.load(readable)
         out["SRR_JSON"] = srr
         out["SITE_NAME"] = srr.get("storageservice").get("name")
         out["STORM_ENDPOINT_QUALITY_LEVEL"] = srr["storageservice"]["storageendpoints"][0]["qualitylevel"]
@@ -76,7 +76,7 @@ class Configuration:
             for vo_name in vos:
                 if vo_name == "*":
                     continue
-                if not vo_name in vo_list:
+                if vo_name not in vo_list:
                     vo_list.append(vo_name)
 
         return vo_list

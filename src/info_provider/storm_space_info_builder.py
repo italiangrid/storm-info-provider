@@ -49,9 +49,9 @@ class SpaceInfoBuilder:
             logging.debug("%s", self._as_JSON(vfs[data["name"]]))
 
             # add/update VO space info
-            if not "*" in data["vos"]:
+            if "*" not in data["vos"]:
                 for vo_name in data["vos"]:
-                    if not vo_name in vos:
+                    if vo_name not in vos:
                         vos[vo_name] = SpaceRecord(**{
                             "total": int(data["totalsize"]),
                             "used": int(data["usedsize"]),

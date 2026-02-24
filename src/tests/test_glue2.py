@@ -6,8 +6,8 @@ from info_provider.glue.utils import as_gigabytes
 
 import unittest
 
-def decode_list(l):
-    return list(map(lambda x: x.decode('utf-8'), l))
+def decode_list(encoded_list):
+    return list(map(lambda x: x.decode("utf-8"), encoded_list))
 
 class TestGlue2(unittest.TestCase):
 

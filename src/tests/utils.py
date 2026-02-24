@@ -1,4 +1,3 @@
-import json
 import os
 
 from info_provider.configuration import Configuration

@@ -65,7 +65,7 @@ def init_configuration(srr_url):
 
 def configure(arguments):
     logging.debug("Configure ...")
-    info_provider.configure();
+    info_provider.configure()
     return
 
 def get_static_ldif(arguments):
