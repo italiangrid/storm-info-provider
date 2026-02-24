@@ -11,18 +11,16 @@ class Configuration:
     def __init__(self, **data):
         if data.get("url"):
             logging.debug("Init configuration from %s ...", data.get("url"))
-            self._configuration = self._load_configuration_from_url(data.get("url"), data.get("cert_file"))
+            self._configuration = self._load_configuration_from_url(data.get("url"))
             self._configuration["SRR_URL"] = data.get("url")
-            self._configuration["CERT_FILE"] = data.get("cert_file")
         elif data.get("path"):
             logging.debug("Init configuration from %s ...", data.get("path"))
             self._configuration = self._load_configuration_from_file(data.get("path"))
         return
 
-    def _load_configuration_from_url(self, url, cert_file):
-        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    def _load_configuration_from_url(self, url):
+        context = ssl.create_default_context()
         context.load_verify_locations(capath="/etc/grid-security/certificates/")
-        context.load_cert_chain(certfile=cert_file)
         with urllib.request.urlopen(url, context=context) as f:
             return self._load_configuration(f)
 

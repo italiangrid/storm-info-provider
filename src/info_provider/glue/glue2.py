@@ -121,7 +121,7 @@ class Glue2:
     def _create_plugin_file(self):
         f = open(GLUE2_INFO_PLUGIN_FILE, "w")
         f.write("#!/bin/sh\n")
-        f.write("%s --url %s --cert %s get-update-ldif" % (INFO_PROVIDER_SCRIPT, self._configuration.get("SRR_URL"), self._configuration.get("CERT_FILE")))
+        f.write("%s --url %s get-update-ldif" % (INFO_PROVIDER_SCRIPT, self._configuration.get("SRR_URL")))
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE2_INFO_PLUGIN_FILE)

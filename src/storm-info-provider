@@ -33,8 +33,6 @@ def parse_args():
         required = False, help="redirect log messages to a file. LOG_FILENAME contains the file path.")
     parser.add_argument('--url', action = 'store', dest = 'srr_url', 
         required = True, help = "the URL of the SRR report.json file")
-    parser.add_argument('--cert', action = 'store', dest = 'cert_file', 
-        required = True, help = "the path of the certicate file to access the SRR URL")
     subparsers = parser.add_subparsers()
     # create parser for "init" command
     parser_init = subparsers.add_parser('configure', help="installs/creates all the necessary files to make BDII able to retrieve information from StoRM service and publish them by following the needed GLUE specifications. It's automatically re-run during StoRM service YAIM configuration.")
@@ -55,9 +53,9 @@ def get_implementation_version():
     cmd = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
     return os.popen(cmd).read()
 
-def init_configuration(srr_url, cert_file):
+def init_configuration(srr_url):
     # load configuration from file    
-    configuration = Configuration(url=srr_url, cert_file=cert_file)
+    configuration = Configuration(url=srr_url)
     # get current serving state (used by GLUE2)
     (value_int, value_str) = get_current_serving_state()
     configuration.set("STORM_SERVING_STATE_VALUE", value_int)
@@ -97,7 +95,7 @@ if __name__ == '__main__':
     initialize_logger(arguments)
 
     # load configuration
-    configuration = init_configuration(arguments.srr_url, arguments.cert_file)
+    configuration = init_configuration(arguments.srr_url)
 
     # create info_provider
     info_provider = StormInfoProvider(configuration=configuration)
