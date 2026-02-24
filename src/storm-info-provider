@@ -25,36 +25,66 @@ from info_provider.storm_info_provider import StormInfoProvider
 
 LOG_FORMAT = "%(asctime)s %(name)-12s: %(levelname)s %(message)s"
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description = 'storm-info-provider args')
-    parser.add_argument('-v', action = 'store', dest = 'log_level', 
-        required = False, default=20, type=int, help="set the logging level. Values: '10' (DEBUG), '20' (INFO), '30' (WARNING) or '40' (ERROR). Default value: '20' (INFO).")
-    parser.add_argument('-o', action = 'store', dest = 'log_filename',
-        required = False, help="redirect log messages to a file. LOG_FILENAME contains the file path.")
-    parser.add_argument('--url', action = 'store', dest = 'srr_url', 
-        required = True, help = "the URL of the SRR report.json file")
+    parser = argparse.ArgumentParser(description="storm-info-provider args")
+    parser.add_argument(
+        "-v",
+        action="store",
+        dest="log_level",
+        required=False,
+        default=20,
+        type=int,
+        help="set the logging level. Values: '10' (DEBUG), '20' (INFO), '30' (WARNING) or '40' (ERROR). Default value: '20' (INFO).",
+    )
+    parser.add_argument(
+        "-o",
+        action="store",
+        dest="log_filename",
+        required=False,
+        help="redirect log messages to a file. LOG_FILENAME contains the file path.",
+    )
+    parser.add_argument(
+        "--url",
+        action="store",
+        dest="srr_url",
+        required=True,
+        help="the URL of the SRR report.json file",
+    )
     subparsers = parser.add_subparsers()
     # create parser for "init" command
-    parser_init = subparsers.add_parser('configure', help="installs/creates all the necessary files to make BDII able to retrieve information from StoRM service and publish them by following the needed GLUE specifications. It's automatically re-run during StoRM service YAIM configuration.")
+    parser_init = subparsers.add_parser(
+        "configure",
+        help="installs/creates all the necessary files to make BDII able to retrieve information from StoRM service and publish them by following the needed GLUE specifications. It's automatically re-run during StoRM service YAIM configuration.",
+    )
     parser_init.set_defaults(action=configure)
     # create parser for "get-update-ldif" command
-    parser_update = subparsers.add_parser('get-update-ldif', help="obtain the LDIF that updates the BDII information (for example the information about free/used space for a storage area). It's used, by default, by the scripts saved into /var/lib/bdii/gip/plugin directory, created launching the info provider script with configure.")
+    parser_update = subparsers.add_parser(
+        "get-update-ldif",
+        help="obtain the LDIF that updates the BDII information (for example the information about free/used space for a storage area). It's used, by default, by the scripts saved into /var/lib/bdii/gip/plugin directory, created launching the info provider script with configure.",
+    )
     parser_update.set_defaults(action=get_update_ldif)
     # create parser for "get-static-ldif" command
-    parser_static = subparsers.add_parser('get-static-ldif', help="obtain the static LDIF of a particular GLUE specification version. This output is the same content of the LDIF file saved into /var/lib/bdii/gip/static directory during configure execution.")
+    parser_static = subparsers.add_parser(
+        "get-static-ldif",
+        help="obtain the static LDIF of a particular GLUE specification version. This output is the same content of the LDIF file saved into /var/lib/bdii/gip/static directory during configure execution.",
+    )
     parser_static.set_defaults(action=get_static_ldif)
     return parser.parse_args()
+
 
 def get_current_serving_state():
     logging.debug("Getting serving state ...")
     return (4, "production")
 
+
 def get_implementation_version():
     cmd = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
     return os.popen(cmd).read()
 
+
 def init_configuration(srr_url):
-    # load configuration from file    
+    # load configuration from file
     configuration = Configuration(url=srr_url)
     # get current serving state (used by GLUE2)
     (value_int, value_str) = get_current_serving_state()
@@ -63,31 +93,39 @@ def init_configuration(srr_url):
     configuration.set("STORM_IMPLEMENTATION_VERSION", get_implementation_version())
     return configuration
 
+
 def configure(arguments):
     logging.debug("Configure ...")
     info_provider.configure()
     return
+
 
 def get_static_ldif(arguments):
     logging.debug("Get static LDIF ...")
     info_provider.get_static_ldif()
     return
 
+
 def get_update_ldif(arguments):
     info_provider.get_update_ldif()
     return
 
+
 def initialize_logger(arguments):
     if arguments.log_filename:
-        logging.basicConfig(filename=arguments.log_filename, filemode='a',
-            format=LOG_FORMAT, level=arguments.log_level)
+        logging.basicConfig(
+            filename=arguments.log_filename,
+            filemode="a",
+            format=LOG_FORMAT,
+            level=arguments.log_level,
+        )
     else:
-        logging.basicConfig(stream=sys.stderr, format=LOG_FORMAT,
-            level=arguments.log_level)
+        logging.basicConfig(
+            stream=sys.stderr, format=LOG_FORMAT, level=arguments.log_level
+        )
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # command line parsing
     arguments = parse_args()
 

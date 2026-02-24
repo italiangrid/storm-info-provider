@@ -5,8 +5,8 @@ from info_provider.glue.glue2 import Glue2
 from info_provider.storm_space_info_builder import SpaceInfoBuilder
 from info_provider.utils.ldap_utils import LDIFExporter
 
-class StormInfoProvider:
 
+class StormInfoProvider:
     def __init__(self, **args):
         logging.debug("StormInfoProvider initialization ...")
         # set configuration
@@ -54,7 +54,9 @@ class StormInfoProvider:
 
         # get Glue2 update LDIF info
         exporter.add_nodes(self._glue2.get_update_ldif_endpoints(serving_state))
-        exporter.add_nodes(self._glue2.get_update_ldif_spaceinfo(spaceinfo, serving_state))
+        exporter.add_nodes(
+            self._glue2.get_update_ldif_spaceinfo(spaceinfo, serving_state)
+        )
 
         exporter.print_nodes(sys.stdout)
         return

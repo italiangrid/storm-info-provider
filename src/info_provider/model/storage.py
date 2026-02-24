@@ -2,8 +2,8 @@ import calendar
 import logging
 import time
 
-class StorageService:
 
+class StorageService:
     def __init__(self, **data):
         # required:
         if data.get("name"):
@@ -19,11 +19,15 @@ class StorageService:
         else:
             raise ValueError("quality_level not found")
         # initialize with default value:
-        self.storageendpoints = data.get("storage_endpoints") if data.get("storage_endpoints") else []
-        self.storageshares = data.get("storage_shares") if data.get("storage_shares") else []
+        self.storageendpoints = (
+            data.get("storage_endpoints") if data.get("storage_endpoints") else []
+        )
+        self.storageshares = (
+            data.get("storage_shares") if data.get("storage_shares") else []
+        )
         # automatic values:
         self.implementation = "storm"
-        self.capabilities = ['data.management.transfer', 'data.management.storage']
+        self.capabilities = ["data.management.transfer", "data.management.storage"]
         self.latestupdate = calendar.timegm(time.gmtime())
 
     def get_name(self):
@@ -64,7 +68,6 @@ class StorageService:
 
 
 class StorageShare:
-
     def __init__(self, **data):
         # required:
         if data.get("name"):
@@ -84,8 +87,16 @@ class StorageShare:
         else:
             raise ValueError("path not found")
         # initialize with default value:
-        self.accesslatency = data.get("access_latency") if data.get("access_latency") else AccessLatency.online()
-        self.retentionpolicy = data.get("retention_policy") if data.get("retention_policy") else RetentionPolicy.NONE
+        self.accesslatency = (
+            data.get("access_latency")
+            if data.get("access_latency")
+            else AccessLatency.online()
+        )
+        self.retentionpolicy = (
+            data.get("retention_policy")
+            if data.get("retention_policy")
+            else RetentionPolicy.NONE
+        )
         self.usedsize = data.get("used_size") if data.get("used_size") else 0
         # automatic values:
         self.servingstate = ServingState.OPEN
@@ -122,11 +133,11 @@ class StorageShare:
     def get_assigned_endpoints(self):
         return self.assignedendpoints
 
-    def add_vo(self,vo_name):
+    def add_vo(self, vo_name):
         self.vos.append(vo_name)
 
-class StorageEndpoint:
 
+class StorageEndpoint:
     def __init__(self, **data):
         # required:
         if data.get("name"):
@@ -179,7 +190,6 @@ class StorageEndpoint:
 
 
 class AccessLatency:
-
     @staticmethod
     def online():
         return "online"
@@ -195,10 +205,12 @@ class AccessLatency:
     def __init__(self):
         logging.debug("AccessLatency init")
 
+
 class ServingState:
     OPEN = "open"
     CLOSED = "closed"
     DRAINING = "draining"
+
 
 class RetentionPolicy:
     NONE = "none"

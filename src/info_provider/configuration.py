@@ -7,7 +7,6 @@ from info_provider.model.space import ApproachableRule
 
 
 class Configuration:
-
     def __init__(self, **data):
         if data.get("url"):
             logging.debug("Init configuration from %s ...", data.get("url"))
@@ -33,10 +32,21 @@ class Configuration:
         srr = json.load(readable)
         out["SRR_JSON"] = srr
         out["SITE_NAME"] = srr.get("storageservice").get("name")
-        out["STORM_ENDPOINT_QUALITY_LEVEL"] = srr["storageservice"]["storageendpoints"][0]["qualitylevel"]
-        out["STORM_WEBDAV_POOL_LIST"] = srr["storageservice"]["storageendpoints"][0]["endpointurl"]
-        out["STORM_IMPLEMENTATION_VERSION"] = srr["storageservice"]["implementationversion"]
-        out["STORM_STORAGEAREA_LIST"] = ' '.join([storageshare["name"] for storageshare in srr["storageservice"]["storageshares"]])
+        out["STORM_ENDPOINT_QUALITY_LEVEL"] = srr["storageservice"]["storageendpoints"][
+            0
+        ]["qualitylevel"]
+        out["STORM_WEBDAV_POOL_LIST"] = srr["storageservice"]["storageendpoints"][0][
+            "endpointurl"
+        ]
+        out["STORM_IMPLEMENTATION_VERSION"] = srr["storageservice"][
+            "implementationversion"
+        ]
+        out["STORM_STORAGEAREA_LIST"] = " ".join(
+            [
+                storageshare["name"]
+                for storageshare in srr["storageservice"]["storageshares"]
+            ]
+        )
         out["STORM_SERVING_STATE"] = srr["storageservice"]["qualitylevel"]
         out["VOS"] = []
         for share in srr["storageservice"]["storageshares"]:
@@ -61,7 +71,9 @@ class Configuration:
         return ["https", "webdav"]
 
     def get_webdav_endpoints(self):
-        endpoints = [e for e in self.get("STORM_WEBDAV_POOL_LIST").split(',') if e is not None]
+        endpoints = [
+            e for e in self.get("STORM_WEBDAV_POOL_LIST").split(",") if e is not None
+        ]
 
         logging.debug("webdav endpoints: " + str(endpoints))
         return endpoints
@@ -82,7 +94,7 @@ class Configuration:
         return vo_list
 
     def get_storage_area_list(self):
-        return self.get("STORM_STORAGEAREA_LIST").split(' ')
+        return self.get("STORM_STORAGEAREA_LIST").split(" ")
 
     def get_sa_short(self, sa):
         return sa.replace(".", "").replace("-", "").replace("_", "").upper()
@@ -90,7 +102,7 @@ class Configuration:
     def get_sa_vos(self, sa):
         sa_name = self.get_sa_short(sa)
         if "STORM_" + sa_name + "_VONAME" in self._configuration:
-            return self.get("STORM_" + sa_name + "_VONAME").split(',')
+            return self.get("STORM_" + sa_name + "_VONAME").split(",")
         if sa in self.get_supported_VOs():
             return [sa]
         return []
@@ -105,7 +117,7 @@ class Configuration:
         sa_name = self.get_sa_short(sa)
         if "STORM_" + sa_name + "_ACCESSPOINT" in self._configuration:
             return self.get("STORM_" + sa_name + "_ACCESSPOINT").split(" ")
-        return [ "/" + sa ]
+        return ["/" + sa]
 
     def get_sa_retention_policy(self, sa):
         if "T1" in self.get_sa_class(sa):
@@ -135,20 +147,32 @@ class Configuration:
         out = []
         for vo_name in self.get_sa_vos(sa):
             if len(dn) > 0:
-                out.append(ApproachableRule(**{
-                    "dn": dn,
-                    "vo": vo_name,
-                }))
+                out.append(
+                    ApproachableRule(
+                        **{
+                            "dn": dn,
+                            "vo": vo_name,
+                        }
+                    )
+                )
             else:
-                out.append(ApproachableRule(**{
-                    "dn": "*",
-                    "vo": vo_name,
-                }))
+                out.append(
+                    ApproachableRule(
+                        **{
+                            "dn": "*",
+                            "vo": vo_name,
+                        }
+                    )
+                )
         if len(out) == 0:
-            out.append(ApproachableRule(**{
-                "dn": "*",
-                "vo": "*",
-            }))
+            out.append(
+                ApproachableRule(
+                    **{
+                        "dn": "*",
+                        "vo": "*",
+                    }
+                )
+            )
         return out
 
     def get_sitename(self):
@@ -158,7 +182,7 @@ class Configuration:
         return self.get("STORM_IMPLEMENTATION_VERSION")
 
     def get_quality_level(self):
-        return self.get('STORM_ENDPOINT_QUALITY_LEVEL')
+        return self.get("STORM_ENDPOINT_QUALITY_LEVEL")
 
     def get_serving_state(self):
         return self.get("STORM_SERVING_STATE")

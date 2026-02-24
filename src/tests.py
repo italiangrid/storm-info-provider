@@ -7,7 +7,8 @@ import unittest
 import logging
 import logging.config
 
-logging.config.fileConfig('resources/logging.ini')
+logging.config.fileConfig("resources/logging.ini")
+
 
 def create_suite():
     loader = unittest.TestLoader()
@@ -17,6 +18,7 @@ def create_suite():
     suite.addTests(loader.loadTestsFromTestCase(TestInfoProvider))
     suite.addTests(loader.loadTestsFromTestCase(TestSpaceInfo))
     return suite
+
 
 if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity=2)

@@ -1,6 +1,4 @@
-
 class SpaceInfo:
-
     def __init__(self, **data):
         self.summary = data.get("summary") if data.get("summary") else SpaceRecord()
         self.vos = data.get("vo_lists") if data.get("vo_list") else {}
@@ -22,8 +20,8 @@ class SpaceInfo:
         str_list.append("vfs: %s" % self.vfs)
         return "[" + ", ".join(str_list) + "]"
 
-class SpaceRecord:
 
+class SpaceRecord:
     def __init__(self, **data):
         self._init_as_empty()
         # initialize with default value:
@@ -84,8 +82,8 @@ class SpaceRecord:
         str_list.append("near_line: %d" % self.nearline)
         return "[" + ", ".join(str_list) + "]"
 
-class ApproachableRule:
 
+class ApproachableRule:
     def __init__(self, **data):
         self.dn = data.get("dn") if data.get("dn") else ""
         self.vo = data.get("vo") if data.get("vo") else ""
@@ -102,18 +100,24 @@ class ApproachableRule:
         str_list.append("vo: %s" % self.vo)
         return "{" + ", ".join(str_list) + "}"
 
-class VirtualFileSystemRecord:
 
+class VirtualFileSystemRecord:
     def __init__(self, **data):
         self.name = data.get("name") if data.get("name") else ""
         self.token = data.get("token") if data.get("token") else ""
         self.vos = data.get("vos") if data.get("vos") else []
         self.stfnroot = data.get("stfn_root") if data.get("stfn_root") else []
-        self.retentionpolicy = data.get("retention_policy") if data.get("retention_policy") else ""
-        self.accesslatency = data.get("access_latency") if data.get("access_latency") else ""
+        self.retentionpolicy = (
+            data.get("retention_policy") if data.get("retention_policy") else ""
+        )
+        self.accesslatency = (
+            data.get("access_latency") if data.get("access_latency") else ""
+        )
         self.protocols = data.get("protocols") if data.get("protocols") else []
         self.space = data.get("space") if data.get("space") else SpaceRecord()
-        self.approachablerules = data.get("approachable_rules") if data.get("approachable_rules") else []
+        self.approachablerules = (
+            data.get("approachable_rules") if data.get("approachable_rules") else []
+        )
 
     def get_name(self):
         return self.name

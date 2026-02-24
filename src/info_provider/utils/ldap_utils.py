@@ -4,7 +4,6 @@ from ldif import LDIFWriter
 
 
 class LDIFNode:
-
     def __init__(self, dn, default_entries):
         self.default_entries = default_entries
         self.dn = dn
@@ -15,9 +14,11 @@ class LDIFNode:
         # add/update entries
         for entry_name in entries:
             if isinstance(entries[entry_name], list):
-                self.entries[entry_name] = list(map(lambda e: str(e).encode('utf-8'), entries[entry_name]))
+                self.entries[entry_name] = list(
+                    map(lambda e: str(e).encode("utf-8"), entries[entry_name])
+                )
             else:
-                self.entries[entry_name] = [str(entries[entry_name]).encode('utf-8')]
+                self.entries[entry_name] = [str(entries[entry_name]).encode("utf-8")]
         return self
 
     def init(self):
@@ -33,11 +34,10 @@ class LDIFNode:
         for entry_name, entry_values in list(self.entries.items()):
             for value in entry_values:
                 out += "# " + entry_name + " = '" + str(value) + "'\n"
-        return out 
+        return out
 
 
 class LDIFExporter:
-
     def __init__(self):
         self.nodes = []
         return
@@ -46,8 +46,9 @@ class LDIFExporter:
         if not isinstance(node, LDIFNode):
             raise Exception("LDIFExporter.add_node error: Invalid node type")
         self.nodes.append(node.get_info())
-        logging.debug("LDIFExporter - Added %s node:\n%s",
-            node.__class__.__name__, node)
+        logging.debug(
+            "LDIFExporter - Added %s node:\n%s", node.__class__.__name__, node
+        )
         return self
 
     def add_nodes(self, nodes):
@@ -63,6 +64,6 @@ class LDIFExporter:
 
     def save_to_file(self, fname):
         logging.debug("Saving nodes to file %s", fname)
-        with open(fname, 'w') as f:
-          self.print_nodes(f)
+        with open(fname, "w") as f:
+            self.print_nodes(f)
         return self

@@ -1,4 +1,3 @@
-
 # general
 INFO_PROVIDER_CONFIG_DIR = "/etc/storm/info-provider"
 INFO_PROVIDER_TEMPLATES_DIR = "/etc/storm/info-provider/templates"
