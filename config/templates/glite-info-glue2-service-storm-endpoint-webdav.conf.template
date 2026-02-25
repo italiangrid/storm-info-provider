@@ -1,0 +1,13 @@
+service_type=other
+get_site_id=echo $SITEID
+get_endpoint=echo $ENDPOINT
+get_capability=echo "data.management.storage"
+get_technology=echo "webservice"
+get_version=echo "1"
+get_quality_level=echo "$QUALITY_LEVEL"
+get_status=echo "0"
+get_starttime=echo "946684800"
+get_acbr=echo -e "$ACBR"
+get_owner=echo -e "$OWNER"
+get_implementationname=echo "StoRM WebDAV"
+get_implementationversion=echo -e "$IMPLEMENTATION_VERSION"

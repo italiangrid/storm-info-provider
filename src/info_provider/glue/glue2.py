@@ -7,11 +7,12 @@ from info_provider.glue.commons import INFO_PROVIDER_SCRIPT
 from info_provider.glue.glue2_constants import (
     GLUE2_ACCESS_PROTOCOLS_VERSIONS,
     GLUE2_INFO_SERVICE_CONFIG_FILE,
-    GLUE2_INFO_SERVICE_SRM_CONFIG_FILE,
+    GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE,
     GLUE2_INFO_PROVIDER_FILE,
     GLUE2_INFO_PLUGIN_FILE,
     GLUE2_INFO_STATIC_LDIF_FILE,
     GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE,
+    GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE_TEMPLATE,
 )
 from info_provider.glue.glue2_schema import (
     GLUE2StorageService,
@@ -91,6 +92,10 @@ class Glue2:
         logging.debug("Creating %s ...", GLUE2_INFO_SERVICE_CONFIG_FILE)
         self._create_service_config_file()
         logging.info("Successfully created %s !", GLUE2_INFO_SERVICE_CONFIG_FILE)
+        # create Glue2 WebDAV endpoint configuration file
+        logging.debug("Creating %s ...", GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE)
+        self._create_webdav_endpoint_config_file()
+        logging.info("Successfully created %s !", GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE)
         # create Glue2 service provider file
         logging.debug("Creating %s ...", GLUE2_INFO_PROVIDER_FILE)
         self._create_service_provider_file()
@@ -118,6 +123,24 @@ class Glue2:
         )
         return
 
+    def _create_webdav_endpoint_config_file(self):
+        vos = set(self._configuration.get_supported_VOs())
+        params = {
+            "SITEID": self._get_site_id(),
+            "ENDPOINT": self._configuration.get_webdav_endpoints()[0],
+            "QUALITY_LEVEL": self._configuration.get_quality_level(),
+            "SERVICEID": self._get_service_id(),
+            "ACBR": "VO:" + "\\nVO:".join(vos),
+            "OWNER": "\\n".join(vos),
+            "IMPLEMENTATION_VERSION": self._configuration.get_implementation_version(),
+        }
+        create_file_from_template(
+            GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE,
+            GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE_TEMPLATE,
+            params,
+        )
+        return
+
     def _create_service_provider_file(self):
         # create (overwrite) provider file
         f = open(GLUE2_INFO_PROVIDER_FILE, "w")
@@ -125,10 +148,11 @@ class Glue2:
         f.write("glite-info-glue2-simple ")
         f.write(
             "%s,%s "
-            % (GLUE2_INFO_SERVICE_SRM_CONFIG_FILE, GLUE2_INFO_SERVICE_CONFIG_FILE)
+            % (GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE, GLUE2_INFO_SERVICE_CONFIG_FILE)
         )
         f.write("%s " % (self._get_site_id()))
         f.write("%s " % (self._get_service_id()))
+        f.write("%s\n" % (self._get_webdav_endpoint_id()))
         f.close()
         # set ldap as owner and chmod +x
         set_owner("ldap", GLUE2_INFO_PROVIDER_FILE)

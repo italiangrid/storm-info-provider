@@ -20,12 +20,12 @@ GLUE2_INFO_SERVICE_CONFIG_FILE_TEMPLATE = (
 GLUE2_INFO_SERVICE_CONFIG_FILE = (
     INFO_PROVIDER_CONFIG_DIR + "/glite-info-glue2-service-storm.conf"
 )
-GLUE2_INFO_SERVICE_SRM_CONFIG_FILE_TEMPLATE = (
+GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE_TEMPLATE = (
     INFO_PROVIDER_TEMPLATES_DIR
-    + "/glite-info-glue2-service-storm-endpoint-srm.conf.template"
+    + "/glite-info-glue2-service-storm-endpoint-webdav.conf.template"
 )
-GLUE2_INFO_SERVICE_SRM_CONFIG_FILE = (
-    INFO_PROVIDER_CONFIG_DIR + "/glite-info-glue2-service-storm-endpoint-srm.conf"
+GLUE2_INFO_SERVICE_WEBDAV_CONFIG_FILE = (
+    INFO_PROVIDER_CONFIG_DIR + "/glite-info-glue2-service-storm-endpoint-webdav.conf"
 )
 
 GLUE2_ACCESS_PROTOCOLS_VERSIONS = {
