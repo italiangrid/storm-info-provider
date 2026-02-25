@@ -78,11 +78,6 @@ def get_current_serving_state():
     return (4, "production")
 
 
-def get_implementation_version():
-    cmd = "rpm -q --queryformat='%{VERSION}' storm-backend-server"
-    return os.popen(cmd).read()
-
-
 def init_configuration(srr_url):
     # load configuration from file
     configuration = Configuration(url=srr_url)
@@ -90,7 +85,6 @@ def init_configuration(srr_url):
     (value_int, value_str) = get_current_serving_state()
     configuration.set("STORM_SERVING_STATE_VALUE", value_int)
     configuration.set("STORM_SERVING_STATE", value_str)
-    configuration.set("STORM_IMPLEMENTATION_VERSION", get_implementation_version())
     return configuration
 
 
